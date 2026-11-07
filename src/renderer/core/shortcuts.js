@@ -27,6 +27,8 @@ const SHORTCUTS = {
   FRAME_FIRST: ['home', 'down', 'ctrl+left'],
   ONION_MORE: ['+'],
   ONION_LESS: ['-'],
+  ONION_TOGGLE: ['o'],
+  ONION_REFERENCE_TOGGLE: ['p'],
   MUTE: ['m', '/', 'ctrl+m'],
   CLONE: ['c'],
   DUPLICATE: ['pageup'],

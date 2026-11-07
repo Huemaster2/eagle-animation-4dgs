@@ -7,6 +7,7 @@ import LimitWarning from '@components/LimitWarning';
 import LoadingPage from '@components/LoadingPage';
 import MaskingWindow from '@components/MaskingWindow';
 import MobileNavigation from '@components/MobileNavigation';
+import OnionSkinWindow from '@components/OnionSkinWindow';
 import PageLayout from '@components/PageLayout';
 import PictureWindow from '@components/PictureWindow';
 import Player from '@components/Player';
@@ -18,6 +19,7 @@ import ToolsWindow from '@components/ToolsWindow';
 import Tour from '@components/Tour';
 import Window from '@components/Window';
 import { DEFAULT_FPS, MAX_FRAME_DUPLICATION } from '@config-web';
+import { normalizeOnionSkin } from '@core/onionSkin';
 import { parseRatio } from '@core/ratio';
 import useAppCapabilities from '@hooks/useAppCapabilities';
 import useCamera from '@hooks/useCamera';
@@ -156,6 +158,7 @@ const Animator = ({ t }) => {
   const [shortPlayStatus, setShortPlayStatus] = useState(false);
   const [differenceStatus, setDifferenceStatus] = useState(false);
   const [onionValue, setOnionValue] = useState(1);
+  const [referenceFrameId, setReferenceFrameId] = useState(null);
   const [gridStatus, setGridStatus] = useState(false);
   const [currentFrameId, setCurrentFrameId] = useState(false);
   const [deleteOnLiveViewConfirmation, setDeleteOnLiveViewConfirmation] = useState(false);
@@ -204,6 +207,7 @@ const Animator = ({ t }) => {
   // Reset per-scene local state when switching scenes
   useEffect(() => {
     setCurrentFrameId(false);
+    setReferenceFrameId(null);
     setPendingBackgroundFrame(false);
     setDeleteOnLiveViewConfirmation(false);
     if (playerRef.current) {
@@ -257,6 +261,9 @@ const Animator = ({ t }) => {
   // ---- RUNTIME LOGIC
   const pictures = (project.scenes[track]?.pictures || []).filter((e) => !e.deleted);
   const framePosition = currentFrameId === false ? false : pictures.findIndex((p) => p.id === currentFrameId) + 1 || 1;
+  const onionConfig = normalizeOnionSkin(settings?.ONION_SKIN);
+  const onionEnabled = onionConfig.ENABLED;
+  const referenceFramePosition = referenceFrameId === null ? null : pictures.findIndex((p) => p.id === referenceFrameId) + 1 || null;
   const currentFrame = currentFrameId === false ? false : pictures.find((p) => p.id === currentFrameId) || false;
   const totalAnimationFrames = pictures.reduce((acc, e) => acc + (!e.deleted && !e.hidden ? e.length || 1 : 0), 0);
 
@@ -446,13 +453,13 @@ const Animator = ({ t }) => {
       playerRef.current.showFrame(newId);
     },
     ONION_LESS: () => {
-      if (!differenceStatus && framePosition === false) {
+      if (!differenceStatus && (framePosition === false || onionEnabled)) {
         setOnionValue(Math.max(parseFloat(onionValue) - 0.1, 0));
         window.track('animator_changed', { feature: 'onion', value: Math.max(parseFloat(onionValue) - 0.1, 0) });
       }
     },
     ONION_MORE: () => {
-      if (!differenceStatus && framePosition === false) {
+      if (!differenceStatus && (framePosition === false || onionEnabled)) {
         setOnionValue(Math.min(parseFloat(onionValue) + 0.1, 1));
         window.track('animator_changed', { feature: 'onion', value: Math.min(parseFloat(onionValue) + 0.1, 1) });
       }
@@ -460,6 +467,30 @@ const Animator = ({ t }) => {
     ONION_CHANGE: (value) => {
       setOnionValue(value);
       window.track('animator_changed', { feature: 'onion', value: value });
+    },
+    ONION_SETTINGS: () => {
+      setActiveWindow((v) => (v === 'onion' ? null : 'onion'));
+    },
+    ONION_TOGGLE: () => {
+      settingsActions.setSettings({ ONION_SKIN: { ...onionConfig, ENABLED: !onionConfig.ENABLED } });
+    },
+    ONION_SKIN_CHANGE: (config) => {
+      settingsActions.setSettings({ ONION_SKIN: normalizeOnionSkin(config) });
+    },
+    ONION_REFERENCE_SET: () => {
+      if (currentFrameId !== false) {
+        setReferenceFrameId(currentFrameId);
+      }
+    },
+    ONION_REFERENCE_CLEAR: () => {
+      setReferenceFrameId(null);
+    },
+    ONION_REFERENCE_TOGGLE: () => {
+      if (referenceFrameId !== null && (currentFrameId === false || currentFrameId === referenceFrameId)) {
+        setReferenceFrameId(null);
+      } else if (currentFrameId !== false) {
+        setReferenceFrameId(currentFrameId);
+      }
     },
     GRID: () => {
       if (framePosition === false) {
@@ -703,6 +734,8 @@ const Animator = ({ t }) => {
           isPlaying={isPlaying}
           pictures={pictures}
           onionValue={onionValue}
+          onionSkin={onionConfig}
+          referenceFrameId={referenceFramePosition ? referenceFrameId : null}
           showGrid={gridStatus}
           blendMode={differenceStatus}
           shortPlayStatus={shortPlayStatus}
@@ -734,6 +767,8 @@ const Animator = ({ t }) => {
             gridStatus={gridStatus}
             differenceStatus={differenceStatus}
             onionValue={onionValue}
+            onionEnabled={onionEnabled}
+            showOnionSettings={activeWindow === 'onion'}
             isPlaying={isPlaying}
             isCameraReady={!!currentCamera}
             isTakingPicture={isTakingPicture}
@@ -787,6 +822,16 @@ const Animator = ({ t }) => {
               shortPlayStatus={shortPlayStatus}
               fps={fps}
               framePosition={framePosition}
+            />
+          </Window>
+          <Window isOpened={activeWindow === 'onion'} onClose={() => setActiveWindow(null)}>
+            <OnionSkinWindow
+              config={onionConfig}
+              onChange={(config) => handleAction('ONION_SKIN_CHANGE', config)}
+              selectedFrameNumber={framePosition}
+              referenceFrameNumber={referenceFramePosition}
+              onPinReference={() => handleAction('ONION_REFERENCE_SET')}
+              onClearReference={() => handleAction('ONION_REFERENCE_CLEAR')}
             />
           </Window>
           <Window isOpened={activeWindow === 'picture'} onClose={() => setActiveWindow(null)}>

@@ -1,10 +1,12 @@
 import GridOverlay from '@components/GridOverlay';
+import OnionSkinLayers from '@components/OnionSkinLayers';
 import PreviewStream from '@components/PreviewStream';
 import RatioBorders from '@components/RatioBorders';
+import { drawFitted } from '@core/drawFitted';
+import { getOnionLayers, normalizeOnionSkin } from '@core/onionSkin';
 import { getPictureLink } from '@core/resize';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import faEyeSlash from '@icons/faEyeSlash';
-import resizeToFit from 'intrinsic-scale';
 import { isEqual } from 'lodash';
 import PropTypes from 'prop-types';
 import React, { Component } from 'react';
@@ -265,45 +267,31 @@ class Player extends Component {
       return;
     }
 
-    // Load image
     const img = await this.loadImage(getPictureLink(src, { h: 720, m: 'contain', f: 'jpg' })).catch(() => null);
-
-    // Draw background
-    ctx.fillStyle = '#000000';
-    ctx.fillRect(0, 0, this.getSize().width, this.getSize().height);
-
-    // If image is loaded, draw it
-    if (img) {
-      let ratioPosition = null;
-      if (this.getVideoRatio()) {
-        ratioPosition = resizeToFit('contain', { width: this.getVideoRatio(), height: 1 }, { width: this.getSize().width, height: this.getSize().height });
-      } else {
-        ratioPosition = { width: this.getSize().width, height: this.getSize().height };
-      }
-
-      const imagePosition = resizeToFit('cover', { width: img.width, height: img.height }, { width: ratioPosition.width, height: ratioPosition.height });
-
-      ctx.drawImage(
-        img,
-        0,
-        0,
-        img.width,
-        img.height,
-        Math.round(this.getSize().width / 2) - imagePosition.width / 2,
-        Math.round(this.getSize().height / 2) - imagePosition.height / 2,
-        imagePosition.width,
-        imagePosition.height
-      );
-    }
+    drawFitted(ctx, img, this.getSize(), this.getVideoRatio());
   }
 
   render() {
-    const { showGrid, onionValue, blendMode, isCameraReady, t, ratioLayerOpacity, reverseX, reverseY } = this.props;
+    const { showGrid, onionValue, blendMode, isCameraReady, t, ratioLayerOpacity, reverseX, reverseY, isPlaying, onionSkin, referenceFrameId } = this.props;
     const { width, height, ready, frameIndex } = this.state;
 
     const reverseClassNames = `${reverseX ? style.reverseX : ''} ${reverseY ? style.reverseY : ''}`;
     const frames = this.props.pictures.filter((e) => !e.deleted).reduce((acc, e) => [...acc, ...new Array(e.length || 1).fill(e)], []);
     const hasOnionFrame = frames.some((e) => !e.hidden);
+
+    // Multi-frame onion skin replaces the single legacy ghost; Difference mode keeps the legacy single-frame view
+    const onion = normalizeOnionSkin(onionSkin);
+    const useLayers = onion.ENABLED && !blendMode && !isPlaying && (frameIndex !== false || isCameraReady);
+    const onionLayers = useLayers
+      ? getOnionLayers({
+          pictures: this.props.pictures,
+          currentFrameId: frameIndex === false ? false : (frames[frameIndex]?.id ?? false),
+          config: onion,
+          master: 1 - (parseFloat(onionValue) || 0),
+          referenceFrameId,
+        })
+      : [];
+    const legacyGhostOpacity = onion.ENABLED && !blendMode ? 0 : hasOnionFrame ? 1 - onionValue : 0;
 
     return (
       <div className={`${style.playerContainer} ${frameIndex === false ? style.live : ''}`}>
@@ -318,10 +306,11 @@ class Player extends Component {
             ref={this.dom.picture}
             className={style.layout}
             style={{
-              opacity: !isCameraReady && frameIndex === false ? 0 : frameIndex !== false || blendMode ? 1 : hasOnionFrame ? 1 - onionValue : 0,
+              opacity: !isCameraReady && frameIndex === false ? 0 : frameIndex !== false || blendMode ? 1 : legacyGhostOpacity,
               mixBlendMode: !blendMode ? 'normal' : 'difference',
             }}
           />
+          <OnionSkinLayers layers={onionLayers} width={this.getSize().width} height={this.getSize().height} videoRatio={this.getVideoRatio()} className={style.layout} />
           <RatioBorders width={this.getSize().width} height={this.getSize().height} ratio={this.getVideoRatio()} opacity={ratioLayerOpacity} />
           {isCameraReady && showGrid && frameIndex === false && (
             <GridOverlay
@@ -350,6 +339,8 @@ class Player extends Component {
 
 Player.propTypes = {
   blendMode: PropTypes.any.isRequired,
+  onionSkin: PropTypes.object,
+  referenceFrameId: PropTypes.any,
   onionValue: PropTypes.any.isRequired,
   ratioLayerOpacity: PropTypes.number.isRequired,
   showGrid: PropTypes.bool.isRequired,

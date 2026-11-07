@@ -81,6 +81,16 @@ const ToolsWindow = ({ t, gridStatus = false, differenceStatus = false, onionVal
 
       <div className={style.row}>
         <span className={style.label}>
+          <FontAwesomeIcon icon={faLayer} className={style.icon} />
+          {t('Onion skin settings')}
+        </span>
+        <button type="button" className={style.linkButton} onClick={handleAction('ONION_SETTINGS')}>
+          {t('Open')}
+        </button>
+      </div>
+
+      <div className={style.row}>
+        <span className={style.label}>
           <FontAwesomeIcon icon={faArrowsRepeat} className={style.icon} />
           {t('Loop')}
         </span>

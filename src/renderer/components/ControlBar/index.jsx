@@ -17,6 +17,7 @@ import faFrame from '@icons/faFrame';
 import faImage from '@icons/faImage';
 import faImageCircleMinus from '@icons/faImageCircleMinus';
 import faImageCirclePlus from '@icons/faImageCirclePlus';
+import faLayer from '@icons/faLayer';
 import faPen from '@icons/faPen';
 import faPlay from '@icons/faPlay';
 import faSliders from '@icons/faSliders';
@@ -41,6 +42,8 @@ const ControlBar = ({
   gridLines = 1,
   differenceStatus = false,
   onionValue = 1,
+  onionEnabled = false,
+  showOnionSettings = false,
   isPlaying = false,
   isTakingPicture = false,
   isCameraReady = false,
@@ -86,6 +89,8 @@ const ControlBar = ({
   }, [fps]);
 
   const isFrameSelected = !isPlaying && framePosition !== false;
+  // With multi-frame onion skin the slider also drives the ghosts shown while browsing frames
+  const onionSliderDisabled = differenceStatus || (framePosition !== false && !onionEnabled);
   const isGridUnavailable = gridModes.length === 1 && gridModes?.includes('GRID') && Number(gridColumns) === 0 && Number(gridLines) === 0;
 
   return (
@@ -140,20 +145,31 @@ const ControlBar = ({
           <ButtonsGroup
             groupClassName={style.liveViewActions}
             actions={[
+              ...(isFrameSelected
+                ? []
+                : [
+                    {
+                      title: t('Difference'),
+                      selected: differenceStatus,
+                      onClick: handleAction('DIFFERENCE'),
+                      icon: faDiamondHalfStroke,
+                      disabled: framePosition !== false,
+                    },
+                    {
+                      title: gridStatus ? t('Disable grid') : t('Enable grid'),
+                      selected: gridStatus,
+                      onClick: handleAction('GRID'),
+                      icon: faFrame,
+                      disabled: framePosition !== false || isGridUnavailable,
+                      warning: isGridUnavailable,
+                    },
+                  ]),
               {
-                title: t('Difference'),
-                selected: differenceStatus,
-                onClick: handleAction('DIFFERENCE'),
-                icon: faDiamondHalfStroke,
-                disabled: framePosition !== false,
-              },
-              {
-                title: gridStatus ? t('Disable grid') : t('Enable grid'),
-                selected: gridStatus,
-                onClick: handleAction('GRID'),
-                icon: faFrame,
-                disabled: framePosition !== false || isGridUnavailable,
-                warning: isGridUnavailable,
+                title: t('Onion skin settings'),
+                selected: showOnionSettings,
+                onClick: handleAction('ONION_SETTINGS'),
+                icon: faLayer,
+                disabled: isPlaying,
               },
             ]}
             tooltipPosition="TOP"
@@ -161,8 +177,8 @@ const ControlBar = ({
           />
         </div>
 
-        <div className={`${style.slider} ${differenceStatus || framePosition !== false ? style.sliderDisabled : ''}`} id="onion" data-tooltip-id="onion" data-tour="onion">
-          <CustomSlider step={0.01} min={0} max={1} value={onionValue} onChange={differenceStatus || framePosition !== false ? () => {} : (value) => handleAction('ONION_CHANGE', value)()} />
+        <div className={`${style.slider} ${onionSliderDisabled ? style.sliderDisabled : ''}`} id="onion" data-tooltip-id="onion" data-tour="onion">
+          <CustomSlider step={0.01} min={0} max={1} value={onionValue} onChange={onionSliderDisabled ? () => {} : (value) => handleAction('ONION_CHANGE', value)()} />
         </div>
       </div>
       <div className={`${style.subcontainer} ${style.center}`}>

@@ -39,3 +39,13 @@
 .disabled .icon {
   opacity: 0.35;
 }
+
+.linkButton {
+  background: var(--color-theme-light);
+  border: none;
+  border-radius: 4px;
+  color: var(--color-white);
+  cursor: pointer;
+  font-size: var(--font-size-6);
+  padding: var(--space-small) var(--space-medium);
+}

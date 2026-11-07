@@ -1,4 +1,5 @@
 import { DEFAULT_FPS, PARTNER_API } from '@config-web';
+import { DEFAULT_ONION_SKIN } from '@core/onionSkin';
 import { currentLanguage, setLanguage } from '@i18n';
 import { useCallback, useEffect, useState } from 'react';
 
@@ -18,6 +19,7 @@ const DEFAULT_SETTINGS = {
   GRID_MODES: ['GRID'], // GRID | CENTER | MARGINS
   GRID_LINES: 3,
   GRID_COLUMNS: 3,
+  ONION_SKIN: DEFAULT_ONION_SKIN,
   SOUNDS: true,
   REVERSE_X: false,
   REVERSE_Y: false,
