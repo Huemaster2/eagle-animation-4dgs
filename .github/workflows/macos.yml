@@ -8,6 +8,9 @@ on:
       - 'stopmo'
       - 'stopmo/**'
 
+permissions:
+  contents: write
+
 jobs:
   macos:
     name: Build macOS app (universal)
@@ -41,3 +44,14 @@ jobs:
             binaries/*.dmg
             binaries/*.zip
           retention-days: 30
+
+      # Public download (no GitHub sign-in needed): one pre-release per build.
+      - name: Publish build as a pre-release
+        run: |
+          TAG="build-${{ github.run_number }}"
+          gh release create "$TAG" binaries/*.dmg binaries/*.zip \
+            --target "${{ github.sha }}" --prerelease \
+            --title "StopMo build ${{ github.run_number }} (${GITHUB_REF_NAME})" \
+            --notes "Automatic macOS build from ${GITHUB_REF_NAME} at ${{ github.sha }}."
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
