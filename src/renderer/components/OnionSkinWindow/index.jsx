@@ -61,7 +61,7 @@ const OnionSkinWindow = ({
   return (
     <div className={style.actions}>
       <Heading h={1} className={style.title}>
-        {t('Onion skin')}
+        {t('Onion skin & references')}
       </Heading>
 
       <div className={style.row}>

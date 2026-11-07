@@ -367,6 +367,60 @@ function useProject(options) {
     [projectId, actionSavePicture]
   );
 
+  // Action import reference sequence: frames are copied into the project, then listed on the scene
+  const actionImportReferenceSequence = useCallback(
+    async (trackId, files, name, onProgress = () => {}) => {
+      const sceneId = Number(trackId);
+      const frames = [];
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const fromMime = mimeTypeToExtension(file.type);
+        const extension = fromMime !== 'dat' ? fromMime : file.name.split('.').pop()?.toLowerCase() || 'jpg';
+        const saved = await window.EA('SAVE_REFERENCE_FRAME', {
+          project_id: projectId,
+          buffer: Buffer.from(await file.arrayBuffer()),
+          extension,
+        });
+        frames.push({ filename: saved.filename, link: saved.link });
+        onProgress(i + 1, files.length);
+      }
+      const reference = { id: v4(), name, frames, enabled: true, opacity: 0.5, offset: 0, x: 0, y: 0, scale: 1, blendMode: 'normal' };
+      setProjectData((oldData) => {
+        let d = structuredClone(oldData);
+        if (d.project.scenes[sceneId]) {
+          d.project.scenes[sceneId].references = [...(d.project.scenes[sceneId].references || []), reference];
+        }
+        return d;
+      });
+      return reference;
+    },
+    [projectId]
+  );
+
+  // Action update reference sequence display settings
+  const actionUpdateReference = useCallback(async (trackId, referenceId, patch = {}) => {
+    const sceneId = Number(trackId);
+    setProjectData((oldData) => {
+      let d = structuredClone(oldData);
+      if (d.project.scenes[sceneId]) {
+        d.project.scenes[sceneId].references = (d.project.scenes[sceneId].references || []).map((r) => (r.id === referenceId ? { ...r, ...patch } : r));
+      }
+      return d;
+    });
+  }, []);
+
+  // Action remove reference sequence (files stay in the project folder, like deleted frames)
+  const actionDeleteReference = useCallback(async (trackId, referenceId) => {
+    const sceneId = Number(trackId);
+    setProjectData((oldData) => {
+      let d = structuredClone(oldData);
+      if (d.project.scenes[sceneId]) {
+        d.project.scenes[sceneId].references = (d.project.scenes[sceneId].references || []).filter((r) => r.id !== referenceId);
+      }
+      return d;
+    });
+  }, []);
+
   // Action Undo
   const actionUndo = useCallback(() => {
     const prev = historyUndo();
@@ -398,6 +452,9 @@ function useProject(options) {
       addScene: actionAddScene,
       renameScene: actionRenameScene,
       deleteScene: actionDeleteScene,
+      importReferenceSequence: actionImportReferenceSequence,
+      updateReference: actionUpdateReference,
+      deleteReference: actionDeleteReference,
       undo: actionUndo,
       redo: actionRedo,
     },

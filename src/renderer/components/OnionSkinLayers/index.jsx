@@ -55,6 +55,48 @@ const OnionLayer = ({ link, color, tint, opacity, blendMode, width, height, vide
   return <canvas ref={canvasRef} className={`${style.layer} ${className}`} style={{ opacity, mixBlendMode: blendMode || 'normal' }} />;
 };
 
+export const preloadImage = (link) => loadImage(getPictureLink(link, { h: 720, m: 'contain', f: 'jpg' })).catch(() => null);
+
+// One persistent canvas per reference sequence: the previous image stays up until the next one
+// has loaded, so playback does not flicker while frames stream in.
+export const ReferenceLayer = ({ link = null, preload = [], opacity = 0.5, blendMode = 'normal', x = 0, y = 0, scale = 1, width, height, videoRatio = null, className = '' }) => {
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const canvas = canvasRef.current;
+    if (!canvas || !width || !height) {
+      return undefined;
+    }
+    if (canvas.width !== Math.round(width) || canvas.height !== Math.round(height)) {
+      canvas.width = width;
+      canvas.height = height;
+    }
+    const ctx = canvas.getContext('2d');
+    if (!link) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      return undefined;
+    }
+    preloadImage(link).then((img) => {
+      if (!cancelled && canvasRef.current) {
+        drawFitted(ctx, img, { width, height }, videoRatio, { background: null });
+      }
+    });
+    preload.forEach(preloadImage);
+    return () => {
+      cancelled = true;
+    };
+  }, [link, width, height, videoRatio]);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className={`${style.layer} ${className}`}
+      style={{ opacity: link ? opacity : 0, mixBlendMode: blendMode || 'normal', transform: `translate(${x * 50}%, ${y * 50}%) scale(${scale})` }}
+    />
+  );
+};
+
 const OnionSkinLayers = ({ layers = [], width, height, videoRatio = null, className = '' }) => (
   <>
     {layers.map((l) => (

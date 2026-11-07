@@ -12,7 +12,7 @@ import { uploadFile } from './core/api';
 import { clearCache, getCacheSize } from './core/cache';
 import { setDiscordActivity } from './core/discord';
 import { exportProjectScene, exportSaveTemporaryBuffer, getSyncList, saveSyncList } from './core/export';
-import { createProject, deleteProject, getProjectData, getProjectsList, projectSave, savePicture } from './core/projects';
+import { createProject, deleteProject, getProjectData, getProjectsList, projectSave, savePicture, saveReferenceFile } from './core/projects';
 import { getCameraSettings, getSettings, saveCameraSettings, saveSettings } from './core/settings';
 import { getToucanCameraServerConfig, setToucanCameraServerConfig, stopToucanCameraServer } from './core/toucan';
 import { selectFile, selectFolder } from './core/utils';
@@ -38,6 +38,10 @@ const computeProject = (data) => {
     ...scene,
     id: scene.id || randomUUID(),
     deleted: scene.deleted || false,
+    references: (scene.references || []).map((ref) => ({
+      ...ref,
+      frames: (ref.frames || []).map((f) => ({ ...f, link: getPictureLink(copiedData._id, 'references', f.filename) })),
+    })),
     pictures: scene.pictures.map((picture) => ({
       ...picture,
       link: getPictureLink(copiedData._id, i, picture.filename),
@@ -127,6 +131,11 @@ const actions = {
       link: getPictureLink(data._id, track_id, picture.filename),
       metaLink: getMetaPictureLink(data._id, track_id, picture.filename),
     };
+  },
+  SAVE_REFERENCE_FRAME: async (evt, { project_id, buffer, extension = 'dat' }) => {
+    const data = await getProjectData(join(PROJECTS_PATH, project_id));
+    const file = await saveReferenceFile(join(PROJECTS_PATH, project_id), extension, buffer);
+    return { ...file, link: getPictureLink(data._id, 'references', file.filename) };
   },
   OPEN_LINK: async (evt, { link }) => {
     shell.openExternal(link);

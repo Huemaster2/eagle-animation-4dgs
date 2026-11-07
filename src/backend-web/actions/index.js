@@ -50,6 +50,10 @@ const computeProject = async (data) => {
         ...scene,
         id: scene.id || uuidv4(),
         deleted: scene.deleted || false,
+        references: (scene.references || []).map((ref) => ({
+          ...ref,
+          frames: (ref.frames || []).map((f) => ({ ...f, link: `/api/pictures/${f.filename}` })),
+        })),
         pictures: await Promise.all(
           scene.pictures.map(async (picture) => ({
             ...picture,
@@ -135,6 +139,11 @@ export const Actions = {
   OPEN_LINK: async (evt, { link }) => {
     window.open(link, '_blank');
     return null;
+  },
+  SAVE_REFERENCE_FRAME: async (evt, { buffer, extension = 'dat' }) => {
+    const frameId = await createFrame(buffer, extension);
+    const filename = `${frameId}.${extension || 'dat'}`;
+    return { filename, link: `/api/pictures/${filename}` };
   },
   SAVE_PICTURE: async (evt, { buffer, extension = 'dat' }) => {
     const frameId = await createFrame(buffer, extension);

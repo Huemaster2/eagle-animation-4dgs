@@ -1,9 +1,10 @@
 import GridOverlay from '@components/GridOverlay';
-import OnionSkinLayers from '@components/OnionSkinLayers';
+import OnionSkinLayers, { ReferenceLayer } from '@components/OnionSkinLayers';
 import PreviewStream from '@components/PreviewStream';
 import RatioBorders from '@components/RatioBorders';
 import { drawFitted } from '@core/drawFitted';
 import { getOnionLayers, normalizeOnionSkin } from '@core/onionSkin';
+import { getAnimationPosition, getReferenceFrame, normalizeReference } from '@core/referenceSequence';
 import { getPictureLink } from '@core/resize';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import faEyeSlash from '@icons/faEyeSlash';
@@ -291,6 +292,10 @@ class Player extends Component {
           referenceFrameId,
         })
       : [];
+    // Reference sequences follow the animation position (holds counted, hidden frames skipped), during playback too
+    const showReferences = frameIndex !== false || isCameraReady;
+    const animationPosition = getAnimationPosition(this.frames, frameIndex);
+    const references = (this.props.references || []).map(normalizeReference).filter((r) => r.enabled && r.frames.length);
     const legacyGhostOpacity = onion.ENABLED && !blendMode ? 0 : hasOnionFrame ? 1 - onionValue : 0;
 
     return (
@@ -310,6 +315,26 @@ class Player extends Component {
               mixBlendMode: !blendMode ? 'normal' : 'difference',
             }}
           />
+          {references.map((ref) => {
+            const current = showReferences ? getReferenceFrame(ref, animationPosition) : null;
+            const preload = [1, 2, 3].map((d) => getReferenceFrame(ref, animationPosition + d)?.frame?.link).filter(Boolean);
+            return (
+              <ReferenceLayer
+                key={ref.id}
+                link={current?.frame?.link || null}
+                preload={preload}
+                opacity={ref.opacity}
+                blendMode={ref.blendMode}
+                x={ref.x}
+                y={ref.y}
+                scale={ref.scale}
+                width={this.getSize().width}
+                height={this.getSize().height}
+                videoRatio={this.getVideoRatio()}
+                className={style.layout}
+              />
+            );
+          })}
           <OnionSkinLayers layers={onionLayers} width={this.getSize().width} height={this.getSize().height} videoRatio={this.getVideoRatio()} className={style.layout} />
           <RatioBorders width={this.getSize().width} height={this.getSize().height} ratio={this.getVideoRatio()} opacity={ratioLayerOpacity} />
           {isCameraReady && showGrid && frameIndex === false && (
@@ -341,6 +366,7 @@ Player.propTypes = {
   blendMode: PropTypes.any.isRequired,
   onionSkin: PropTypes.object,
   referenceFrameId: PropTypes.any,
+  references: PropTypes.array,
   onionValue: PropTypes.any.isRequired,
   ratioLayerOpacity: PropTypes.number.isRequired,
   showGrid: PropTypes.bool.isRequired,

@@ -11,6 +11,7 @@ import OnionSkinWindow from '@components/OnionSkinWindow';
 import PageLayout from '@components/PageLayout';
 import PictureWindow from '@components/PictureWindow';
 import Player from '@components/Player';
+import ReferenceSequencesPanel from '@components/ReferenceSequencesPanel';
 import SceneSelector from '@components/SceneSelector';
 import SceneSelectorWindow from '@components/SceneSelectorWindow';
 import SceneSettingsWindow from '@components/SceneSettingsWindow';
@@ -21,6 +22,7 @@ import Window from '@components/Window';
 import { DEFAULT_FPS, MAX_FRAME_DUPLICATION } from '@config-web';
 import { normalizeOnionSkin } from '@core/onionSkin';
 import { parseRatio } from '@core/ratio';
+import { getAnimationPosition } from '@core/referenceSequence';
 import useAppCapabilities from '@hooks/useAppCapabilities';
 import useCamera from '@hooks/useCamera';
 import useDiscordActivity from '@hooks/useDiscordActivity';
@@ -159,6 +161,7 @@ const Animator = ({ t }) => {
   const [differenceStatus, setDifferenceStatus] = useState(false);
   const [onionValue, setOnionValue] = useState(1);
   const [referenceFrameId, setReferenceFrameId] = useState(null);
+  const [referenceImport, setReferenceImport] = useState(null);
   const [gridStatus, setGridStatus] = useState(false);
   const [currentFrameId, setCurrentFrameId] = useState(false);
   const [deleteOnLiveViewConfirmation, setDeleteOnLiveViewConfirmation] = useState(false);
@@ -265,6 +268,17 @@ const Animator = ({ t }) => {
   const onionEnabled = onionConfig.ENABLED;
   const referenceFramePosition = referenceFrameId === null ? null : pictures.findIndex((p) => p.id === referenceFrameId) + 1 || null;
   const currentFrame = currentFrameId === false ? false : pictures.find((p) => p.id === currentFrameId) || false;
+  const sceneReferences = project.scenes[track]?.references || [];
+  const expandedFrames = pictures.reduce((acc, e) => [...acc, ...new Array(e.length || 1).fill(e)], []);
+  const animationPosition = getAnimationPosition(
+    expandedFrames,
+    currentFrameId === false
+      ? false
+      : Math.max(
+          0,
+          expandedFrames.findIndex((p) => p.id === currentFrameId)
+        )
+  );
   const totalAnimationFrames = pictures.reduce((acc, e) => acc + (!e.deleted && !e.hidden ? e.length || 1 : 0), 0);
 
   const visibleScenes = project.scenes.map((s, index) => ({ ...s, index })).filter((s) => !s.deleted);
@@ -736,6 +750,7 @@ const Animator = ({ t }) => {
           onionValue={onionValue}
           onionSkin={onionConfig}
           referenceFrameId={referenceFramePosition ? referenceFrameId : null}
+          references={sceneReferences}
           showGrid={gridStatus}
           blendMode={differenceStatus}
           shortPlayStatus={shortPlayStatus}
@@ -832,7 +847,23 @@ const Animator = ({ t }) => {
               referenceFrameNumber={referenceFramePosition}
               onPinReference={() => handleAction('ONION_REFERENCE_SET')}
               onClearReference={() => handleAction('ONION_REFERENCE_CLEAR')}
-            />
+            >
+              <ReferenceSequencesPanel
+                references={sceneReferences}
+                animationPosition={animationPosition}
+                importProgress={referenceImport}
+                onImport={async (files, name) => {
+                  setReferenceImport({ done: 0, total: files.length });
+                  try {
+                    await projectActions.importReferenceSequence(track, files, name, (done, total) => setReferenceImport({ done, total }));
+                  } finally {
+                    setReferenceImport(null);
+                  }
+                }}
+                onUpdate={(referenceId, patch) => projectActions.updateReference(track, referenceId, patch)}
+                onDelete={(referenceId) => projectActions.deleteReference(track, referenceId)}
+              />
+            </OnionSkinWindow>
           </Window>
           <Window isOpened={activeWindow === 'picture'} onClose={() => setActiveWindow(null)}>
             <PictureWindow

@@ -108,6 +108,15 @@ export const createProject = async (path, name, framerate = DEFAULT_FPS) => {
   return getProjectData(projectPath);
 };
 
+// Reference sequence frames live in the project folder so projects stay portable
+export const saveReferenceFile = async (projectPath, ext, buffer) => {
+  const directoryPath = join(projectPath, 'references');
+  await mkdirp(directoryPath);
+  const filename = `${await v4()}.${ext || 'dat'}`;
+  await writeFile(join(directoryPath, filename), buffer);
+  return { filename };
+};
+
 // Create image file
 const createImageFile = async (projectPath, scene, ext, data) => {
   const directoryPath = join(projectPath, `/${scene}/`);
