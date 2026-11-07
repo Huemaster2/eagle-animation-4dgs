@@ -1,12 +1,9 @@
 name: Eagle Animation - Build & package
 
+# Upstream release pipeline (needs Brick à Brack's secrets). Manual only in this fork;
+# day-to-day builds come from macos.yml.
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - 'master'
-      - 'dev'
-      - 'feature/pipeline'
 
 jobs:
   web:

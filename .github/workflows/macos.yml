@@ -1,0 +1,43 @@
+name: StopMo - macOS build
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'master'
+      - 'stopmo'
+      - 'stopmo/**'
+
+jobs:
+  macos:
+    name: Build macOS app (universal)
+    runs-on: macos-latest
+
+    steps:
+      - name: Clone source code
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+
+      - name: Prepare build environment
+        uses: ./.github/actions/prepare
+        with:
+          sharp: darwin
+
+      - name: Package macOS app
+        run: |
+          echo "VITE_COMMIT_HASH=${{ github.sha }}" >> .env
+          npm run build:mac
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # No Apple Developer certificate yet: build unsigned (ad-hoc signed by afterPack).
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+
+      - name: Upload app
+        uses: actions/upload-artifact@v7
+        with:
+          name: StopMo-macOS-${{ github.run_number }}
+          path: |
+            binaries/*.dmg
+            binaries/*.zip
+          retention-days: 30
