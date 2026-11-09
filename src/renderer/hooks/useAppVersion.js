@@ -6,11 +6,9 @@ import { useCallback, useEffect, useState } from 'react';
 function useAppVersion() {
   const [latestVersion, setLatestVersion] = useState(null);
 
-  // Initial load
+  // StopMo fork: upstream Eagle releases would replace the Canon/turntable build, so never offer them
   useEffect(() => {
-    (async () => {
-      setLatestVersion((await window.EA('GET_LAST_VERSION').catch(() => null))?.version || null);
-    })();
+    setLatestVersion(null);
   }, []);
 
   // Action open update page

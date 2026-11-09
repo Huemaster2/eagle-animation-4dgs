@@ -7,7 +7,14 @@ const Action = ({ onClick = false, target = '_blank', className = '', ...props }
   const actionType = dest && typeof dest;
 
   if (actionType === 'function') {
-    return <span className={`${style.action} ${className}`} onClick={dest} {...props} />;
+    // Exposed as a real button so keyboard users and accessibility tools can press it
+    const onKeyDown = (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        dest(e);
+      }
+    };
+    return <span role="button" tabIndex={0} className={`${style.action} ${className}`} onClick={dest} onKeyDown={onKeyDown} {...props} />;
   }
 
   if (actionType === 'string' && dest[0] === '/') {
