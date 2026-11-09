@@ -1,0 +1,40 @@
+name: StopMo - camera test app
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'stopmo'
+      - 'stopmo/**'
+    paths:
+      - 'native/camera-test/**'
+      - '.github/workflows/camera-test.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build camera test app (Apple Silicon)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+
+      - name: Build app
+        working-directory: native/camera-test
+        run: |
+          swift --version
+          ./build_app.sh
+          ditto -c -k --keepParent "StopMo Stage 1.app" StopMo-Camera-Test.zip
+
+      - name: Publish as pre-release
+        working-directory: native/camera-test
+        run: |
+          gh release create "camera-test-${{ github.run_number }}" StopMo-Camera-Test.zip \
+            --target "${{ github.sha }}" --prerelease \
+            --title "Camera test app ${{ github.run_number }}" \
+            --notes "Canon 5D Mark II test app (ImageCaptureCore + Canon EOS PTP)."
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
