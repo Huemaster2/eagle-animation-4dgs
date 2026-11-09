@@ -139,13 +139,7 @@ final class CameraController: NSObject {
         log("Captures and logs go to: \(captureDir.path)")
         browser.delegate = self
         browser.browsedDeviceTypeMask = ICDeviceTypeMask(
-            rawValue: ICDeviceTypeMask.camera.rawValue | ICDeviceLocationTypeMask.local.rawValue)
-        browser.requestControlAuthorization { status in
-            self.log("Camera control authorisation: \(status.rawValue)")
-        }
-        browser.requestContentsAuthorization { status in
-            self.log("Camera contents authorisation: \(status.rawValue)")
-        }
+            rawValue: ICDeviceTypeMask.camera.rawValue | ICDeviceLocationTypeMask.local.rawValue)!
         browser.start()
         status("Looking for a camera… (plug in the 5D Mark II and switch it on)", false)
     }
