@@ -37,6 +37,24 @@
   margin: var(--space-small) 0;
 }
 
+.warning {
+  background: rgb(255 193 7 / 15%);
+  border-radius: 6px;
+  color: #ffd54f;
+  font-size: var(--font-size-6);
+  margin: var(--space-small) 0;
+  padding: var(--space-small) var(--space-medium);
+}
+
+.path {
+  color: var(--color-white);
+  flex: 1;
+  font-size: var(--font-size-6);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .error {
   color: #ef5350;
   font-size: var(--font-size-6);
@@ -45,6 +63,7 @@
 .row {
   align-items: center;
   display: flex;
+  gap: var(--space-medium);
   justify-content: space-between;
   margin: var(--space-medium) 0;
 }

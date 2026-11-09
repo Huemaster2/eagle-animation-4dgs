@@ -127,20 +127,25 @@ export const getStopMoCameraConfig = () => ({
 
 export const CAMERA_TEST_DIR = path.join(homedir(), 'Pictures', 'StopMo', 'Camera_Test');
 
-export const getNextCameraTestName = async () => {
-  await mkdir(CAMERA_TEST_DIR, { recursive: true });
-  const names = await readdir(CAMERA_TEST_DIR).catch(() => []);
+// A chosen storage folder holds Camera_Test too, so every original from this Mac lives in one place
+const cameraTestDir = (storageFolder) => (storageFolder ? path.join(storageFolder, 'Camera_Test') : CAMERA_TEST_DIR);
+
+export const getNextCameraTestName = async (storageFolder = '') => {
+  const dir = cameraTestDir(storageFolder);
+  await mkdir(dir, { recursive: true });
+  const names = await readdir(dir).catch(() => []);
   const numbers = names
     .map((n) => n.match(/^Test_(\d+)/))
     .filter(Boolean)
     .map((m) => Number(m[1]));
   const next = (numbers.length ? Math.max(...numbers) : 0) + 1;
-  return { dir: CAMERA_TEST_DIR, baseName: `Test_${String(next).padStart(3, '0')}` };
+  return { dir, baseName: `Test_${String(next).padStart(3, '0')}` };
 };
 
-export const logCameraTest = async (entry = {}) => {
-  await mkdir(CAMERA_TEST_DIR, { recursive: true });
-  const file = path.join(CAMERA_TEST_DIR, 'capture_log.csv');
+export const logCameraTest = async (entry = {}, storageFolder = '') => {
+  const dir = cameraTestDir(storageFolder);
+  await mkdir(dir, { recursive: true });
+  const file = path.join(dir, 'capture_log.csv');
   if (!fs.existsSync(file)) {
     await appendFile(file, 'time,result,file,kind,bytes,camera_bytes,size_matches,signature_ok,structure_ok,width,height,seconds,error\n');
   }
@@ -164,5 +169,26 @@ export const logCameraTest = async (entry = {}) => {
   return true;
 };
 
-// Ordinary animation frames keep their CR2 next to the project, one folder per scene
-export const getProjectRawDir = (projectsPath, projectId, trackId) => path.join(projectsPath, `${projectId}`, 'raw', `${Number(trackId) || 0}`);
+const safeName = (name) =>
+  `${name || ''}`
+    .replace(/[/\\:*?"<>|]/g, '_')
+    .trim()
+    .slice(0, 80);
+
+// Originals go next to the project by default, or under the chosen storage folder as "<title> (<id>)/Scene_N"
+export const getProjectRawDir = (projectsPath, projectId, trackId, storageFolder = '', projectTitle = '') => {
+  const scene = Number(trackId) || 0;
+  if (!storageFolder) {
+    return path.join(projectsPath, `${projectId}`, 'raw', `${scene}`);
+  }
+  const title = safeName(projectTitle);
+  return path.join(storageFolder, title ? `${title} (${projectId})` : `${projectId}`, `Scene_${scene + 1}`);
+};
+
+export const isUsableFolder = (folder) => {
+  try {
+    return !!folder && fs.statSync(folder).isDirectory();
+  } catch (err) {
+    return false;
+  }
+};

@@ -24,7 +24,7 @@ import { DEFAULT_FPS, MAX_FRAME_DUPLICATION } from '@config-web';
 import { normalizeOnionSkin } from '@core/onionSkin';
 import { parseRatio } from '@core/ratio';
 import { getAnimationPosition } from '@core/referenceSequence';
-import { getStopMoCameraStatus, setStopMoRawContext, STOPMO_CAMERA_AVAILABLE } from '@core/stopmoCamera';
+import { getStopMoCameraStatus, setStopMoCaptureOptions, setStopMoRawContext, STOPMO_CAMERA_AVAILABLE } from '@core/stopmoCamera';
 import useAppCapabilities from '@hooks/useAppCapabilities';
 import useCamera from '@hooks/useCamera';
 import useDiscordActivity from '@hooks/useDiscordActivity';
@@ -166,11 +166,6 @@ const Animator = ({ t }) => {
   const [referenceImport, setReferenceImport] = useState(null);
   const [canonStatus, setCanonStatus] = useState(null);
 
-  // CR2 files from ordinary captures go to <project>/raw/<scene>
-  useEffect(() => {
-    setStopMoRawContext(id, track);
-  }, [id, track]);
-
   // Clear camera connection indicator in the top bar
   useEffect(() => {
     if (!STOPMO_CAMERA_AVAILABLE) return undefined;
@@ -194,6 +189,14 @@ const Animator = ({ t }) => {
   const maskingEditorRef = useRef(null);
 
   const { project, actions: projectActions } = useProject({ id });
+
+  // Where (and whether) ordinary captures keep the camera originals
+  useEffect(() => {
+    setStopMoRawContext(id, track, project?.title || '');
+  }, [id, track, project?.title]);
+  useEffect(() => {
+    setStopMoCaptureOptions({ saveTarget: settings?.STOPMO_SAVE_TARGET, storageFolder: settings?.STOPMO_STORAGE_FOLDER });
+  }, [settings?.STOPMO_SAVE_TARGET, settings?.STOPMO_STORAGE_FOLDER]);
 
   const nbFrames = project?.scenes?.[track]?.pictures?.filter((e) => !e.deleted)?.length || 0;
   const fps = Math.min(60, Math.max(1, Number(project?.scenes?.[track]?.framerate) || 1));
@@ -694,11 +697,15 @@ const Animator = ({ t }) => {
   const canonAction = STOPMO_CAMERA_AVAILABLE
     ? [
         {
-          title: canonStatus?.ready ? t('{{model}} connected — camera test', { model: canonStatus.model || 'Canon' }) : t('Canon camera not connected — camera test'),
+          title: !canonStatus?.ready
+            ? t('Canon camera not connected — camera settings')
+            : canonStatus.focus === 'AF'
+              ? t('Lens is on AF — the camera will not fire if it cannot focus. Switch to MF.')
+              : t('{{model}} connected — camera settings', { model: canonStatus.model || 'Canon' }),
           icon: faCamera,
           onClick: () => setActiveWindow((v) => (v === 'camera-test' ? null : 'camera-test')),
-          selected: !!canonStatus?.ready,
-          warning: !canonStatus?.ready,
+          selected: !!canonStatus?.ready && canonStatus.focus !== 'AF',
+          warning: !canonStatus?.ready || canonStatus.focus === 'AF',
         },
       ]
     : [];
@@ -875,7 +882,7 @@ const Animator = ({ t }) => {
             />
           </Window>
           <Window isOpened={activeWindow === 'camera-test'} onClose={() => setActiveWindow(null)}>
-            <CameraTestWindow isOpened={activeWindow === 'camera-test'} />
+            <CameraTestWindow isOpened={activeWindow === 'camera-test'} settings={settings} onSettingsChange={settingsActions.setSettings} />
           </Window>
           <Window isOpened={activeWindow === 'onion'} onClose={() => setActiveWindow(null)}>
             <OnionSkinWindow

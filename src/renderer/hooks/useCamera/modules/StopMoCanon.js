@@ -1,4 +1,4 @@
-import { getStopMoCameraConfig, getStopMoRawDir, stopmoCapture, stopmoFetch, stopmoUrl } from '@core/stopmoCamera';
+import { getStopMoCameraConfig, getStopMoCaptureOptions, getStopMoRawDir, stopmoCapture, stopmoFetch, stopmoUrl } from '@core/stopmoCamera';
 
 const CAMERA_ID = 'canon-eos-ptp';
 
@@ -54,7 +54,8 @@ class StopMoCanon {
   }
 
   async takePicture() {
-    const rawDir = await getStopMoRawDir();
+    // Card-only shooting keeps the originals on the card, so no Mac folder is involved
+    const rawDir = getStopMoCaptureOptions().saveTarget === 'card' ? null : await getStopMoRawDir();
     const result = await stopmoCapture({ rawDir });
     this.lastCaptureFiles = result.files || [];
     if (!result.ok) {

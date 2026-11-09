@@ -10,6 +10,8 @@ enum PTPOp {
     static let getDeviceInfo: UInt16          = 0x1001
     static let getObjectInfo: UInt16          = 0x1008
     static let getObject: UInt16              = 0x1009
+    static let getThumb: UInt16               = 0x100A
+    static let getPartialObject: UInt16       = 0x101B
 
     static let eosSetDevicePropValueEx: UInt16 = 0x9110
     static let eosRemoteRelease: UInt16       = 0x910F   // older EOS bodies (5D Mk II era)
@@ -43,6 +45,7 @@ enum EOSProp {
     static let iso: UInt32              = 0xD103
     static let expCompensation: UInt32  = 0xD104
     static let autoExposureMode: UInt32 = 0xD105
+    static let focusMode: UInt32        = 0xD108   // 3 = manual (lens switch on MF)
     static let whiteBalance: UInt32     = 0xD109
     static let captureDestination: UInt32 = 0xD11C
     static let imageFormat: UInt32      = 0xD120
@@ -57,6 +60,7 @@ enum EOSProp {
         case expCompensation: return "ExposureComp"
         case autoExposureMode: return "ExposureMode"
         case whiteBalance: return "WhiteBalance"
+        case focusMode: return "FocusMode"
         case captureDestination: return "CaptureDestination"
         case imageFormat: return "ImageFormat"
         case evfOutputDevice: return "EVFOutputDevice"

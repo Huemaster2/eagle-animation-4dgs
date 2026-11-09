@@ -30,6 +30,8 @@ const DEFAULT_SETTINGS = {
   EVENT_API: PARTNER_API,
   TOUCAN_CAMERA_SERVER_DISABLED: /mac/i.test(globalThis?.navigator?.platform || ''),
   TOUCAN_CAMERA_SERVER_EXPOSE: false,
+  STOPMO_SAVE_TARGET: 'both', // both | mac | card — where the Canon originals are kept
+  STOPMO_STORAGE_FOLDER: '', // '' = inside each project
   TELEMETRY_ENABLED: true,
   TOURS_COMPLETED: [], // Keys of the guided tours the user has already seen
 };

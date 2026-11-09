@@ -59,6 +59,16 @@ public func describeImageFormat(_ values: [UInt32]) -> String {
 public enum SaveTarget: Int {
     case cardAndMac = 0   // camera writes to CF card, we copy the file to the Mac
     case macOnly = 1      // camera keeps image in RAM and hands it to the Mac (no card writes)
+    case cardOnly = 2     // originals stay on the card; only the preview comes over for the timeline
+
+    public init?(name: String) {
+        switch name.lowercased() {
+        case "both", "card_and_mac": self = .cardAndMac
+        case "mac", "mac_only": self = .macOnly
+        case "card", "card_only": self = .cardOnly
+        default: return nil
+        }
+    }
 }
 
 public enum CamError: LocalizedError {
@@ -68,6 +78,7 @@ public enum CamError: LocalizedError {
     case badResponse(UInt16, Int)
     case refused(String, UInt16)
     case noImageArrived
+    case autofocusNoRelease
     case writeFailed(String)
 
     public var errorDescription: String? {
@@ -78,6 +89,7 @@ public enum CamError: LocalizedError {
         case .badResponse(let op, let n): return "Unreadable response to \(hex(op)) (\(n) bytes)."
         case .refused(let what, let rc): return "\(what) refused by camera (response \(hex(rc)))."
         case .noImageArrived: return "The camera accepted the shutter command but sent no photo. If it did not click: autofocus could not lock (lens on AF with the cap on, subject too close or too dark) — switch the lens to MF. If it did click: check the card is in, unlocked and not full."
+        case .autofocusNoRelease: return "No photo: the lens is on AF and the camera did not fire, so autofocus could not lock. Switch the lens to MF (recommended for stop motion) or give it something to focus on."
         case .writeFailed(let m): return "Could not save image: \(m)"
         }
     }
@@ -501,10 +513,13 @@ public final class CameraController: NSObject {
         case .macOnly:
             try? setEOSPropSync(EOSProp.captureDestination, 4)                      // 4 = keep in camera RAM
             _ = try? ptp(PTPOp.eosPCHDDCapacity, [0x04FF_FFFF, 0x1000, 1])          // tell camera the Mac has space
-        case .cardAndMac:
-            if let orig = originalCaptureDest, propValues[EOSProp.captureDestination] != orig {
-                try? setEOSPropSync(EOSProp.captureDestination, orig)
+        case .cardAndMac, .cardOnly:
+            if propValues[EOSProp.captureDestination] != 1 {
+                try? setEOSPropSync(EOSProp.captureDestination, 1)                  // 1 = memory card
             }
+        }
+        if !lensIsManualFocus {
+            log("Lens is on AF: the camera will not fire if autofocus cannot lock")
         }
 
         _ = try? pollEventsSync()                 // flush anything stale
@@ -553,7 +568,8 @@ public final class CameraController: NSObject {
         }
         guard !handles.isEmpty else {
             let summary = seenEvents.sorted { $0.key < $1.key }.map { "\(hex($0.key, width: 4))×\($0.value)" }.joined(separator: " ")
-            log("No new photo within 25 s. Camera events seen: \(summary.isEmpty ? "none" : summary). Destination \(propValues[EOSProp.captureDestination].map { hex($0) } ?? "?")")
+            log("No new photo within 25 s. Camera events seen: \(summary.isEmpty ? "none" : summary). Destination \(propValues[EOSProp.captureDestination].map { hex($0) } ?? "?"), focus mode \(propValues[EOSProp.focusMode].map { hex($0) } ?? "?")")
+            if let fm = propValues[EOSProp.focusMode], fm != 3 { throw CamError.autofocusNoRelease }
             throw CamError.noImageArrived
         }
         log(String(format: "Shutter-to-announce: %.2f s", Date().timeIntervalSince(t0)))
@@ -567,6 +583,10 @@ public final class CameraController: NSObject {
                 if !oi.filename.isEmpty { name = oi.filename }
                 expected = oi.compressedSize
                 log("Object \(hex(h, width: 8)): \(oi.filename), \(oi.compressedSize) bytes, \(oi.imageWidth)×\(oi.imageHeight)")
+            }
+            if saveTarget == .cardOnly {
+                captureRecords.append(try cardOnlyRecord(h, name: name, expected: expected))
+                continue
             }
             let td = Date()
             let obj = try ptp(PTPOp.getObject, [h], timeout: 120)
@@ -594,7 +614,7 @@ public final class CameraController: NSObject {
                 size: UInt64(obj.data.count), expectedSize: expected > 0 ? UInt64(expected) : nil,
                 sizeMatches: expected > 0 && UInt32(obj.data.count) == expected,
                 signatureOK: kind != nil, structureOK: kind == "CR2" ? true : nil,
-                width: dims?.0, height: dims?.1))
+                width: dims?.0, height: dims?.1, onCard: false))
             log(String(format: "Saved %@ (%.1f MB in %.2f s)", url.lastPathComponent,
                        Double(obj.data.count) / 1_048_576, Date().timeIntervalSince(td)))
             urls.append(url)
@@ -922,6 +942,7 @@ public struct CaptureFile: Codable {
     public let structureOK: Bool?
     public let width: Int?
     public let height: Int?
+    public let onCard: Bool?
 }
 
 public struct CaptureResult {
@@ -949,6 +970,8 @@ extension CameraController {
         if let f = firmware { d["firmware"] = f }
         if !imageFormatValues.isEmpty { d["quality"] = describeImageFormat(imageFormatValues) }
         if let q = currentQuality { d["qualityId"] = q.rawValue }
+        if let fm = propValues[EOSProp.focusMode] { d["focus"] = fm == 3 ? "MF" : "AF" }
+        d["saveTarget"] = ["both", "mac", "card"][saveTarget.rawValue]
         var settings: [String: String] = [:]
         for k in [EOSProp.autoExposureMode, EOSProp.aperture, EOSProp.shutterSpeed, EOSProp.iso, EOSProp.expCompensation, EOSProp.whiteBalance] {
             if let v = propValues[k] { settings[EOSProp.name(k)] = hex(v) }
@@ -988,9 +1011,10 @@ extension CameraController {
 
     /// Fires the shutter and saves every file the camera sends into `dir` (base name optional),
     /// verified and never overwriting. Live view resumes afterwards if it was on.
-    public func capture(into dir: URL, baseName: String?, completion: @escaping (Result<CaptureResult, Error>) -> Void) {
+    public func capture(into dir: URL, baseName: String?, target: SaveTarget? = nil, completion: @escaping (Result<CaptureResult, Error>) -> Void) {
         ptpQueue.async {
             let t0 = Date()
+            if let target { self.saveTarget = target }
             self.activeDestination = (dir, baseName)
             defer { self.activeDestination = nil; self.lastActivity = Date() }
             do {
@@ -1018,6 +1042,87 @@ extension CameraController {
     }
 
     fileprivate func scheduleLiveViewTickPublic() { scheduleLiveViewTickInternal() }
+}
+
+// MARK: - Card-only captures
+
+extension CameraController {
+    /// True when the camera reports manual focus (lens switch on MF); unknown counts as AF.
+    var lensIsManualFocus: Bool { propValues[EOSProp.focusMode] == 3 }
+
+    func readPartial(_ h: UInt32, offset: UInt32, length: UInt32) throws -> Data {
+        let r = try ptp(PTPOp.getPartialObject, [h, offset, length], timeout: 60)
+        guard r.ok else { throw CamError.refused("Partial read of \(hex(h, width: 8))", r.code) }
+        return r.data
+    }
+
+    /// Leaves the original on the card, checks its header, and fetches only what the timeline needs to show.
+    func cardOnlyRecord(_ h: UInt32, name: String, expected: UInt32) throws -> CaptureFile {
+        let ext = (name as NSString).pathExtension.uppercased()
+        var kind: String?
+        var structureOK: Bool?
+        var width: Int?, height: Int?
+
+        if deviceInfo?.supports(PTPOp.getPartialObject) == true {
+            let headLen: UInt32 = expected > 0 ? min(expected, 262_144) : 262_144
+            let head = try readPartial(h, offset: 0, length: headLen)
+            kind = detectImageKind(head)
+            if kind == "CR2" {
+                let layout = cr2Layout(head, fileSize: UInt64(expected))
+                structureOK = layout.complete
+                if let (o, l) = layout.preview {
+                    let jpeg = try readPartial(h, offset: o, length: l)
+                    if jpeg.count == Int(l), jpeg.count > 2, jpeg[jpeg.startIndex] == 0xFF, jpeg[jpeg.startIndex + 1] == 0xD8 {
+                        if capturePreview == nil { capturePreview = jpeg }
+                        if let size = jpegPixelSize(jpeg) { width = Int(size.width); height = Int(size.height) }
+                    }
+                }
+            } else if kind == "JPG", capturePreview == nil {
+                // JPEG-only shooting: the camera JPEG itself is the timeline picture, shown but not stored here
+                let full = try ptp(PTPOp.getObject, [h], timeout: 120)
+                if full.ok, expected == 0 || full.data.count == Int(expected) {
+                    capturePreview = full.data
+                    if let size = jpegPixelSize(full.data) { width = Int(size.width); height = Int(size.height) }
+                }
+            }
+        }
+        if capturePreview == nil, let thumb = try? ptp(PTPOp.getThumb, [h]), thumb.ok, thumb.data.count > 2 {
+            capturePreview = thumb.data
+            log("Only the small card thumbnail was available for \(name)")
+        }
+        log("Kept on card: \(name), \(expected) bytes, signature \(kind ?? "?"), structure \(structureOK.map { $0 ? "OK" : "BAD" } ?? "–")")
+        return CaptureFile(
+            path: "card:/\(name)", kind: kind ?? ext, cameraName: name,
+            size: UInt64(expected), expectedSize: expected > 0 ? UInt64(expected) : nil,
+            sizeMatches: false, signatureOK: kind != nil, structureOK: structureOK,
+            width: width, height: height, onCard: true)
+    }
+}
+
+/// Reads CR2 IFDs from the first bytes of a file: every strip must fit in `fileSize`; IFD0's strip is the full-size JPEG preview.
+func cr2Layout(_ head: Data, fileSize: UInt64) -> (complete: Bool, preview: (UInt32, UInt32)?) {
+    let data = Data(head)
+    guard data.count > 16, var ifd = le32(data, 4).map(Int.init) else { return (false, nil) }
+    var preview: (UInt32, UInt32)?
+    var sawRaw = false
+    for index in 0..<8 {
+        guard ifd > 0, let count = le16(data, ifd) else { break }
+        var offset: UInt32?, length: UInt32?
+        for i in 0..<Int(count) {
+            let e = ifd + 2 + i * 12
+            guard let tag = le16(data, e) else { return (false, preview) }
+            if tag == 0x0111 { offset = le32(data, e + 8) }
+            if tag == 0x0117 { length = le32(data, e + 8) }
+        }
+        if let o = offset, let l = length {
+            if fileSize > 0, UInt64(o) + UInt64(l) > fileSize { return (false, preview) }
+            if index == 0 { preview = (o, l) }
+            if index == 3 { sawRaw = l > 1_000_000 }
+        }
+        guard let next = le32(data, ifd + 2 + Int(count) * 12) else { break }
+        ifd = Int(next)
+    }
+    return (sawRaw, preview)
 }
 
 /// CR2 files are TIFF containers whose first IFD holds a full-size JPEG preview.

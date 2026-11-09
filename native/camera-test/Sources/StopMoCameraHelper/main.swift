@@ -11,7 +11,7 @@ import StopMoCamera
 //   PUT  /cameras/{id}/connect            remote mode + live view
 //   PUT  /cameras/{id}/disconnect         stop live view
 //   GET  /cameras/{id}/liveview?token=    MJPEG stream
-//   POST /cameras/{id}/capture?raw_dir=&base_name=
+//   POST /cameras/{id}/capture?raw_dir=&base_name=&save=both|mac|card
 //        -> image/jpeg preview, header x-stopmo-files: JSON array of saved files with checks
 //   GET  /cameras/{id}/parameters         Toucan-style parameter list (image quality)
 //   PUT  /cameras/{id}/parameters         {"type": "image_quality", "value": "0|1|2"}
@@ -97,7 +97,8 @@ server.handler = { req, res in
         let rawDir = req.query["raw_dir"].flatMap { $0.isEmpty ? nil : URL(fileURLWithPath: $0, isDirectory: true) }
             ?? FileManager.default.temporaryDirectory.appendingPathComponent("stopmo-captures", isDirectory: true)
         let baseName = req.query["base_name"].flatMap { $0.isEmpty ? nil : $0 }
-        cam.capture(into: rawDir, baseName: baseName) { result in
+        let target = req.query["save"].flatMap { SaveTarget(name: $0) }
+        cam.capture(into: rawDir, baseName: baseName, target: target) { result in
             switch result {
             case .success(let r):
                 let filesJSON = (try? JSONEncoder().encode(r.files)).flatMap { String(data: $0, encoding: .utf8) } ?? "[]"

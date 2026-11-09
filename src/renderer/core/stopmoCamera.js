@@ -4,7 +4,20 @@ import { DEVICE } from '@config-web';
 export const STOPMO_CAMERA_AVAILABLE = DEVICE === 'ELECTRON' && /mac/i.test(navigator.platform || navigator.userAgent || '');
 
 let cachedConfig = null;
-let rawContext = { projectId: null, trackId: 0 };
+let rawContext = { projectId: null, trackId: 0, title: '' };
+
+// both = card + Mac, mac = Mac only (no card writes), card = originals stay on the card
+export const SAVE_TARGETS = ['both', 'mac', 'card'];
+let captureOptions = { saveTarget: 'both', storageFolder: '' };
+
+export const setStopMoCaptureOptions = ({ saveTarget, storageFolder } = {}) => {
+  captureOptions = {
+    saveTarget: SAVE_TARGETS.includes(saveTarget) ? saveTarget : 'both',
+    storageFolder: storageFolder || '',
+  };
+};
+
+export const getStopMoCaptureOptions = () => captureOptions;
 
 export const getStopMoCameraConfig = async () => {
   if (!STOPMO_CAMERA_AVAILABLE) {
@@ -57,15 +70,21 @@ export const getStopMoCameraStatus = async () => {
 };
 
 // Where ordinary animation captures keep their CR2 files
-export const setStopMoRawContext = (projectId, trackId) => {
-  rawContext = { projectId, trackId };
+export const setStopMoRawContext = (projectId, trackId, title = '') => {
+  rawContext = { projectId, trackId, title };
 };
 
+// Throws when the chosen storage folder is missing (e.g. drive unplugged) rather than saving somewhere unexpected
 export const getStopMoRawDir = async () => {
   if (!rawContext.projectId) {
     return null;
   }
-  return window.EA('STOPMO_CAMERA_PROJECT_RAW_DIR', { project_id: rawContext.projectId, track_id: rawContext.trackId }).catch(() => null);
+  return window.EA('STOPMO_CAMERA_PROJECT_RAW_DIR', {
+    project_id: rawContext.projectId,
+    track_id: rawContext.trackId,
+    project_title: rawContext.title,
+    storage_folder: captureOptions.storageFolder,
+  });
 };
 
 const parseFiles = (res) => {
@@ -77,10 +96,11 @@ const parseFiles = (res) => {
 };
 
 // Fires the shutter and saves the camera's files (CR2 untouched) into rawDir/baseName.*
-export const stopmoCapture = async ({ rawDir = null, baseName = null } = {}) => {
+export const stopmoCapture = async ({ rawDir = null, baseName = null, saveTarget = captureOptions.saveTarget } = {}) => {
   const params = new URLSearchParams();
   if (rawDir) params.set('raw_dir', rawDir);
   if (baseName) params.set('base_name', baseName);
+  params.set('save', saveTarget);
   const t0 = performance.now();
   const res = await stopmoFetch(`/cameras/canon-eos-ptp/capture?${params.toString()}`, { method: 'POST' });
   const seconds = Number(res.headers.get('x-stopmo-seconds')) || (performance.now() - t0) / 1000;

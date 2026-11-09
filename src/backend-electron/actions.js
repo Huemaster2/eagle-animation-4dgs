@@ -14,7 +14,7 @@ import { setDiscordActivity } from './core/discord';
 import { exportProjectScene, exportSaveTemporaryBuffer, getSyncList, saveSyncList } from './core/export';
 import { createProject, deleteProject, getProjectData, getProjectsList, projectSave, savePicture, saveReferenceFile } from './core/projects';
 import { getCameraSettings, getSettings, saveCameraSettings, saveSettings } from './core/settings';
-import { getNextCameraTestName, getProjectRawDir, getStopMoCameraConfig, logCameraTest } from './core/stopmoCamera';
+import { getNextCameraTestName, getProjectRawDir, getStopMoCameraConfig, isUsableFolder, logCameraTest } from './core/stopmoCamera';
 import { getToucanCameraServerConfig, setToucanCameraServerConfig, stopToucanCameraServer } from './core/toucan';
 import { selectFile, selectFolder } from './core/utils';
 
@@ -335,14 +335,24 @@ const actions = {
   STOPMO_CAMERA_GET_CONFIG: async () => {
     return getStopMoCameraConfig();
   },
-  STOPMO_CAMERA_NEXT_TEST_NAME: async () => {
-    return getNextCameraTestName();
+  STOPMO_CAMERA_NEXT_TEST_NAME: async (evt, { storage_folder = '' } = {}) => {
+    return getNextCameraTestName(isUsableFolder(storage_folder) ? storage_folder : '');
   },
-  STOPMO_CAMERA_LOG_TEST: async (evt, entry = {}) => {
-    return logCameraTest(entry);
+  STOPMO_CAMERA_LOG_TEST: async (evt, { storage_folder = '', ...entry } = {}) => {
+    return logCameraTest(entry, isUsableFolder(storage_folder) ? storage_folder : '');
   },
-  STOPMO_CAMERA_PROJECT_RAW_DIR: async (evt, { project_id, track_id = 0 } = {}) => {
-    return getProjectRawDir(PROJECTS_PATH, project_id, track_id);
+  STOPMO_CAMERA_PROJECT_RAW_DIR: async (evt, { project_id, track_id = 0, storage_folder = '', project_title = '' } = {}) => {
+    // A folder on an unplugged drive must not silently create a new tree on the system disk
+    if (storage_folder && !isUsableFolder(storage_folder)) {
+      throw new Error(`Storage folder not available: ${storage_folder}`);
+    }
+    return getProjectRawDir(PROJECTS_PATH, project_id, track_id, storage_folder, project_title);
+  },
+  STOPMO_SELECT_FOLDER: async (evt, { title = 'Choose a folder' } = {}) => {
+    return selectFolder(title);
+  },
+  STOPMO_FOLDER_STATUS: async (evt, { folder = '' } = {}) => {
+    return { usable: isUsableFolder(folder) };
   },
   STOPMO_SHOW_PATH: async (evt, { path: target } = {}) => {
     if (target) {
