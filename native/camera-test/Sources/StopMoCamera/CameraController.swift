@@ -1037,20 +1037,20 @@ func jpegPixelSize(_ jpeg: Data) -> CGSize? {
 }
 
 extension CameraController: ICDeviceBrowserDelegate {
-    func deviceBrowser(_ browser: ICDeviceBrowser, didAdd device: ICDevice, moreComing: Bool) {
+    public func deviceBrowser(_ browser: ICDeviceBrowser, didAdd device: ICDevice, moreComing: Bool) {
         log("Device appeared: \(device.name ?? "?") USB \(hex(device.usbVendorID)):\(hex(device.usbProductID)) transport \(device.transportType ?? "?")")
         guard let cam = device as? ICCameraDevice else { return }
         hotplugEvents.append("\(Date()): connect \(cam.name ?? "?")")
         if camera == nil { connect(cam) }
     }
 
-    func deviceBrowser(_ browser: ICDeviceBrowser, didRemove device: ICDevice, moreGoing: Bool) {
+    public func deviceBrowser(_ browser: ICDeviceBrowser, didRemove device: ICDevice, moreGoing: Bool) {
         if device === camera { handleDisconnect(reason: "camera unplugged or switched off") }
     }
 }
 
 extension CameraController: ICCameraDeviceDelegate {
-    func device(_ device: ICDevice, didOpenSessionWithError error: Error?) {
+    public func device(_ device: ICDevice, didOpenSessionWithError error: Error?) {
         if let error {
             log("Could not open camera session: \(error.localizedDescription). Is EOS Utility, Image Capture or Photos using the camera?")
             status("Camera found but busy — close other camera apps, then click Reconnect", false)
@@ -1062,24 +1062,24 @@ extension CameraController: ICCameraDeviceDelegate {
         status("Connected — reading camera…", true)
     }
 
-    func deviceDidBecomeReady(withCompleteContentCatalog device: ICCameraDevice) {
+    public func deviceDidBecomeReady(withCompleteContentCatalog device: ICCameraDevice) {
         markReady(device)
     }
 
-    func device(_ device: ICDevice, didCloseSessionWithError error: Error?) {
+    public func device(_ device: ICDevice, didCloseSessionWithError error: Error?) {
         sessionOpen.value = false
         log("Session closed\(error.map { ": \($0.localizedDescription)" } ?? "")")
     }
 
-    func didRemove(_ device: ICDevice) {
+    public func didRemove(_ device: ICDevice) {
         if device === camera { handleDisconnect(reason: "device removed") }
     }
 
-    func device(_ device: ICDevice, didEncounterError error: Error?) {
+    public func device(_ device: ICDevice, didEncounterError error: Error?) {
         log("Camera error: \(error?.localizedDescription ?? "unknown")")
     }
 
-    func cameraDevice(_ camera: ICCameraDevice, didAdd items: [ICCameraItem]) {
+    public func cameraDevice(_ camera: ICCameraDevice, didAdd items: [ICCameraItem]) {
         guard nativePending else { return }
         for case let f as ICCameraFile in items {
             nativePending = false
@@ -1088,16 +1088,16 @@ extension CameraController: ICCameraDeviceDelegate {
         }
     }
 
-    func cameraDevice(_ camera: ICCameraDevice, didRemove items: [ICCameraItem]) {}
-    func cameraDevice(_ camera: ICCameraDevice, didReceiveThumbnail thumbnail: CGImage?, for item: ICCameraItem, error: Error?) {}
-    func cameraDevice(_ camera: ICCameraDevice, didReceiveMetadata metadata: [AnyHashable: Any]?, for item: ICCameraItem, error: Error?) {}
-    func cameraDevice(_ camera: ICCameraDevice, didRenameItems items: [ICCameraItem]) {}
-    func cameraDeviceDidChangeCapability(_ camera: ICCameraDevice) {}
-    func cameraDevice(_ camera: ICCameraDevice, didReceivePTPEvent eventData: Data) {}
-    func cameraDeviceDidRemoveAccessRestriction(_ device: ICDevice) {
+    public func cameraDevice(_ camera: ICCameraDevice, didRemove items: [ICCameraItem]) {}
+    public func cameraDevice(_ camera: ICCameraDevice, didReceiveThumbnail thumbnail: CGImage?, for item: ICCameraItem, error: Error?) {}
+    public func cameraDevice(_ camera: ICCameraDevice, didReceiveMetadata metadata: [AnyHashable: Any]?, for item: ICCameraItem, error: Error?) {}
+    public func cameraDevice(_ camera: ICCameraDevice, didRenameItems items: [ICCameraItem]) {}
+    public func cameraDeviceDidChangeCapability(_ camera: ICCameraDevice) {}
+    public func cameraDevice(_ camera: ICCameraDevice, didReceivePTPEvent eventData: Data) {}
+    public func cameraDeviceDidRemoveAccessRestriction(_ device: ICDevice) {
         log("Camera access restriction removed")
     }
-    func cameraDeviceDidEnableAccessRestriction(_ device: ICDevice) {
+    public func cameraDeviceDidEnableAccessRestriction(_ device: ICDevice) {
         log("Camera access restricted by macOS — check System Settings › Privacy & Security")
     }
 }
