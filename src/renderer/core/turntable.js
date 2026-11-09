@@ -4,6 +4,19 @@ import { DEFAULT_STEPS_PER_REV, parseLine } from '@core/turntableMath';
 export const ARDUINO_USB_FILTERS = [0x2341, 0x2a03, 0x1a86, 0x0403, 0x10c4].map((usbVendorId) => ({ usbVendorId }));
 
 const BAUD = 115200;
+
+const isArduino = (port) => ARDUINO_USB_FILTERS.some((f) => f.usbVendorId === port.getInfo?.().usbVendorId);
+
+// Ports already allowed include Bluetooth and debug ports on a Mac, so only USB Arduinos are reused
+export const findArduinoPort = async () => {
+  const known = (await navigator.serial.getPorts()).find(isArduino);
+  if (known) return known;
+  try {
+    return await navigator.serial.requestPort({ filters: ARDUINO_USB_FILTERS });
+  } catch (err) {
+    throw new Error('No Arduino found. Plug in the turntable’s USB cable (and close the Arduino IDE serial monitor).');
+  }
+};
 const REPLY_TIMEOUT = 2500;
 const JOG_KEEPALIVE_MS = 120; // firmware stops on its own if JOG is not repeated within 250 ms
 const LOG_LINES = 200;
@@ -70,8 +83,7 @@ class Turntable {
     if (this.state.connected || this.state.connecting) return;
     this.set({ connecting: true, error: null });
     try {
-      const known = await navigator.serial.getPorts();
-      const port = known[0] || (await navigator.serial.requestPort({ filters: ARDUINO_USB_FILTERS }));
+      const port = await findArduinoPort();
       await port.open({ baudRate: BAUD });
       this.port = port;
       this.writer = port.writable.getWriter();

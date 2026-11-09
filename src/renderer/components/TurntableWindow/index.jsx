@@ -2,7 +2,7 @@ import ActionCard from '@components/ActionCard';
 import Heading from '@components/Heading';
 import Select from '@components/Select';
 import { flashArduinoUno } from '@core/arduinoFlasher';
-import { ARDUINO_USB_FILTERS, turntable } from '@core/turntable';
+import { findArduinoPort, turntable } from '@core/turntable';
 import { angleOf, degreesToSteps, interpolateShots, nearestEquivalent, PERSPECTIVES } from '@core/turntableMath';
 import useTurntable from '@hooks/useTurntable';
 import { useEffect, useState } from 'react';
@@ -85,8 +85,7 @@ const TurntableWindow = ({ t }) => {
     setMessage('');
     try {
       if (state.connected) await turntable.disconnect();
-      const known = await navigator.serial.getPorts();
-      const port = known[0] || (await navigator.serial.requestPort({ filters: ARDUINO_USB_FILTERS }));
+      const port = await findArduinoPort();
       setFlash({ stage: 'connecting', done: 0, total: 1 });
       const r = await flashArduinoUno(port, firmwareHex, (stage, done, total) => setFlash({ stage, done, total }));
       setFlash(null);

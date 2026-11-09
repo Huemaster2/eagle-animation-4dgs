@@ -25,7 +25,7 @@ const makeBoard = () => {
     else out(`ERR UNKNOWN ${name}`);
   };
   const port = {
-    sent, get pos() { return pos; },
+    sent, get pos() { return pos; }, getInfo: () => ({ usbVendorId: 0x2341, usbProductId: 0x0043 }),
     async open() {
       this.readable = new ReadableStream({ start(c) { ctrl = c; setTimeout(() => out('READY StopMoTurntable 2'), 30); } });
       this.writable = new WritableStream({ write(chunk) { line += new TextDecoder().decode(chunk); let i; while ((i = line.indexOf('\n')) >= 0) { handle(line.slice(0, i).trim()); line = line.slice(i + 1); } } });
@@ -36,7 +36,7 @@ const makeBoard = () => {
 };
 
 const board = makeBoard();
-Object.defineProperty(globalThis, "navigator", { value: { serial: { addEventListener() {}, getPorts: async () => [board], requestPort: async () => board } }, configurable: true });
+Object.defineProperty(globalThis, "navigator", { value: { serial: { addEventListener() {}, getPorts: async () => [{ getInfo: () => ({}) }, board], requestPort: async () => board } }, configurable: true });
 const { turntable } = await import('@core/turntable');
 
 await turntable.connect({ restorePosition: 1000 });
