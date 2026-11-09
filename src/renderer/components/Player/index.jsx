@@ -1,4 +1,6 @@
+import FocusPeakingLayer from '@components/FocusPeakingLayer';
 import GridOverlay from '@components/GridOverlay';
+import MagnifierMarker from '@components/MagnifierMarker';
 import OnionSkinLayers, { ReferenceLayer } from '@components/OnionSkinLayers';
 import PreviewStream from '@components/PreviewStream';
 import RatioBorders from '@components/RatioBorders';
@@ -27,6 +29,8 @@ class Player extends Component {
 
     // Cached images promises
     this.images = {};
+
+    this.getLiveCanvas = () => this.dom.previewStream.current?.canvasRef?.current || null;
 
     this.state = {
       width: 0,
@@ -338,6 +342,28 @@ class Player extends Component {
             );
           })}
           <OnionSkinLayers layers={onionLayers} width={this.getSize().width} height={this.getSize().height} videoRatio={this.getVideoRatio()} className={style.layout} />
+          {frameIndex === false && (
+            <FocusPeakingLayer
+              enabled={Boolean(isCameraReady && this.props.focusPeaking?.ENABLED)}
+              getSource={this.getLiveCanvas}
+              color={this.props.focusPeaking?.COLOR}
+              sensitivity={this.props.focusPeaking?.SENSITIVITY}
+              className={`${style.layout} ${reverseClassNames}`}
+            />
+          )}
+          {frameIndex === false && isCameraReady && this.props.magnifier?.enabled && (
+            <MagnifierMarker
+              srcW={this.getLiveCanvas()?.width}
+              srcH={this.getLiveCanvas()?.height}
+              center={this.props.magnifier.center}
+              zoom={this.props.magnifier.zoom}
+              aspect={this.props.magnifier.aspect}
+              reverseX={reverseX}
+              reverseY={reverseY}
+              onMove={this.props.onMagnifierMove}
+              onCommit={this.props.onMagnifierCommit}
+            />
+          )}
           <RatioBorders width={this.getSize().width} height={this.getSize().height} ratio={this.getVideoRatio()} opacity={ratioLayerOpacity} />
           {isCameraReady && showGrid && frameIndex === false && (
             <GridOverlay
@@ -371,6 +397,10 @@ Player.propTypes = {
   references: PropTypes.array,
   perspective: PropTypes.string,
   perspectiveViews: PropTypes.object,
+  focusPeaking: PropTypes.object,
+  magnifier: PropTypes.object,
+  onMagnifierMove: PropTypes.func,
+  onMagnifierCommit: PropTypes.func,
   onionValue: PropTypes.any.isRequired,
   ratioLayerOpacity: PropTypes.number.isRequired,
   showGrid: PropTypes.bool.isRequired,

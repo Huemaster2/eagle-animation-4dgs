@@ -1,6 +1,7 @@
 import ActionCard from '@components/ActionCard';
 import Heading from '@components/Heading';
 import Select from '@components/Select';
+import TurntableAngleSlider from '@components/TurntableAngleSlider';
 import { flashArduinoUno } from '@core/arduinoFlasher';
 import { findArduinoPort, turntable } from '@core/turntable';
 import { angleOf, degreesToSteps, interpolateShots, nearestEquivalent, PERSPECTIVES } from '@core/turntableMath';
@@ -16,7 +17,7 @@ const DEGREE_STEPS = [1, 5, 15, 45, 90];
 const fmt = (deg) => `${deg.toFixed(1)}°`;
 
 // Plain button that keeps rotating while held (pointer or Space/Enter) and decelerates on release
-const HoldButton = ({ dir, disabled, children, onError }) => {
+export const HoldButton = ({ dir, disabled, children, onError, className = '' }) => {
   const [held, setHeld] = useState(false);
   const start = () => {
     if (disabled || held) return;
@@ -31,7 +32,7 @@ const HoldButton = ({ dir, disabled, children, onError }) => {
   return (
     <button
       type="button"
-      className={`${style.hold} ${held ? style.held : ''}`}
+      className={`${style.hold} ${held ? style.held : ''} ${className}`}
       disabled={disabled && !held}
       onPointerDown={(e) => {
         e.currentTarget.setPointerCapture?.(e.pointerId);
@@ -158,6 +159,7 @@ const TurntableWindow = ({ t }) => {
             {t('Hold')} ⟳
           </HoldButton>
         </div>
+        <TurntableAngleSlider state={state} onError={fail} />
         <div className={style.stepRow}>
           {[...DEGREE_STEPS].reverse().map((d) => (
             <button key={`m${d}`} type="button" className={style.step} disabled={!ready} onClick={() => run(() => turntable.moveBy(-degreesToSteps(d, rev)))}>

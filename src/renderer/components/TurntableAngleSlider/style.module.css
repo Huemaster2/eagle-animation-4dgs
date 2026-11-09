@@ -1,0 +1,21 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: var(--space-small) 0;
+  width: 100%;
+}
+
+.scale {
+  color: var(--color-theme-extra-light);
+  display: flex;
+  font-size: var(--font-size-6);
+  font-variant-numeric: tabular-nums;
+  justify-content: space-between;
+}
+
+.readout {
+  color: var(--color-white);
+  font-size: var(--font-size-6);
+  font-variant-numeric: tabular-nums;
+}

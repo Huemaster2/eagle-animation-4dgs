@@ -1,0 +1,94 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.readout {
+  align-items: baseline;
+  display: flex;
+  gap: var(--space-medium);
+  justify-content: space-between;
+}
+
+.angle {
+  color: var(--color-white);
+  font-size: 1.6rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.btn {
+  background: var(--pf-button-face);
+  border: 1px solid var(--pf-line);
+  box-shadow: var(--pf-bevel);
+  color: var(--color-white);
+  cursor: pointer;
+  flex: 1 1 auto;
+  font-family: inherit;
+  font-size: var(--font-size-6);
+  padding: 4px 6px;
+  user-select: none;
+}
+
+.btn:disabled {
+  cursor: default;
+  opacity: 0.4;
+}
+
+.btn:active:not(:disabled) {
+  background: var(--pf-line);
+  color: var(--pf-paper);
+}
+
+.stop {
+  flex: 0 0 72px;
+  font-weight: 700;
+}
+
+.grow {
+  border: 1px solid var(--pf-line);
+  box-shadow: var(--pf-bevel);
+  flex: 1;
+  padding: 8px 4px;
+}
+
+.label {
+  border-top: 1px solid var(--pf-line);
+  color: var(--color-white);
+  font-size: var(--font-size-6);
+  font-weight: 600;
+  margin: 6px 0 0;
+  padding-top: 6px;
+}
+
+.viewRow {
+  align-items: center;
+  display: grid;
+  gap: 4px;
+  grid-template-columns: 56px 1fr auto auto;
+}
+
+.viewName {
+  color: var(--color-white);
+  font-size: var(--font-size-6);
+  font-weight: 600;
+}
+
+.hint {
+  color: var(--color-theme-extra-light);
+  font-size: var(--font-size-6);
+  margin: 0;
+}
+
+.error {
+  color: var(--color-alert);
+  font-size: var(--font-size-6);
+  margin: 0;
+}

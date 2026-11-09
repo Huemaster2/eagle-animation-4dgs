@@ -2,10 +2,12 @@ import CameraSettingsWindow from '@components/CameraSettingsWindow';
 import CameraTestWindow from '@components/CameraTestWindow';
 import ControlBar from '@components/ControlBar';
 import DesktopNavigation from '@components/DesktopNavigation';
+import HistogramWindow from '@components/HistogramWindow';
 import ImportOverlay from '@components/ImportOverlay';
 import KeyboardHandler from '@components/KeyboardHandler';
 import LimitWarning from '@components/LimitWarning';
 import LoadingPage from '@components/LoadingPage';
+import MagnifierWindow from '@components/MagnifierWindow';
 import MaskingWindow from '@components/MaskingWindow';
 import MobileNavigation from '@components/MobileNavigation';
 import NoticeBanner from '@components/NoticeBanner';
@@ -22,6 +24,7 @@ import Timeline from '@components/Timeline';
 import ToolsWindow from '@components/ToolsWindow';
 import Tour from '@components/Tour';
 import TurntableWindow from '@components/TurntableWindow';
+import ViewsPanel from '@components/ViewsPanel';
 import Window from '@components/Window';
 import { DEFAULT_FPS, MAX_FRAME_DUPLICATION } from '@config-web';
 import { normalizeOnionSkin } from '@core/onionSkin';
@@ -39,12 +42,16 @@ import useTurntable from '@hooks/useTurntable';
 import faArrowLeft from '@icons/faArrowLeft';
 import faBoxArrowDown from '@icons/faBoxArrowDown';
 import faCamera from '@icons/faCamera';
+import faCrosshairs from '@icons/faCrosshairs';
 import faEllipsisVertical from '@icons/faEllipsisVertical';
 import faEraser from '@icons/faEraser';
+import faFaceViewfinder from '@icons/faFaceViewfinder';
 import faFolder from '@icons/faFolder';
 import faImage from '@icons/faImage';
+import faMagnifyingGlass from '@icons/faMagnifyingGlass';
 import faPlay from '@icons/faPlay';
 import faRotate from '@icons/faRotate';
+import faSignal from '@icons/faSignal';
 import faSliders from '@icons/faSliders';
 import faStop from '@icons/faStop';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -157,6 +164,9 @@ const Animator = ({ t }) => {
   const { id, track } = useParams();
   const navigate = useNavigate();
   const playerRef = useRef(null);
+  const getLiveCanvas = useCallback(() => playerRef.current?.getLiveCanvas?.() || null, []);
+  const [magnifierCenter, setMagnifierCenter] = useState(null);
+  const [magnifierAspect, setMagnifierAspect] = useState(0.75);
 
   const [startedAt, setStartedAt] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -778,7 +788,51 @@ const Animator = ({ t }) => {
         },
       ]
     : [];
-  const secondaryActions = [...canonAction, ...turntableAction, ...(canExport ? [{ title: t('Export'), icon: faBoxArrowDown, onClick: handleAction.bind(null, 'EXPORT') }] : [])];
+  const livePanel = { OPEN: false, ...(settings.LIVE_PANEL || {}) };
+
+  const setLivePanel = (patch) => settingsActions.setSettings({ LIVE_PANEL: { ...livePanel, ...patch } });
+  const magnifier = { ...settings.MAGNIFIER };
+  const setMagnifier = (patch) => settingsActions.setSettings({ MAGNIFIER: { ...magnifier, ...patch } });
+  const magnifierCentre = magnifierCenter || { cx: magnifier.CX ?? 0.5, cy: magnifier.CY ?? 0.5 };
+  const commitMagnifierCentre = (c) => {
+    setMagnifierCenter(c);
+    setMagnifier({ CX: c.cx, CY: c.cy });
+  };
+  const liveActions = [
+    {
+      title: livePanel.OPEN ? t('Hide live controls') : t('Live controls (views, turntable, focus peaking, histogram)'),
+      icon: faFaceViewfinder,
+      onClick: () => setLivePanel({ OPEN: !livePanel.OPEN }),
+      selected: !!livePanel.OPEN,
+    },
+    {
+      title: settings.FOCUS_PEAKING?.ENABLED ? t('Focus peaking on') : t('Focus peaking off'),
+      icon: faCrosshairs,
+      onClick: () => settingsActions.setSettings({ FOCUS_PEAKING: { ...settings.FOCUS_PEAKING, ENABLED: !settings.FOCUS_PEAKING?.ENABLED } }),
+      selected: !!settings.FOCUS_PEAKING?.ENABLED,
+    },
+    {
+      title: magnifier.ENABLED ? t('Magnifier on') : t('Magnifier off'),
+      icon: faMagnifyingGlass,
+      onClick: () => setMagnifier({ ENABLED: !magnifier.ENABLED }),
+      selected: !!magnifier.ENABLED,
+    },
+    {
+      title: settings.HISTOGRAM?.ENABLED ? t('Histogram on') : t('Histogram off'),
+      icon: faSignal,
+      onClick: () => settingsActions.setSettings({ HISTOGRAM: { ...settings.HISTOGRAM, ENABLED: !settings.HISTOGRAM?.ENABLED } }),
+      selected: !!settings.HISTOGRAM?.ENABLED,
+    },
+  ];
+  const importReferences = async (files, name, perspective = null) => {
+    setReferenceImport({ done: 0, total: files.length });
+    try {
+      await projectActions.importReferenceSequence(track, files, name, (done, total) => setReferenceImport({ done, total }), perspective ? { perspective } : {});
+    } finally {
+      setReferenceImport(null);
+    }
+  };
+  const secondaryActions = [...liveActions, ...canonAction, ...turntableAction, ...(canExport ? [{ title: t('Export'), icon: faBoxArrowDown, onClick: handleAction.bind(null, 'EXPORT') }] : [])];
 
   const mobileActionsTop = [
     {
@@ -881,10 +935,14 @@ const Animator = ({ t }) => {
           videoRatio={ratio?.value || null}
           reverseX={settings.REVERSE_X}
           reverseY={settings.REVERSE_Y}
+          focusPeaking={settings.FOCUS_PEAKING}
+          magnifier={{ enabled: !!magnifier.ENABLED, center: magnifierCentre, zoom: magnifier.ZOOM || 4, aspect: magnifierAspect }}
+          onMagnifierMove={setMagnifierCenter}
+          onMagnifierCommit={commitMagnifierCentre}
         />
         <div>
           <NoticeBanner message={notice?.message} tone={notice?.tone} onDismiss={() => setNotice(null)} />
-          {showPerspectives && (
+          {showPerspectives && !livePanel.OPEN && (
             <PerspectiveBar
               active={activePerspective}
               status={perspectiveStatus}
@@ -936,6 +994,48 @@ const Animator = ({ t }) => {
       </PageLayout>
       {activeWindow === null && !isPlaying && <ImportOverlay onPictureAdd={handleImportPicture} />}
       {activeWindow === null && <KeyboardHandler onAction={handleAction} />}
+      {magnifier.ENABLED && (
+        <MagnifierWindow
+          enabled={isCameraReady && currentFrameId === false}
+          layout={magnifier}
+          center={magnifierCentre}
+          getSource={getLiveCanvas}
+          onCenterChange={setMagnifierCenter}
+          onCenterCommit={commitMagnifierCentre}
+          onAspectChange={setMagnifierAspect}
+          onLayoutChange={setMagnifier}
+          onClose={() => setMagnifier({ ENABLED: false })}
+        />
+      )}
+      {settings.HISTOGRAM?.ENABLED && (
+        <HistogramWindow
+          enabled={isCameraReady && currentFrameId === false}
+          layout={settings.HISTOGRAM}
+          getSource={getLiveCanvas}
+          onLayoutChange={(patch) => settingsActions.setSettings({ HISTOGRAM: { ...settings.HISTOGRAM, ...patch } })}
+          onClose={() => settingsActions.setSettings({ HISTOGRAM: { ...settings.HISTOGRAM, ENABLED: false } })}
+        />
+      )}
+      {livePanel.OPEN && !isPlaying && (
+        <ViewsPanel
+          layout={livePanel}
+          active={activePerspective}
+          status={perspectiveStatus}
+          busy={turntableState.moving}
+          calibrated={Object.fromEntries(PERSPECTIVES.map((v) => [v, turntableState.connected && turntableProfile.perspectives[v] !== null]))}
+          references={sceneReferences}
+          importProgress={referenceImport}
+          onSelect={selectPerspective}
+          onImport={importReferences}
+          onUpdateReference={(referenceId, patch) => projectActions.updateReference(track, referenceId, patch)}
+          onLayoutChange={setLivePanel}
+          onClose={() => setLivePanel({ OPEN: false })}
+          focusPeaking={settings.FOCUS_PEAKING}
+          histogram={settings.HISTOGRAM}
+          magnifier={magnifier}
+          onSettingsChange={settingsActions.setSettings}
+        />
+      )}
       {!isPlaying && (
         <>
           <Window isOpened={activeWindow === 'camera'} onClose={() => setActiveWindow(null)} title={t('Camera')} tone="yellow">
@@ -981,14 +1081,7 @@ const Animator = ({ t }) => {
                 references={sceneReferences}
                 animationPosition={animationPosition}
                 importProgress={referenceImport}
-                onImport={async (files, name) => {
-                  setReferenceImport({ done: 0, total: files.length });
-                  try {
-                    await projectActions.importReferenceSequence(track, files, name, (done, total) => setReferenceImport({ done, total }));
-                  } finally {
-                    setReferenceImport(null);
-                  }
-                }}
+                onImport={(files, name) => importReferences(files, name)}
                 onUpdate={(referenceId, patch) => projectActions.updateReference(track, referenceId, patch)}
                 onDelete={(referenceId) => projectActions.deleteReference(track, referenceId)}
               />

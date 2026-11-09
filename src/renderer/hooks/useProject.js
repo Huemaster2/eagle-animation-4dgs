@@ -398,7 +398,7 @@ function useProject(options) {
 
   // Action import reference sequence: frames are copied into the project, then listed on the scene
   const actionImportReferenceSequence = useCallback(
-    async (trackId, files, name, onProgress = () => {}) => {
+    async (trackId, files, name, onProgress = () => {}, extra = {}) => {
       const sceneId = Number(trackId);
       const frames = [];
       for (let i = 0; i < files.length; i++) {
@@ -413,7 +413,7 @@ function useProject(options) {
         frames.push({ filename: saved.filename, link: saved.link });
         onProgress(i + 1, files.length);
       }
-      const reference = { id: v4(), name, frames, enabled: true, opacity: 0.5, offset: 0, x: 0, y: 0, scale: 1, blendMode: 'normal' };
+      const reference = { id: v4(), name, frames, enabled: true, opacity: 0.5, offset: 0, x: 0, y: 0, scale: 1, blendMode: 'normal', ...extra };
       setProjectData((oldData) => {
         let d = structuredClone(oldData);
         if (d.project.scenes[sceneId]) {

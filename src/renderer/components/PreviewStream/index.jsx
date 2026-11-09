@@ -94,6 +94,8 @@ class PreviewStream extends Component {
       this._imgRetries = 0;
     };
     el.onerror = () => this._scheduleImgRetry();
+    // The Canon helper sends CORS headers; anonymous mode keeps the canvas readable for focus peaking
+    if (/\/cameras\/[^/]+\/liveview/.test(`${src}`)) el.crossOrigin = 'anonymous';
     el.src = src;
   }
 

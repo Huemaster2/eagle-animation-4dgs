@@ -1,0 +1,99 @@
+.panel {
+  background: var(--color-theme-dark);
+  border: var(--pf-frame);
+  box-shadow: var(--pf-shadow);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  z-index: 999990;
+}
+
+.collapsed {
+  height: auto;
+}
+
+.titleBar {
+  align-items: center;
+  cursor: move;
+  display: flex;
+  flex-shrink: 0;
+  gap: 8px;
+  height: 22px;
+  padding: 0 6px;
+  touch-action: none;
+  user-select: none;
+}
+
+.panel:not(.collapsed) .titleBar {
+  border-bottom: 1px solid var(--pf-line);
+}
+
+/* Same stripes as the dialog windows, defined per theme */
+.stripes {
+  background: var(--pf-stripes);
+  flex: 1;
+  height: 11px;
+}
+
+.title {
+  color: var(--color-white);
+  font-size: var(--font-size-6);
+  font-weight: 600;
+  padding: 0 4px;
+  white-space: nowrap;
+}
+
+.box {
+  align-items: center;
+  background: var(--color-theme-dark);
+  border: 1px solid var(--pf-line);
+  color: var(--pf-line);
+  cursor: pointer;
+  display: flex;
+  flex-shrink: 0;
+  height: 13px;
+  justify-content: center;
+  padding: 1px;
+  width: 13px;
+}
+
+.box:hover {
+  background: var(--pf-line);
+  color: var(--color-theme-dark);
+}
+
+.box svg {
+  height: 100%;
+  width: 100%;
+}
+
+.flip svg {
+  transform: rotate(180deg);
+}
+
+.content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* System 7 grow box in the bottom-right corner */
+.grow {
+  background:
+    linear-gradient(var(--pf-line), var(--pf-line)) 3px 3px / 7px 1px no-repeat,
+    linear-gradient(var(--pf-line), var(--pf-line)) 3px 3px / 1px 7px no-repeat,
+    linear-gradient(var(--pf-line), var(--pf-line)) 6px 6px / 8px 1px no-repeat,
+    linear-gradient(var(--pf-line), var(--pf-line)) 6px 6px / 1px 8px no-repeat,
+    var(--color-theme-dark);
+  border-left: 1px solid var(--pf-line);
+  border-top: 1px solid var(--pf-line);
+  bottom: 0;
+  cursor: nwse-resize;
+  height: 15px;
+  position: absolute;
+  right: 0;
+  touch-action: none;
+  width: 15px;
+}

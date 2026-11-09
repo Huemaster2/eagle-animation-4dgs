@@ -1,4 +1,6 @@
 import { DEFAULT_FPS, PARTNER_API } from '@config-web';
+import { DEFAULT_FOCUS_PEAKING, DEFAULT_HISTOGRAM } from '@core/focusPeaking';
+import { DEFAULT_MAGNIFIER } from '@core/magnifier';
 import { DEFAULT_ONION_SKIN } from '@core/onionSkin';
 import { currentLanguage, setLanguage } from '@i18n';
 import { useCallback, useEffect, useState } from 'react';
@@ -34,6 +36,10 @@ const DEFAULT_SETTINGS = {
   STOPMO_STORAGE_FOLDER: '', // '' = inside each project
   TURNTABLE_PROFILES: [], // see core/turntableProfiles
   THEME: 'system', // system | light (Classic) | dark (Phosphor)
+  FOCUS_PEAKING: DEFAULT_FOCUS_PEAKING,
+  HISTOGRAM: DEFAULT_HISTOGRAM,
+  MAGNIFIER: DEFAULT_MAGNIFIER,
+  LIVE_PANEL: { OPEN: false, TAB: 'views', X: null, Y: 80, W: 320, H: 460 }, // floating live controls
   TURNTABLE_PROFILE_ID: null,
   TELEMETRY_ENABLED: true,
   TOURS_COMPLETED: [], // Keys of the guided tours the user has already seen

@@ -42,7 +42,17 @@ const Button = ({
 
   return (
     <div {...{ ...rest, children: null }} className={`${style.mainContainer} ${className || ''}`}>
-      <div id={`button-${uid}`} data-tooltip-id={`button-${uid}`} data-tour={dataTour} role="button" tabIndex={0} onClick={() => onClick && !disabled && onClick()} className={classNames}>
+      <div
+        id={`button-${uid}`}
+        data-tooltip-id={`button-${uid}`}
+        data-tour={dataTour}
+        role="button"
+        tabIndex={0}
+        aria-label={title || undefined}
+        title={title && tooltipPosition.toLowerCase() === 'none' ? title : undefined}
+        onClick={() => onClick && !disabled && onClick()}
+        className={classNames}
+      >
         {icon && (typeof icon === 'string' ? <img src={icon} /> : <FontAwesomeIcon icon={icon} />)}
         {hasLabel && <span className={style.label}>{label}</span>}
         {(warning || tag) && (
