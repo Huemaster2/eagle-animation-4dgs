@@ -29,6 +29,7 @@ const ViewsPanel = ({
   onClose = () => {},
   focusPeaking,
   histogram,
+  parade,
   magnifier,
   onSettingsChange = () => {},
 }) => {
@@ -95,7 +96,7 @@ const ViewsPanel = ({
 
       {tab === 'live' && (
         <div className={style.body}>
-          <LiveAssistControls focusPeaking={focusPeaking} histogram={histogram} magnifier={magnifier} onChange={onSettingsChange} />
+          <LiveAssistControls focusPeaking={focusPeaking} histogram={histogram} parade={parade} magnifier={magnifier} onChange={onSettingsChange} />
         </div>
       )}
 

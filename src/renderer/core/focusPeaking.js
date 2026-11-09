@@ -56,28 +56,3 @@ export const computePeaking = (source, work, { color = DEFAULT_FOCUS_PEAKING.COL
   }
   return out;
 };
-
-export const DEFAULT_HISTOGRAM = { ENABLED: false };
-
-// 256-bin luminance histogram of a downscaled copy, plus the share of clipped shadows/highlights
-export const computeHistogram = (source, work, sampleWidth = 200) => {
-  if (!source?.width || !source?.height) return null;
-  const w = Math.min(sampleWidth, source.width);
-  const h = Math.max(1, Math.round((source.height / source.width) * w));
-  if (work.width !== w) work.width = w;
-  if (work.height !== h) work.height = h;
-  const ctx = work.getContext('2d', { willReadFrequently: true });
-  ctx.drawImage(source, 0, 0, w, h);
-  let data;
-  try {
-    data = ctx.getImageData(0, 0, w, h).data;
-  } catch (err) {
-    return null;
-  }
-  const bins = new Uint32Array(256);
-  for (let p = 0; p < data.length; p += 4) {
-    bins[Math.round(0.299 * data[p] + 0.587 * data[p + 1] + 0.114 * data[p + 2])]++;
-  }
-  const total = w * h;
-  return { bins, total, shadows: bins[0] / total, highlights: bins[255] / total };
-};

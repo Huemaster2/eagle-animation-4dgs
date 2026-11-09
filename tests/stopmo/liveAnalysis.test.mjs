@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 
-import { computeHistogram, computePeaking, peakingThreshold } from '../../src/renderer/core/focusPeaking.js';
+import { computePeaking, peakingThreshold } from '../../src/renderer/core/focusPeaking.js';
+import { computeHistogram, computeParade, traceIntensity } from '../../src/renderer/core/scopes.js';
 
 // Minimal canvas stand-ins: the "source" is a canvas whose pixels we define
 globalThis.ImageData = class {
@@ -58,4 +59,26 @@ assert.equal(hist.bins[255], 200);
 assert.equal(hist.shadows, 0.5);
 assert.equal(hist.highlights, 0.5);
 assert.equal(computeHistogram({ ...edge, tainted: true }, makeWork()), null);
+assert.equal(hist.r[0], 200);
+assert.equal(hist.g[255], 200);
+assert.equal(hist.b[255], 200);
+
+// RGB channels are counted separately: a pure red picture
+const red = { width: 4, height: 2, data: new Uint8ClampedArray(Array.from({ length: 8 }, () => [255, 0, 0, 255]).flat()) };
+const redHist = computeHistogram(red, makeWork());
+assert.equal(redHist.r[255], 8);
+assert.equal(redHist.g[0], 8);
+assert.equal(redHist.highlights, 1);
+assert.equal(redHist.shadows, 0);
+
+// Parade: column x of channel c has its pixels at their level
+const parade = computeParade(edge, makeWork());
+assert.equal(parade.w, 40);
+assert.equal(parade.counts[0][0 * 40 + 5], 10);
+assert.equal(parade.counts[1][255 * 40 + 30], 10);
+assert.equal(parade.counts[2][255 * 40 + 5], 0);
+assert.equal(computeParade({ ...edge, tainted: true }, makeWork()), null);
+assert.equal(traceIntensity(0, 2), 0);
+assert.ok(traceIntensity(1, 2) > 0.2 && traceIntensity(1, 2) < traceIntensity(20, 2));
+assert.ok(traceIntensity(10000, 2) <= 1);
 console.log('liveAnalysis ok');

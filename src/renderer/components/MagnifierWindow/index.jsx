@@ -1,5 +1,6 @@
 import FloatingPanel from '@components/FloatingPanel';
 import { clampCenter, MAGNIFIER_ZOOMS, magnifierCrop } from '@core/magnifier';
+import useHiDpiCanvas from '@hooks/useHiDpiCanvas';
 import { useEffect, useRef } from 'react';
 import { withTranslation } from 'react-i18next';
 
@@ -20,28 +21,13 @@ const MagnifierWindow = ({
   onLayoutChange = () => {},
   onClose = () => {},
 }) => {
-  const canvas = useRef(null);
   const live = useRef({ center, zoom: layout.ZOOM || 4 });
   live.current = { center, zoom: layout.ZOOM || 4 };
 
   const aspectChange = useRef(onAspectChange);
   aspectChange.current = onAspectChange;
-
-  // Keep the backing store at screen resolution and tell the marker the view's shape (canvas remounts on expand)
-  useEffect(() => {
-    const c = canvas.current;
-    if (!c) return undefined;
-    const observer = new ResizeObserver(() => {
-      const dpr = window.devicePixelRatio || 1;
-      const w = Math.max(1, Math.round(c.clientWidth * dpr));
-      const h = Math.max(1, Math.round(c.clientHeight * dpr));
-      if (c.width !== w) c.width = w;
-      if (c.height !== h) c.height = h;
-      if (c.clientWidth) aspectChange.current(c.clientHeight / c.clientWidth);
-    });
-    observer.observe(c);
-    return () => observer.disconnect();
-  }, [layout.COLLAPSED]);
+  // Tell the marker on the picture the view's shape whenever the window is resized
+  const [canvas, canvasRef] = useHiDpiCanvas((c) => c.clientWidth && aspectChange.current(c.clientHeight / c.clientWidth));
 
   useEffect(() => {
     if (!enabled) return undefined;
@@ -63,7 +49,7 @@ const MagnifierWindow = ({
     };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
-  }, [enabled, getSource]);
+  }, [enabled, getSource, canvas]);
 
   // Dragging the picture moves the view the other way, like sliding a print under a loupe
   const startPan = (event) => {
@@ -96,7 +82,7 @@ const MagnifierWindow = ({
   return (
     <FloatingPanel title={t('Magnifier')} layout={layout} defaults={{ X: 24, Y: 280, W: 320, H: 260 }} minWidth={180} minHeight={140} onLayoutChange={onLayoutChange} onClose={onClose}>
       <div className={style.box}>
-        <canvas ref={canvas} className={`${style.view} ${enabled ? '' : style.off}`} onPointerDown={startPan} />
+        <canvas ref={canvasRef} className={`${style.view} ${enabled ? '' : style.off}`} onPointerDown={startPan} />
         {!enabled && <p className={style.note}>{t('Shown while the live view is on screen')}</p>}
         <div className={style.bar}>
           {MAGNIFIER_ZOOMS.map((z) => (

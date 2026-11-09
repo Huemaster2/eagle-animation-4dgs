@@ -8,6 +8,8 @@ import { withTranslation } from 'react-i18next';
 import * as style from './style.module.css';
 
 const TITLE_H = 22;
+// Last-clicked floating window comes to the front
+let topLayer = 0;
 
 const clampRect = ({ x, y, w, h }, minW, minH) => {
   const vw = window.innerWidth;
@@ -33,6 +35,7 @@ const FloatingPanel = ({ t, title = '', layout = {}, defaults = {}, minWidth = 2
     )
   );
   const [collapsed, setCollapsed] = useState(!!layout.COLLAPSED);
+  const [layer, setLayer] = useState(() => ++topLayer);
   const rectRef = useRef(rect);
   rectRef.current = rect;
   const root = useRef(null);
@@ -73,10 +76,11 @@ const FloatingPanel = ({ t, title = '', layout = {}, defaults = {}, minWidth = 2
     <div
       ref={root}
       className={`${style.panel} ${collapsed ? style.collapsed : ''}`}
-      style={{ left: rect.x, top: rect.y, width: rect.w, height: collapsed ? undefined : rect.h }}
+      style={{ left: rect.x, top: rect.y, width: rect.w, height: collapsed ? undefined : rect.h, zIndex: 990000 + layer }}
       role="dialog"
       aria-label={title}
       onPointerUp={releaseFocus}
+      onPointerDownCapture={() => layer !== topLayer && setLayer(++topLayer)}
     >
       <div
         className={style.titleBar}

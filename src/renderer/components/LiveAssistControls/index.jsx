@@ -6,8 +6,8 @@ import { withTranslation } from 'react-i18next';
 
 import * as style from './style.module.css';
 
-// Focus peaking, magnifier and histogram settings for the live view
-const LiveAssistControls = ({ t, focusPeaking = DEFAULT_FOCUS_PEAKING, histogram = {}, magnifier = {}, onChange = () => {} }) => {
+// Focus peaking, magnifier and scopes for the live view
+const LiveAssistControls = ({ t, focusPeaking = DEFAULT_FOCUS_PEAKING, histogram = {}, parade = {}, magnifier = {}, onChange = () => {} }) => {
   const peaking = { ...DEFAULT_FOCUS_PEAKING, ...focusPeaking };
   const setPeaking = (patch) => onChange({ FOCUS_PEAKING: { ...peaking, ...patch } });
   const colorNames = { '#ffe000': t('Yellow'), '#4dff88': t('Green'), '#ffffff': t('White') };
@@ -65,7 +65,12 @@ const LiveAssistControls = ({ t, focusPeaking = DEFAULT_FOCUS_PEAKING, histogram
         <span className={style.label}>{t('Histogram')}</span>
         <Switch checked={!!histogram?.ENABLED} onChange={() => onChange({ HISTOGRAM: { ...histogram, ENABLED: !histogram?.ENABLED } })} />
       </label>
-      <span className={style.hint}>{t('Brightness of the live view. Black and White show how much of the picture is clipped.')}</span>
+      <span className={style.hint}>{t('Red, green and blue levels of the live view, with how much of the picture is crushed to black or clipped.')}</span>
+      <label className={`${style.row} ${style.divider}`}>
+        <span className={style.label}>{t('RGB parade')}</span>
+        <Switch checked={!!parade?.ENABLED} onChange={() => onChange({ PARADE: { ...parade, ENABLED: !parade?.ENABLED } })} />
+      </label>
+      <span className={style.hint}>{t('Red, green and blue waveforms side by side: left to right follows the picture, height is brightness. Use it to match colour balance between views.')}</span>
     </div>
   );
 };

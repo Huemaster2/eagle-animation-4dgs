@@ -13,6 +13,7 @@ import MobileNavigation from '@components/MobileNavigation';
 import NoticeBanner from '@components/NoticeBanner';
 import OnionSkinWindow from '@components/OnionSkinWindow';
 import PageLayout from '@components/PageLayout';
+import ParadeWindow from '@components/ParadeWindow';
 import PerspectiveBar from '@components/PerspectiveBar';
 import PictureWindow from '@components/PictureWindow';
 import Player from '@components/Player';
@@ -54,6 +55,7 @@ import faRotate from '@icons/faRotate';
 import faSignal from '@icons/faSignal';
 import faSliders from '@icons/faSliders';
 import faStop from '@icons/faStop';
+import faWaveform from '@icons/faWaveform';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { withTranslation } from 'react-i18next';
@@ -800,7 +802,7 @@ const Animator = ({ t }) => {
   };
   const liveActions = [
     {
-      title: livePanel.OPEN ? t('Hide live controls') : t('Live controls (views, turntable, focus peaking, histogram)'),
+      title: livePanel.OPEN ? t('Hide live controls') : t('Live controls (views, turntable, focus aids, scopes)'),
       icon: faFaceViewfinder,
       onClick: () => setLivePanel({ OPEN: !livePanel.OPEN }),
       selected: !!livePanel.OPEN,
@@ -822,6 +824,12 @@ const Animator = ({ t }) => {
       icon: faSignal,
       onClick: () => settingsActions.setSettings({ HISTOGRAM: { ...settings.HISTOGRAM, ENABLED: !settings.HISTOGRAM?.ENABLED } }),
       selected: !!settings.HISTOGRAM?.ENABLED,
+    },
+    {
+      title: settings.PARADE?.ENABLED ? t('RGB parade on') : t('RGB parade off'),
+      icon: faWaveform,
+      onClick: () => settingsActions.setSettings({ PARADE: { ...settings.PARADE, ENABLED: !settings.PARADE?.ENABLED } }),
+      selected: !!settings.PARADE?.ENABLED,
     },
   ];
   const importReferences = async (files, name, perspective = null) => {
@@ -1007,6 +1015,15 @@ const Animator = ({ t }) => {
           onClose={() => setMagnifier({ ENABLED: false })}
         />
       )}
+      {settings.PARADE?.ENABLED && (
+        <ParadeWindow
+          enabled={isCameraReady && currentFrameId === false}
+          layout={settings.PARADE}
+          getSource={getLiveCanvas}
+          onLayoutChange={(patch) => settingsActions.setSettings({ PARADE: { ...settings.PARADE, ...patch } })}
+          onClose={() => settingsActions.setSettings({ PARADE: { ...settings.PARADE, ENABLED: false } })}
+        />
+      )}
       {settings.HISTOGRAM?.ENABLED && (
         <HistogramWindow
           enabled={isCameraReady && currentFrameId === false}
@@ -1032,6 +1049,7 @@ const Animator = ({ t }) => {
           onClose={() => setLivePanel({ OPEN: false })}
           focusPeaking={settings.FOCUS_PEAKING}
           histogram={settings.HISTOGRAM}
+          parade={settings.PARADE}
           magnifier={magnifier}
           onSettingsChange={settingsActions.setSettings}
         />

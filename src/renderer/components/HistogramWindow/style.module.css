@@ -6,15 +6,20 @@
   flex-direction: column;
   min-height: 0;
   padding: 6px 6px 16px;
+  position: relative;
 }
 
 .graph {
-  color: var(--pf-line);
+  border: 1px solid var(--pf-line);
+  box-sizing: border-box;
   display: block;
   flex: 1;
-  image-rendering: pixelated;
   min-height: 40px;
   width: 100%;
+}
+
+.off {
+  opacity: 0.25;
 }
 
 .legend {
@@ -32,6 +37,10 @@
 }
 
 .note {
+  color: var(--color-white);
   font-size: var(--font-size-6);
+  left: 14px;
   margin: 0;
+  position: absolute;
+  top: 12px;
 }

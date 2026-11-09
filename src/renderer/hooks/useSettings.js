@@ -1,7 +1,8 @@
 import { DEFAULT_FPS, PARTNER_API } from '@config-web';
-import { DEFAULT_FOCUS_PEAKING, DEFAULT_HISTOGRAM } from '@core/focusPeaking';
+import { DEFAULT_FOCUS_PEAKING } from '@core/focusPeaking';
 import { DEFAULT_MAGNIFIER } from '@core/magnifier';
 import { DEFAULT_ONION_SKIN } from '@core/onionSkin';
+import { DEFAULT_HISTOGRAM, DEFAULT_PARADE } from '@core/scopes';
 import { currentLanguage, setLanguage } from '@i18n';
 import { useCallback, useEffect, useState } from 'react';
 
@@ -38,6 +39,7 @@ const DEFAULT_SETTINGS = {
   THEME: 'system', // system | light (Classic) | dark (Phosphor)
   FOCUS_PEAKING: DEFAULT_FOCUS_PEAKING,
   HISTOGRAM: DEFAULT_HISTOGRAM,
+  PARADE: DEFAULT_PARADE,
   MAGNIFIER: DEFAULT_MAGNIFIER,
   LIVE_PANEL: { OPEN: false, TAB: 'views', X: null, Y: 80, W: 320, H: 460 }, // floating live controls
   TURNTABLE_PROFILE_ID: null,

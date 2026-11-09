@@ -75,3 +75,7 @@ svg[data-icon='triangle-exclamation'] {
 svg[data-icon='star'] {
   --pf-accent: var(--pf-accent-yellow);
 }
+
+svg[data-icon='waveform'] {
+  --pf-accent: var(--pf-accent-green);
+}
