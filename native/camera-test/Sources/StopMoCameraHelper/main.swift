@@ -11,6 +11,7 @@ import StopMoCamera
 //   PUT  /cameras/{id}/connect            remote mode + live view
 //   PUT  /cameras/{id}/disconnect         stop live view
 //   GET  /cameras/{id}/liveview?token=    MJPEG stream
+//   GET  /cameras/{id}/liveview/frame     latest live-view JPEG (header x-frame-counter)
 //   POST /cameras/{id}/capture?raw_dir=&base_name=&save=both|mac|card
 //        -> image/jpeg preview, header x-stopmo-files: JSON array of saved files with checks
 //   GET  /cameras/{id}/parameters         Toucan-style parameter list (image quality)
@@ -87,6 +88,11 @@ server.handler = { req, res in
         cam.prepareForShooting { err in
             if let err { res.error(500, err.localizedDescription) } else { res.json(200, ["ok": true]) }
         }
+
+    case ("GET", base + "/liveview/frame"):
+        // One live-view JPEG, never a shutter release: used for view snapshots while posing
+        guard cam.isLiveViewOn, let jpeg = cam.latestLiveJPEG.value else { res.error(409, "live view is not running"); return }
+        res.send(status: 200, contentType: "image/jpeg", body: jpeg, extraHeaders: ["x-frame-counter": String(cam.liveFrameCounter.value)])
 
     case ("PUT", base + "/disconnect"), ("POST", base + "/disconnect"):
         cam.stopLiveView()

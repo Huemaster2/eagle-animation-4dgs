@@ -38,7 +38,8 @@ export const normalizeOnionSkin = (config = {}) => {
 
 // Layers are returned back-to-front: furthest frames first so the nearest ghost sits on top.
 // Onion frames are distinct captures (holds are not repeated) and skip hidden frames.
-export const getOnionLayers = ({ pictures = [], currentFrameId = false, config, master = 1, referenceFrameId = null }) => {
+// resolveLink picks the image for a frame (e.g. how it looked from the active view); null leaves that ghost out
+export const getOnionLayers = ({ pictures = [], currentFrameId = false, config, master = 1, referenceFrameId = null, resolveLink = (frame) => frame.link }) => {
   const c = normalizeOnionSkin(config);
   const layers = [];
   if (!c.ENABLED || master <= 0) {
@@ -53,12 +54,13 @@ export const getOnionLayers = ({ pictures = [], currentFrameId = false, config, 
 
   for (let i = c.PREVIOUS_COUNT; i >= 1; i--) {
     const frame = frames[anchor - i];
-    if (frame) {
+    const link = frame ? resolveLink(frame) : null;
+    if (link) {
       layers.push({
-        key: `prev-${i}-${frame.id}`,
+        key: `prev-${i}-${frame.id}-${link}`,
         kind: 'previous',
         offset: -i,
-        link: frame.link,
+        link,
         opacity: c.PREVIOUS_OPACITIES[i - 1] * master,
         color: c.PREVIOUS_COLOR,
         tint: c.TINT_STRENGTH,
@@ -70,12 +72,13 @@ export const getOnionLayers = ({ pictures = [], currentFrameId = false, config, 
   if (currentFrameId !== false) {
     for (let i = c.NEXT_COUNT; i >= 1; i--) {
       const frame = frames[anchor + i];
-      if (frame) {
+      const link = frame ? resolveLink(frame) : null;
+      if (link) {
         layers.push({
-          key: `next-${i}-${frame.id}`,
+          key: `next-${i}-${frame.id}-${link}`,
           kind: 'next',
           offset: i,
-          link: frame.link,
+          link,
           opacity: c.NEXT_OPACITIES[i - 1] * master,
           color: c.NEXT_COLOR,
           tint: c.TINT_STRENGTH,

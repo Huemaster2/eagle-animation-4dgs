@@ -331,7 +331,7 @@ function useProject(options) {
 
   // Action add frame
   const actionAddFrame = useCallback(
-    async (trackId, frameBlob, beforeFrameId = false, backgroundBlob = null) => {
+    async (trackId, frameBlob, beforeFrameId = false, backgroundBlob = null, extra = {}) => {
       const sceneId = Number(trackId);
       const addedPicture = await actionSavePicture(trackId, frameBlob);
       let backgroundPicture = null;
@@ -346,6 +346,7 @@ function useProject(options) {
           const index = beforeFrameId === false ? -1 : d.project.scenes[sceneId].pictures.findIndex((f) => `${f.id}` === `${beforeFrameId}`);
           const frameToAdd = {
             ...addedPicture,
+            ...extra,
             ...(backgroundPicture && {
               masking: {
                 background: { ...backgroundPicture, id: newIds[1] },
@@ -359,12 +360,40 @@ function useProject(options) {
             d.project.scenes[sceneId].pictures = [...d.project.scenes[sceneId].pictures.slice(0, index), { ...frameToAdd, id: newIds[0] }, ...d.project.scenes[sceneId].pictures.slice(index)];
           } else {
             d.project.scenes[sceneId].pictures = [...d.project.scenes[sceneId].pictures, { ...frameToAdd, id: newIds[0] }];
+            // View snapshots taken while posing this frame now belong to it
+            const views = d.project.scenes[sceneId].perspectiveViews;
+            if (views?.live) {
+              d.project.scenes[sceneId].perspectiveViews = { ...views, [newIds[0]]: views.live, live: {} };
+            }
           }
         }
         return d;
       });
     },
     [projectId, actionSavePicture]
+  );
+
+  // Action save a live-view snapshot of the pose being worked on, as seen from one view (FRONT/RIGHT/BACK/LEFT)
+  const actionSavePerspectiveView = useCallback(
+    async (trackId, view, blob) => {
+      const sceneId = Number(trackId);
+      const saved = await window.EA('SAVE_REFERENCE_FRAME', {
+        project_id: projectId,
+        buffer: Buffer.from(await blob.arrayBuffer()),
+        extension: 'jpg',
+      });
+      setProjectData((oldData) => {
+        let d = structuredClone(oldData);
+        const scene = d.project.scenes[sceneId];
+        if (scene) {
+          const views = scene.perspectiveViews || {};
+          scene.perspectiveViews = { ...views, live: { ...(views.live || {}), [view]: { filename: saved.filename, link: saved.link } } };
+        }
+        return d;
+      });
+      return saved;
+    },
+    [projectId]
   );
 
   // Action import reference sequence: frames are copied into the project, then listed on the scene
@@ -453,6 +482,7 @@ function useProject(options) {
       renameScene: actionRenameScene,
       deleteScene: actionDeleteScene,
       importReferenceSequence: actionImportReferenceSequence,
+      savePerspectiveView: actionSavePerspectiveView,
       updateReference: actionUpdateReference,
       deleteReference: actionDeleteReference,
       undo: actionUndo,

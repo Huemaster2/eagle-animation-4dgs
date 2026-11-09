@@ -32,6 +32,8 @@ const DEFAULT_SETTINGS = {
   TOUCAN_CAMERA_SERVER_EXPOSE: false,
   STOPMO_SAVE_TARGET: 'both', // both | mac | card — where the Canon originals are kept
   STOPMO_STORAGE_FOLDER: '', // '' = inside each project
+  TURNTABLE_PROFILES: [], // see core/turntableProfiles
+  TURNTABLE_PROFILE_ID: null,
   TELEMETRY_ENABLED: true,
   TOURS_COMPLETED: [], // Keys of the guided tours the user has already seen
 };
@@ -46,6 +48,9 @@ let SETTINGS_LISTENERS = [];
 // setSettings is a read-modify-write: two overlapping calls would start from the
 // same state, the later one silently dropping the change made by the other.
 let SETTINGS_WRITE_QUEUE = Promise.resolve();
+
+// Latest settings for code that must not work from a stale render (frequent background writes)
+export const getCurrentSettings = () => CURRENT_SETTINGS;
 
 const broadcastSettings = (settings) => {
   CURRENT_SETTINGS = settings;

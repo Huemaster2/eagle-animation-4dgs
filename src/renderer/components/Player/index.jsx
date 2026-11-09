@@ -4,6 +4,7 @@ import PreviewStream from '@components/PreviewStream';
 import RatioBorders from '@components/RatioBorders';
 import { drawFitted } from '@core/drawFitted';
 import { getOnionLayers, normalizeOnionSkin } from '@core/onionSkin';
+import { referenceMatchesPerspective, resolvePerspectiveLink } from '@core/perspectives';
 import { getAnimationPosition, getReferenceFrame, normalizeReference } from '@core/referenceSequence';
 import { getPictureLink } from '@core/resize';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -273,7 +274,7 @@ class Player extends Component {
   }
 
   render() {
-    const { showGrid, onionValue, blendMode, isCameraReady, t, ratioLayerOpacity, reverseX, reverseY, isPlaying, onionSkin, referenceFrameId } = this.props;
+    const { showGrid, onionValue, blendMode, isCameraReady, t, ratioLayerOpacity, reverseX, reverseY, isPlaying, onionSkin, referenceFrameId, perspective, perspectiveViews } = this.props;
     const { width, height, ready, frameIndex } = this.state;
 
     const reverseClassNames = `${reverseX ? style.reverseX : ''} ${reverseY ? style.reverseY : ''}`;
@@ -290,12 +291,13 @@ class Player extends Component {
           config: onion,
           master: 1 - (parseFloat(onionValue) || 0),
           referenceFrameId,
+          resolveLink: (frame) => resolvePerspectiveLink(frame, perspective, perspectiveViews),
         })
       : [];
     // Reference sequences follow the animation position (holds counted, hidden frames skipped), during playback too
     const showReferences = frameIndex !== false || isCameraReady;
     const animationPosition = getAnimationPosition(this.frames, frameIndex);
-    const references = (this.props.references || []).map(normalizeReference).filter((r) => r.enabled && r.frames.length);
+    const references = (this.props.references || []).map(normalizeReference).filter((r) => r.enabled && r.frames.length && referenceMatchesPerspective(r, perspective));
     const legacyGhostOpacity = onion.ENABLED && !blendMode ? 0 : hasOnionFrame ? 1 - onionValue : 0;
 
     return (
@@ -367,6 +369,8 @@ Player.propTypes = {
   onionSkin: PropTypes.object,
   referenceFrameId: PropTypes.any,
   references: PropTypes.array,
+  perspective: PropTypes.string,
+  perspectiveViews: PropTypes.object,
   onionValue: PropTypes.any.isRequired,
   ratioLayerOpacity: PropTypes.number.isRequired,
   showGrid: PropTypes.bool.isRequired,

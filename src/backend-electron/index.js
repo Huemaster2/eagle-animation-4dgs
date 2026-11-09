@@ -9,6 +9,7 @@ import icon from '../../resources/icon.png?asset';
 import actions from './actions';
 import { appLog } from './core/appLog';
 import { ImageRoute } from './core/routes';
+import { enableTurntableSerial } from './core/serial';
 import { shutdownStopMoCameraHelper, startStopMoCameraHelper } from './core/stopmoCamera';
 import { shutdownToucanCameraServer } from './core/toucan';
 
@@ -89,6 +90,8 @@ app.whenReady().then(() => {
 
   // Register custom protocol for image processing
   protocol.handle('ea', ImageRoute);
+
+  enableTurntableSerial();
 
   createWindow();
 

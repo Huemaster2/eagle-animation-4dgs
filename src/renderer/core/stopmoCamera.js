@@ -110,3 +110,19 @@ export const stopmoCapture = async ({ rawDir = null, baseName = null, saveTarget
   }
   return { ok: true, files: parseFiles(res), seconds, type: res.headers.get('Content-Type') || 'image/jpeg', buffer: await res.arrayBuffer() };
 };
+
+// A live-view frame taken after the picture has refreshed `freshFrames` times; never fires the shutter
+export const stopmoGrabLiveFrame = async ({ freshFrames = 2, timeout = 3000 } = {}) => {
+  const path = '/cameras/canon-eos-ptp/liveview/frame';
+  const first = await stopmoFetch(path).catch(() => null);
+  if (!first?.ok) return null;
+  const start = Number(first.headers.get('x-frame-counter')) || 0;
+  const deadline = Date.now() + timeout;
+  while (Date.now() < deadline) {
+    await new Promise((r) => setTimeout(r, 80));
+    const res = await stopmoFetch(path).catch(() => null);
+    if (!res?.ok) return null;
+    if ((Number(res.headers.get('x-frame-counter')) || 0) >= start + freshFrames) return res.blob();
+  }
+  return null;
+};

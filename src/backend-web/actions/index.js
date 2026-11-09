@@ -1,5 +1,6 @@
 import { isIos } from '@braintree/browser-detection';
 import { getEncodingProfile, getFFmpegArgs, parseFFmpegLogs } from '@common/ffmpeg';
+import { mapPerspectiveViews } from '@common/perspectiveViews';
 import { LS_CAMERA_SETTINGS, LS_SETTINGS } from '@config-web';
 import { extensionToMimeType } from '@core/frameTypes';
 import { fetchFile } from '@ffmpeg/util';
@@ -54,6 +55,7 @@ const computeProject = async (data) => {
           ...ref,
           frames: (ref.frames || []).map((f) => ({ ...f, link: `/api/pictures/${f.filename}` })),
         })),
+        perspectiveViews: mapPerspectiveViews(scene.perspectiveViews, (filename) => `/api/pictures/${filename}`),
         pictures: await Promise.all(
           scene.pictures.map(async (picture) => ({
             ...picture,

@@ -8,8 +8,10 @@ import LimitWarning from '@components/LimitWarning';
 import LoadingPage from '@components/LoadingPage';
 import MaskingWindow from '@components/MaskingWindow';
 import MobileNavigation from '@components/MobileNavigation';
+import NoticeBanner from '@components/NoticeBanner';
 import OnionSkinWindow from '@components/OnionSkinWindow';
 import PageLayout from '@components/PageLayout';
+import PerspectiveBar from '@components/PerspectiveBar';
 import PictureWindow from '@components/PictureWindow';
 import Player from '@components/Player';
 import ReferenceSequencesPanel from '@components/ReferenceSequencesPanel';
@@ -19,17 +21,21 @@ import SceneSettingsWindow from '@components/SceneSettingsWindow';
 import Timeline from '@components/Timeline';
 import ToolsWindow from '@components/ToolsWindow';
 import Tour from '@components/Tour';
+import TurntableWindow from '@components/TurntableWindow';
 import Window from '@components/Window';
 import { DEFAULT_FPS, MAX_FRAME_DUPLICATION } from '@config-web';
 import { normalizeOnionSkin } from '@core/onionSkin';
 import { parseRatio } from '@core/ratio';
 import { getAnimationPosition } from '@core/referenceSequence';
-import { getStopMoCameraStatus, setStopMoCaptureOptions, setStopMoRawContext, STOPMO_CAMERA_AVAILABLE } from '@core/stopmoCamera';
+import { getStopMoCameraStatus, setStopMoCaptureOptions, setStopMoRawContext, STOPMO_CAMERA_AVAILABLE, stopmoGrabLiveFrame } from '@core/stopmoCamera';
+import { turntable } from '@core/turntable';
+import { nearestEquivalent, PERSPECTIVES } from '@core/turntableMath';
 import useAppCapabilities from '@hooks/useAppCapabilities';
 import useCamera from '@hooks/useCamera';
 import useDiscordActivity from '@hooks/useDiscordActivity';
 import useProject from '@hooks/useProject';
 import useSettings from '@hooks/useSettings';
+import useTurntable from '@hooks/useTurntable';
 import faArrowLeft from '@icons/faArrowLeft';
 import faBoxArrowDown from '@icons/faBoxArrowDown';
 import faCamera from '@icons/faCamera';
@@ -38,6 +44,7 @@ import faEraser from '@icons/faEraser';
 import faFolder from '@icons/faFolder';
 import faImage from '@icons/faImage';
 import faPlay from '@icons/faPlay';
+import faRotate from '@icons/faRotate';
 import faSliders from '@icons/faSliders';
 import faStop from '@icons/faStop';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -165,6 +172,15 @@ const Animator = ({ t }) => {
   const [referenceFrameId, setReferenceFrameId] = useState(null);
   const [referenceImport, setReferenceImport] = useState(null);
   const [canonStatus, setCanonStatus] = useState(null);
+  const [activePerspective, setActivePerspective] = useState(null);
+  const [perspectiveStatus, setPerspectiveStatus] = useState('');
+  const [notice, setNotice] = useState(null);
+  const { state: turntableState, profile: turntableProfile, actions: turntableActions } = useTurntable();
+
+  // The Arduino forgets its position on reset, so every stop is remembered in the rig profile
+  const updateTurntableProfile = useRef(turntableActions.updateProfile);
+  updateTurntableProfile.current = turntableActions.updateProfile;
+  useEffect(() => turntable.onArrival((position) => updateTurntableProfile.current({ lastPosition: position })), []);
 
   // Clear camera connection indicator in the top bar
   useEffect(() => {
@@ -306,6 +322,8 @@ const Animator = ({ t }) => {
           expandedFrames.findIndex((p) => p.id === currentFrameId)
         )
   );
+  // The view buttons appear once the rig has views set up or a reference sequence is tied to a view
+  const showPerspectives = STOPMO_CAMERA_AVAILABLE && (turntableState.connected || PERSPECTIVES.some((v) => turntableProfile.perspectives[v] !== null) || sceneReferences.some((r) => r.perspective));
   const totalAnimationFrames = pictures.reduce((acc, e) => acc + (!e.deleted && !e.hidden ? e.length || 1 : 0), 0);
 
   const visibleScenes = project.scenes.map((s, index) => ({ ...s, index })).filter((s) => !s.deleted);
@@ -347,6 +365,11 @@ const Animator = ({ t }) => {
       if (isTakingPicture || !currentCamera) {
         return;
       }
+      // A photo taken while the table turns would be blurred and at an unknown angle
+      if (turntable.state.moving) {
+        setNotice({ tone: 'warning', message: t('The turntable is moving — wait until it stops before taking a picture.') });
+        return;
+      }
       flushSync(() => {
         setIsTakingPicture(true);
       });
@@ -377,7 +400,7 @@ const Animator = ({ t }) => {
 
           // Save frame
           if (pendingBackgroundFrame || maskingMode === 'DISABLED') {
-            await projectActions.addFrame(track, frame, isPlaying ? false : currentFrameId, pendingBackgroundFrame || null);
+            await projectActions.addFrame(track, frame, isPlaying ? false : currentFrameId, pendingBackgroundFrame || null, activePerspective ? { perspective: activePerspective } : {});
           } else if (maskingMode === 'UNIQUE' || !pendingBackgroundFrame) {
             setPendingBackgroundFrame(await projectActions.savePicture(track, frame));
           }
@@ -386,11 +409,13 @@ const Animator = ({ t }) => {
           if (maskingMode === 'DISABLED' || (maskingMode === 'UNIQUE' && pendingBackgroundFrame)) {
             setPendingBackgroundFrame(null);
           }
+          setNotice(null);
         } catch (err) {
           if (settings.SOUNDS) {
             playSound(soundError);
           }
           console.error('Failed to take a picture', err);
+          setNotice({ tone: 'error', message: `${t('Picture not taken')}: ${err?.message || err}` });
         }
       }
 
@@ -398,6 +423,40 @@ const Animator = ({ t }) => {
         setIsTakingPicture(false);
       });
     };
+
+  // Switching views never touches the shutter: it moves the table, swaps references and keeps the current frame
+  const selectPerspective = async (view) => {
+    if (turntable.state.moving) return;
+    setActivePerspective(view);
+    if (!view) {
+      setPerspectiveStatus('');
+      return;
+    }
+    const target = turntableProfile.perspectives[view];
+    if (!turntable.state.connected || target === null) {
+      setPerspectiveStatus(turntable.state.connected ? t('{{view}} is not set on the turntable', { view: t(view) }) : '');
+      return;
+    }
+    const steps = nearestEquivalent(target, turntable.state.position ?? target, turntable.state.stepsPerRev);
+    setPerspectiveStatus(t('Turning to {{view}}…', { view: t(view) }));
+    try {
+      const position = await turntable.moveTo(steps);
+      if (position !== steps) {
+        setPerspectiveStatus(t('Stopped before reaching {{view}}', { view: t(view) }));
+        return;
+      }
+      setPerspectiveStatus(t('At {{view}} — settling…', { view: t(view) }));
+      await new Promise((resolve) => setTimeout(resolve, turntableProfile.settleMs));
+      setPerspectiveStatus(t('At {{view}}', { view: t(view) }));
+      // While posing (live), keep a live-view snapshot of this view for the view's onion skin
+      if (currentFrameId === false && STOPMO_CAMERA_AVAILABLE) {
+        const blob = await stopmoGrabLiveFrame();
+        if (blob) await projectActions.savePerspectiveView(track, view, blob);
+      }
+    } catch (err) {
+      setPerspectiveStatus(err.message);
+    }
+  };
 
   const actionsEvents = {
     PLAY: () => {
@@ -709,7 +768,17 @@ const Animator = ({ t }) => {
         },
       ]
     : [];
-  const secondaryActions = [...canonAction, ...(canExport ? [{ title: t('Export'), icon: faBoxArrowDown, onClick: handleAction.bind(null, 'EXPORT') }] : [])];
+  const turntableAction = STOPMO_CAMERA_AVAILABLE
+    ? [
+        {
+          title: turntableState.connected ? t('Turntable connected') : t('Turntable'),
+          icon: faRotate,
+          onClick: () => setActiveWindow((v) => (v === 'turntable' ? null : 'turntable')),
+          selected: turntableState.connected,
+        },
+      ]
+    : [];
+  const secondaryActions = [...canonAction, ...turntableAction, ...(canExport ? [{ title: t('Export'), icon: faBoxArrowDown, onClick: handleAction.bind(null, 'EXPORT') }] : [])];
 
   const mobileActionsTop = [
     {
@@ -793,6 +862,8 @@ const Animator = ({ t }) => {
           onionSkin={onionConfig}
           referenceFrameId={referenceFramePosition ? referenceFrameId : null}
           references={sceneReferences}
+          perspective={activePerspective}
+          perspectiveViews={project.scenes[track]?.perspectiveViews}
           showGrid={gridStatus}
           blendMode={differenceStatus}
           shortPlayStatus={shortPlayStatus}
@@ -812,6 +883,16 @@ const Animator = ({ t }) => {
           reverseY={settings.REVERSE_Y}
         />
         <div>
+          <NoticeBanner message={notice?.message} tone={notice?.tone} onDismiss={() => setNotice(null)} />
+          {showPerspectives && (
+            <PerspectiveBar
+              active={activePerspective}
+              status={perspectiveStatus}
+              busy={turntableState.moving}
+              calibrated={Object.fromEntries(PERSPECTIVES.map((v) => [v, turntableState.connected && turntableProfile.perspectives[v] !== null]))}
+              onSelect={selectPerspective}
+            />
+          )}
           {settings?.EVENT_MODE_ENABLED && (
             <LimitWarning nbFrames={pictures.length} nbFramesLimit={settings?.LIMIT_NUMBER_OF_FRAMES} startedAt={startedAt} activityDuration={settings?.LIMIT_ACTIVITY_DURATION} />
           )}
@@ -880,6 +961,9 @@ const Animator = ({ t }) => {
               fps={fps}
               framePosition={framePosition}
             />
+          </Window>
+          <Window isOpened={activeWindow === 'turntable'} onClose={() => setActiveWindow(null)}>
+            <TurntableWindow />
           </Window>
           <Window isOpened={activeWindow === 'camera-test'} onClose={() => setActiveWindow(null)}>
             <CameraTestWindow isOpened={activeWindow === 'camera-test'} settings={settings} onSettingsChange={settingsActions.setSettings} />

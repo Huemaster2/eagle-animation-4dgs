@@ -6,6 +6,7 @@ import { mkdirp } from 'mkdirp';
 import { join } from 'path-browserify';
 
 import { getEncodingProfile } from '../common/ffmpeg';
+import { mapPerspectiveViews } from '../common/perspectiveViews';
 import { CONTRIBUTE_REPOSITORY } from '../config';
 import { PROJECTS_PATH } from './config';
 import { uploadFile } from './core/api';
@@ -43,6 +44,7 @@ const computeProject = (data) => {
       ...ref,
       frames: (ref.frames || []).map((f) => ({ ...f, link: getPictureLink(copiedData._id, 'references', f.filename) })),
     })),
+    perspectiveViews: mapPerspectiveViews(scene.perspectiveViews, (filename) => getPictureLink(copiedData._id, 'references', filename)),
     pictures: scene.pictures.map((picture) => ({
       ...picture,
       link: getPictureLink(copiedData._id, i, picture.filename),

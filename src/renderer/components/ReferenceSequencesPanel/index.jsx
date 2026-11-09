@@ -4,6 +4,7 @@ import Select from '@components/Select';
 import Switch from '@components/Switch';
 import { ONION_BLEND_MODES } from '@core/onionSkin';
 import { getReferenceFrame, normalizeReference, sequenceNameFromFiles, sortSequenceFiles } from '@core/referenceSequence';
+import { PERSPECTIVES } from '@core/turntableMath';
 import { useRef } from 'react';
 import { withTranslation } from 'react-i18next';
 
@@ -129,6 +130,14 @@ const ReferenceSequencesPanel = ({ t, references = [], animationPosition = 0, im
             <div className={style.row}>
               <span className={style.subLabel}>{t('Blend mode')}</span>
               <Select options={blendOptions} value={ref.blendMode} onChange={(e) => onUpdate(ref.id, { blendMode: e.target.value })} />
+            </div>
+            <div className={style.row}>
+              <span className={style.subLabel}>{t('Show for view')}</span>
+              <Select
+                options={[{ value: '', label: t('All views') }, ...PERSPECTIVES.map((p) => ({ value: p, label: t(p) }))]}
+                value={raw.perspective || ''}
+                onChange={(e) => onUpdate(ref.id, { perspective: e.target.value || null })}
+              />
             </div>
             <div className={style.buttons}>
               <ActionCard sizeAuto secondary title={t('Reset position')} onClick={() => onUpdate(ref.id, { x: 0, y: 0, scale: 1 })} />

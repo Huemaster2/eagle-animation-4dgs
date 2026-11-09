@@ -39,7 +39,8 @@
     "lint:stylelint": "stylelint src/**/*.css --ignore-path .gitignore --fix",
     "lint:prettier": "prettier --write src/**/*.{js,jsx,ts,tsx,css,json,md,html}",
     "prepare": "husky install",
-    "lint": "npm run lint:eslint && npm run lint:stylelint && npm run lint:prettier"
+    "lint": "npm run lint:eslint && npm run lint:stylelint && npm run lint:prettier",
+    "test:stopmo": "node --import ./tests/stopmo/register.mjs --test tests/stopmo/*.test.mjs"
   },
   "dependencies": {
     "@braintree/browser-detection": "^2.1.1",

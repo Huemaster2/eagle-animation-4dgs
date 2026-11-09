@@ -1,0 +1,44 @@
+.bar {
+  align-items: center;
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  padding: 6px 0;
+}
+
+.view {
+  background: var(--color-theme-light);
+  border: 0;
+  border-radius: 6px;
+  color: var(--color-white);
+  cursor: pointer;
+  font-size: var(--font-size-6);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  min-width: 72px;
+  padding: 6px 12px;
+}
+
+.view:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.active {
+  background: var(--color-primary, #5e72e4);
+}
+
+.uncalibrated {
+  font-style: italic;
+}
+
+.status {
+  color: var(--color-theme-extra-light);
+  font-size: var(--font-size-6);
+  margin-left: var(--space-medium);
+  min-width: 160px;
+}
+
+.moving {
+  color: #ffb300;
+}
