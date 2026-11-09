@@ -71,14 +71,16 @@ class StopMoCanon {
 
 class StopMoCanonBrowser {
   static async getCameras() {
+    const cfg = await getStopMoCameraConfig();
+    if (!cfg?.port) {
+      return [];
+    }
     const cameras = await stopmoFetch('/cameras')
       .then((r) => (r.ok ? r.json() : []))
       .catch(() => []);
-    return (Array.isArray(cameras) ? cameras : []).map((c) => ({
-      deviceId: c.id,
-      label: `${c.name} (RAW tether)`,
-      module: 'STOPMO-CANON',
-    }));
+    // Listed even while the body is asleep, so the app never falls back to the webcam; live view starts when it wakes
+    const name = (Array.isArray(cameras) && cameras[0]?.name) || 'Canon EOS';
+    return [{ deviceId: CAMERA_ID, label: `${name} (RAW tether)`, module: 'STOPMO-CANON' }];
   }
 }
 

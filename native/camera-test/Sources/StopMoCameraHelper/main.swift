@@ -25,7 +25,6 @@ try? FileManager.default.createDirectory(at: logDir, withIntermediateDirectories
 
 let cam = CameraController(captureDir: logDir, logName: "camera-helper.log")
 cam.onLog = { line in print("LOG \(line)") }
-cam.onStatus = { text, connected in print("STATUS \(connected ? 1 : 0) \(text)") }
 let cameraId = "canon-eos-ptp"
 
 func authorized(_ req: HTTPRequest) -> Bool {
@@ -42,6 +41,16 @@ do {
 
 var streams: [ObjectIdentifier: MJPEGStream] = [:]
 let streamsLock = NSLock()
+
+cam.onStatus = { text, connected in
+    print("STATUS \(connected ? 1 : 0) \(text)")
+    // A live-view window opened while the camera was asleep gets its picture once the body is ready
+    guard connected else { return }
+    DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+        streamsLock.lock(); let watching = !streams.isEmpty; streamsLock.unlock()
+        if watching && cam.isReady && !cam.isLiveViewOn { cam.prepareForShooting { _ in } }
+    }
+}
 
 server.streamHandler = { req, conn in
     guard req.method == "GET", req.path == "/cameras/\(cameraId)/liveview" else { return false }

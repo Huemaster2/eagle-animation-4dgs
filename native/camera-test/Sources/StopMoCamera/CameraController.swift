@@ -77,7 +77,7 @@ public enum CamError: LocalizedError {
         case .transport(let op, let m): return "USB/ImageCapture error on \(hex(op)): \(m)"
         case .badResponse(let op, let n): return "Unreadable response to \(hex(op)) (\(n) bytes)."
         case .refused(let what, let rc): return "\(what) refused by camera (response \(hex(rc)))."
-        case .noImageArrived: return "Shutter fired (or was asked to) but no image arrived from the camera."
+        case .noImageArrived: return "The camera accepted the shutter command but sent no photo. If it did not click: autofocus could not lock (lens on AF with the cap on, subject too close or too dark) — switch the lens to MF. If it did click: check the card is in, unlocked and not full."
         case .writeFailed(let m): return "Could not save image: \(m)"
         }
     }
@@ -531,8 +531,11 @@ public final class CameraController: NSObject {
         var eventSizes: [UInt32: UInt32] = [:]
         var eventNames: [UInt32: String] = [:]
         var lastNew = Date()
+        var seenEvents: [UInt32: Int] = [:]
         while Date().timeIntervalSince(t0) < 25 {
-            for e in try pollEventsSync() where e.type == EOSEvent.objectAddedEx || e.type == EOSEvent.requestObjectTransfer {
+            let batch = try pollEventsSync()
+            for e in batch { seenEvents[e.type, default: 0] += 1 }
+            for e in batch where e.type == EOSEvent.objectAddedEx || e.type == EOSEvent.requestObjectTransfer {
                 if let h = le32(e.payload, 0), !handles.contains(where: { $0.0 == h }) {
                     handles.append((h, e.type == EOSEvent.requestObjectTransfer))
                     // Event layout (libgphoto2 PTP_ece_OA_*): size at +0x14, file name at +0x20
@@ -548,7 +551,11 @@ public final class CameraController: NSObject {
             if !handles.isEmpty && Date().timeIntervalSince(lastNew) > 0.8 { break }
             Thread.sleep(forTimeInterval: 0.1)
         }
-        guard !handles.isEmpty else { throw CamError.noImageArrived }
+        guard !handles.isEmpty else {
+            let summary = seenEvents.sorted { $0.key < $1.key }.map { "\(hex($0.key, width: 4))×\($0.value)" }.joined(separator: " ")
+            log("No new photo within 25 s. Camera events seen: \(summary.isEmpty ? "none" : summary). Destination \(propValues[EOSProp.captureDestination].map { hex($0) } ?? "?")")
+            throw CamError.noImageArrived
+        }
         log(String(format: "Shutter-to-announce: %.2f s", Date().timeIntervalSince(t0)))
 
         var urls: [URL] = []
