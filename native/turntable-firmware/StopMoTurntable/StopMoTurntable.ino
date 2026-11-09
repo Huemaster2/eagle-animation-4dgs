@@ -22,7 +22,7 @@
     STATUS                    -> STATUS pos=<p> target=<t> moving=<0|1> enabled=<0|1>
     MOVETO <steps>            -> OK MOVETO <steps>      ...later: DONE <pos>
     MOVE <delta>              -> OK MOVE <delta>        ...later: DONE <pos>   (raw relative move, no backlash approach)
-    JOG <+1|-1>               -> OK JOG <dir>           keeps turning while JOG is resent at least every 400 ms
+    JOG <+1|-1>               -> OK JOG <dir>           keeps turning while JOG is resent at least every 250 ms
     STOP                      -> OK STOP                ...later: DONE <pos>
     SETPOS <steps>            -> OK SETPOS <steps>      define the current position (no movement)
     BACKLASH <steps>          -> OK BACKLASH <steps>
@@ -61,7 +61,6 @@ bool moving = false;
 bool jogging = false;
 int  jogDir = 0;
 unsigned long lastJogMs = 0;
-bool stopRequested = false;
 bool enabled = false;
 
 long legStart = 0;          // position where the current leg began
@@ -99,7 +98,6 @@ void startLeg(long to) {
 void beginMoveTo(long to, bool approachForward) {
   if (!enabled) { setEnabled(true); delay(50); }
   target = to;
-  stopRequested = false;
   // Backwards targets: overshoot past the target, then come back forwards.
   if (approachForward && to < position && backlashSteps > 0) {
     finalLegPending = true;
@@ -131,17 +129,16 @@ void serviceMotion() {
   if ((long)(now - nextStepUs) < 0) return;
 
   if (!stepPinHigh) {
-    if (position == segmentTarget || (stopRequested && !jogging)) {
+    if (position == segmentTarget) {
       // Leg finished (or stop requested): start the final forward leg if one is pending.
-      if (!stopRequested && finalLegPending) {
+      if (finalLegPending) {
         finalLegPending = false;
         startLeg(target);
         return;
       }
       moving = false;
       jogging = false;
-      stopRequested = false;
-      reportDone();
+          reportDone();
       return;
     }
     digitalWrite(STEP_PIN, HIGH);
@@ -155,16 +152,26 @@ void serviceMotion() {
   }
 }
 
+// Ends the current motion with a short deceleration instead of an abrupt halt,
+// so the table does not jerk or slip the gears.
+void decelerateToStop() {
+  if (!moving) return;
+  int dir = segmentTarget > position ? 1 : (segmentTarget < position ? -1 : 0);
+  if (dir == 0) return;
+  long remaining = labs(segmentTarget - position);
+  long brake = remaining < rampSteps ? remaining : rampSteps;
+  segmentTarget = position + dir * brake;
+  legStart = segmentTarget - dir * (2 * rampSteps + 1);  // puts the ramp in its deceleration half
+  target = segmentTarget;
+  finalLegPending = false;
+  jogging = false;
+}
+
 void serviceJog() {
   if (!jogging) return;
   // Watchdog: if the app stops resending JOG (button released, app crashed), stop.
-  if (millis() - lastJogMs > 400) {
-    jogging = false;
-    // Finish with a short decelerating leg
-    segmentTarget = position + (jogDir > 0 ? rampSteps : -rampSteps);
-    legStart = segmentTarget - (jogDir > 0 ? 2 * rampSteps : -2 * rampSteps);
-    target = segmentTarget;
-    finalLegPending = false;
+  if (millis() - lastJogMs > 250) {
+    decelerateToStop();
     return;
   }
   // Keep the jog leg running ahead of the current position
@@ -211,9 +218,7 @@ void handleLine(String cmd) {
   } else if (name == "STOP") {
     Serial.println(F("OK STOP"));
     if (moving) {
-      stopRequested = true;
-      jogging = false;
-      finalLegPending = false;
+      decelerateToStop();
     } else {
       reportDone();
     }
