@@ -444,7 +444,7 @@ const Animator = ({ t }) => {
     }
     const target = turntableProfile.perspectives[view];
     if (!turntable.state.connected || target === null) {
-      setPerspectiveStatus(turntable.state.connected ? t('{{view}} is not set on the turntable', { view: t(view) }) : '');
+      setPerspectiveStatus(turntable.state.connected ? t('{{view}} is not set on the turntable yet: line it up with the reference, then Set here', { view: t(view) }) : '');
       return;
     }
     const steps = nearestEquivalent(target, turntable.state.position ?? target, turntable.state.stepsPerRev);

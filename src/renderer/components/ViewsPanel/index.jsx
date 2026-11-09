@@ -89,7 +89,7 @@ const ViewsPanel = ({
 
       {tab === 'turntable' && (
         <div className={style.body}>
-          <TurntableQuickControls />
+          <TurntableQuickControls activeView={active} />
         </div>
       )}
 
@@ -114,6 +114,14 @@ const ViewsPanel = ({
               {t('ALL')}
             </button>
           </div>
+          {active && !calibrated[active] && (
+            <p className={style.status}>
+              {t('{{view}} is not set yet. Its references show on the picture: open the Turntable tab to line the table up with them and set it.', { view: t(active) })}{' '}
+              <button type="button" className={style.small} onClick={() => chooseTab('turntable')}>
+                {t('Turntable tab')}
+              </button>
+            </p>
+          )}
           <p className={`${style.status} ${busy ? style.moving : ''}`}>{status || (active ? t('Showing {{view}}', { view: t(active) }) : t('Showing all views'))}</p>
 
           <input ref={input} type="file" className={style.hidden} onChange={handleFiles} {...{ webkitdirectory: '', directory: '' }} />

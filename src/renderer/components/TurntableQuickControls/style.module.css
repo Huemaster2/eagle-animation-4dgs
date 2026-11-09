@@ -59,6 +59,19 @@
   padding: 8px 4px;
 }
 
+.calibrate {
+  border: 1px solid var(--pf-line);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px;
+}
+
+.primary {
+  font-weight: 700;
+  padding: 6px;
+}
+
 .label {
   border-top: 1px solid var(--pf-line);
   color: var(--color-white);

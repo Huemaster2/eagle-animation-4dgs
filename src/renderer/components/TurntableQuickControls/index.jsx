@@ -11,7 +11,7 @@ import * as style from './style.module.css';
 const fmt = (deg) => `${deg.toFixed(1)}°`;
 
 // Compact turntable page for the floating panel, so the table can be set up while watching the live view
-const TurntableQuickControls = ({ t }) => {
+const TurntableQuickControls = ({ t, activeView = null }) => {
   const { state, profile, actions } = useTurntable();
   const [message, setMessage] = useState('');
   const rev = state.stepsPerRev;
@@ -48,6 +48,20 @@ const TurntableQuickControls = ({ t }) => {
       </div>
 
       <TurntableAngleSlider state={state} onError={fail} />
+
+      {activeView && (
+        <div className={style.calibrate}>
+          <span className={style.hint}>{t('{{view}} reference is on the picture. Turn the table until the live view lines up with it, then:', { view: t(activeView) })}</span>
+          <button
+            type="button"
+            className={`${style.btn} ${style.primary}`}
+            disabled={!ready}
+            onClick={() => actions.updateProfile({ perspectives: { ...profile.perspectives, [activeView]: state.position } })}
+          >
+            {t('Set {{view}} here', { view: t(activeView) })}
+          </button>
+        </div>
+      )}
 
       <div className={style.row}>
         <HoldButton className={style.grow} dir={-1} disabled={state.moving && !state.jogging} onError={fail}>
