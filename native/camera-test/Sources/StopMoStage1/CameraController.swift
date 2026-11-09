@@ -514,11 +514,19 @@ final class CameraController: NSObject {
 
         // Wait for the camera to announce the new file(s). RAW+JPEG gives two.
         var handles: [(UInt32, Bool)] = []    // (handle, needsTransferComplete)
+        var eventSizes: [UInt32: UInt32] = [:]
+        var eventNames: [UInt32: String] = [:]
         var lastNew = Date()
         while Date().timeIntervalSince(t0) < 25 {
             for e in try pollEventsSync() where e.type == EOSEvent.objectAddedEx || e.type == EOSEvent.requestObjectTransfer {
                 if let h = le32(e.payload, 0), !handles.contains(where: { $0.0 == h }) {
                     handles.append((h, e.type == EOSEvent.requestObjectTransfer))
+                    // Event layout (libgphoto2 PTP_ece_OA_*): size at +0x14, file name at +0x20
+                    if let size = le32(e.payload, 0x14), size > 0 { eventSizes[h] = size }
+                    if e.payload.count > 0x21 {
+                        let nameBytes = e.payload.subdata(in: (e.payload.startIndex + 0x20)..<e.payload.endIndex).prefix { $0 != 0 }
+                        if let n = String(data: nameBytes, encoding: .ascii), n.contains("."), n.count < 64 { eventNames[h] = n }
+                    }
                     lastNew = Date()
                     log("Camera announced object \(hex(h, width: 8)) via event \(hex(e.type, width: 4))")
                 }
@@ -531,8 +539,9 @@ final class CameraController: NSObject {
 
         var urls: [URL] = []
         for (h, needsComplete) in handles {
-            var name = "IMG.JPG"
-            var expected: UInt32 = 0
+            var name = eventNames[h] ?? "IMG"
+            var expected: UInt32 = eventSizes[h] ?? 0
+            if let n = eventNames[h] { log("Object \(hex(h, width: 8)) from event: \(n), \(expected) bytes") }
             if let infoResp = try? ptp(PTPOp.getObjectInfo, [h]), infoResp.ok, let oi = PTPObjectInfo.parse(infoResp.data) {
                 if !oi.filename.isEmpty { name = oi.filename }
                 expected = oi.compressedSize
@@ -547,6 +556,13 @@ final class CameraController: NSObject {
                 log("INCOMPLETE TRANSFER: received \(obj.data.count) bytes but camera said \(expected) — not saved")
                 throw CamError.writeFailed("incomplete transfer of \(name)")
             }
+            // The bytes decide the file type, never a guessed name
+            let kind = detectImageKind(obj.data)
+            if kind == "CR2", !cr2StructureComplete(obj.data) {
+                log("CR2 STRUCTURE CHECK FAILED for \(name): RAW data runs past the end of the file — not saved")
+                throw CamError.writeFailed("truncated CR2 \(name)")
+            }
+            name = ((name as NSString).deletingPathExtension) + "." + (kind ?? ((name as NSString).pathExtension.isEmpty ? "DAT" : (name as NSString).pathExtension))
             let url = try writeNoOverwrite(obj.data, originalName: name, frameNumber: frameNumber)
             if expected > 0 { lastObjectSizes[url.lastPathComponent] = UInt64(expected) }
             log(String(format: "Saved %@ (%.1f MB in %.2f s)", url.lastPathComponent,
@@ -644,6 +660,37 @@ final class CameraController: NSObject {
               let w = props[kCGImagePropertyPixelWidth] as? Int,
               let h = props[kCGImagePropertyPixelHeight] as? Int else { return nil }
         return (w, h)
+    }
+
+    func detectImageKind(_ d: Data) -> String? {
+        let b = [UInt8](d.prefix(12))
+        if b.count >= 10, b[0] == 0x49, b[1] == 0x49, b[2] == 0x2A, b[3] == 0, b[8] == 0x43, b[9] == 0x52 { return "CR2" }
+        if b.count >= 3, b[0] == 0xFF, b[1] == 0xD8, b[2] == 0xFF { return "JPG" }
+        return nil
+    }
+
+    /// Walks the CR2's TIFF IFDs; every image strip (JPEG previews, RAW sensor data) must lie inside the file.
+    func cr2StructureComplete(_ d: Data) -> Bool {
+        let data = Data(d)
+        guard var ifd = le32(data, 4).map(Int.init) else { return false }
+        var sawRaw = false
+        for index in 0..<8 {
+            guard ifd > 0, let count = le16(data, ifd) else { break }
+            var offset: UInt32?, length: UInt32?
+            for i in 0..<Int(count) {
+                let e = ifd + 2 + i * 12
+                guard let tag = le16(data, e) else { return false }
+                if tag == 0x0111 { offset = le32(data, e + 8) }
+                if tag == 0x0117 { length = le32(data, e + 8) }
+            }
+            if let o = offset, let l = length {
+                if UInt64(o) + UInt64(l) > UInt64(data.count) { return false }
+                if index == 3 { sawRaw = l > 1_000_000 }
+            }
+            guard let next = le32(data, ifd + 2 + Int(count) * 12) else { break }
+            ifd = Int(next)
+        }
+        return sawRaw
     }
 
     /// CR2 = TIFF little-endian header ("II*\0") with "CR" at byte 8.
@@ -753,10 +800,10 @@ final class CameraController: NSObject {
                         let dims = self.imageDimensions(u)
                         let full = dims.map { $0.0 >= 5616 && $0.1 >= 3744 } ?? false
                         let isRaw = u.pathExtension.uppercased() == "CR2"
-                        let rawOK = !isRaw || self.isCR2Signature(u)
+                        let rawOK = !isRaw || (self.isCR2Signature(u) && ((try? Data(contentsOf: u)).map(self.cr2StructureComplete) ?? false))
                         let expectedSize = self.lastObjectSizes[u.lastPathComponent]
                         let actualSize = ((try? FileManager.default.attributesOfItem(atPath: u.path))?[.size] as? NSNumber)?.uint64Value
-                        let complete = expectedSize == nil || expectedSize == actualSize
+                        let complete = expectedSize != nil && expectedSize == actualSize
                         check(full && rawOK && complete, "Capture \(i): full-resolution \(isRaw ? "CR2 RAW" : "JPEG") saved, complete and decoded",
                               self.imageSummary(u) + (expectedSize.map { ", camera size \($0) bytes \(complete ? "matches" : "MISMATCH")" } ?? ""))
                         DispatchQueue.main.async { self.onCaptured?(u, self.imageSummary(u)) }
