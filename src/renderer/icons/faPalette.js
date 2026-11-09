@@ -2,6 +2,6 @@
 const faPalette = {
   prefix: 'fal',
   iconName: 'palette',
-  icon: [16, 16, [], 'f000', 'M4 1h6v1h-6zM2 2h2v1h-2zM10 2h2v1h-2zM1 3h1v1h-1zM12 3h1v1h-1zM0 4h1v7h-1zM4 4h2v2h-2zM9 4h2v2h-2zM13 4h1v1h-1zM14 5h1v2h-1zM3 7h2v2h-2zM13 7h1v1h-1zM12 8h1v1h-1zM11 9h1v2h-1zM6 10h5v1h-5zM1 11h1v1h-1zM6 11h1v3h-1zM2 12h2v1h-2zM4 13h2v1h-2z'],
+  icon: [16, 16, [], 'f000', ['M4 4h2v2h-2zM9 4h2v2h-2zM3 7h2v2h-2z', 'M4 1h6v1h-6zM2 2h2v1h-2zM10 2h2v1h-2zM1 3h1v1h-1zM12 3h1v1h-1zM0 4h1v7h-1zM13 4h1v1h-1zM14 5h1v2h-1zM13 7h1v1h-1zM12 8h1v1h-1zM11 9h1v2h-1zM6 10h5v1h-5zM1 11h1v1h-1zM6 11h1v3h-1zM2 12h2v1h-2zM4 13h2v1h-2z']],
 };
 export default faPalette;

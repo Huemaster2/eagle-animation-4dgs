@@ -2,6 +2,6 @@
 const faRotate = {
   prefix: 'fal',
   iconName: 'rotate',
-  icon: [16, 16, [], 'f000', 'M4 1h7v1h-7zM2 2h2v1h-2zM11 2h1v1h-1zM1 3h1v1h-1zM12 3h1v1h-1zM14 3h1v3h-1zM0 4h1v2h-1zM13 4h1v2h-1zM12 5h1v1h-1zM2 7h12v1h-12zM1 8h1v1h-1zM14 8h1v1h-1zM0 9h1v2h-1zM15 9h1v2h-1zM1 11h1v1h-1zM14 11h1v1h-1zM2 12h12v1h-12zM3 13h1v2h-1zM12 13h1v2h-1zM4 14h8v1h-8z'],
+  icon: [16, 16, [], 'f000', ['M2 8h12v4h-12zM1 9h1v2h-1zM14 9h1v2h-1z', 'M4 1h7v1h-7zM2 2h2v1h-2zM11 2h1v1h-1zM1 3h1v1h-1zM12 3h1v1h-1zM14 3h1v3h-1zM0 4h1v2h-1zM13 4h1v2h-1zM12 5h1v1h-1zM2 7h12v1h-12zM1 8h1v1h-1zM14 8h1v1h-1zM0 9h1v2h-1zM15 9h1v2h-1zM1 11h1v1h-1zM14 11h1v1h-1zM2 12h12v1h-12zM3 13h1v2h-1zM12 13h1v2h-1zM4 14h8v1h-8z']],
 };
 export default faRotate;

@@ -2,6 +2,6 @@
 const faTemperatureHalf = {
   prefix: 'fal',
   iconName: 'temperature-half',
-  icon: [16, 16, [], 'f000', 'M7 2h2v1h-2zM6 3h1v11h-1zM9 3h1v11h-1zM11 4h3v1h-3zM7 6h2v8h-2zM11 6h3v1h-3zM11 8h3v1h-3zM5 9h1v4h-1zM10 9h1v4h-1zM4 10h1v2h-1zM11 10h1v2h-1z'],
+  icon: [16, 16, [], 'f000', ['M7 6h2v7h-2zM6 9h1v4h-1zM9 9h1v4h-1zM5 10h1v2h-1zM10 10h1v2h-1z', 'M7 2h2v1h-2zM6 3h1v6h-1zM9 3h1v6h-1zM11 4h3v1h-3zM11 6h3v1h-3zM11 8h3v1h-3zM5 9h1v1h-1zM10 9h1v1h-1zM4 10h1v2h-1zM11 10h1v2h-1zM5 12h1v1h-1zM10 12h1v1h-1zM6 13h4v1h-4z']],
 };
 export default faTemperatureHalf;

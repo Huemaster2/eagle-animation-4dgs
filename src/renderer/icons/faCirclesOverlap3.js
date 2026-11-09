@@ -2,6 +2,6 @@
 const faCirclesOverlap3 = {
   prefix: 'fal',
   iconName: 'circles-overlap-3',
-  icon: [16, 16, [], 'f000', 'M0 2h9v1h-9zM0 3h1v6h-1zM8 3h1v7h-1zM3 4h5v1h-5zM9 4h3v1h-3zM3 5h1v6h-1zM11 5h1v5h-1zM6 6h2v1h-2zM9 6h2v1h-2zM12 6h3v1h-3zM6 7h1v7h-1zM15 7h1v4h-1zM1 8h2v1h-2zM9 9h2v1h-2zM4 10h2v1h-2zM12 10h1v1h-1zM15 12h1v2h-1zM7 13h8v1h-8z'],
+  icon: [16, 16, [], 'f000', ['M1 3h7v1h-7zM1 4h2v4h-2z', 'M0 2h9v1h-9zM0 3h1v6h-1zM8 3h1v7h-1zM3 4h5v1h-5zM9 4h3v1h-3zM3 5h1v6h-1zM11 5h1v5h-1zM6 6h2v1h-2zM9 6h2v1h-2zM12 6h3v1h-3zM6 7h1v7h-1zM15 7h1v4h-1zM1 8h2v1h-2zM9 9h2v1h-2zM4 10h2v1h-2zM12 10h1v1h-1zM15 12h1v2h-1zM7 13h8v1h-8z']],
 };
 export default faCirclesOverlap3;

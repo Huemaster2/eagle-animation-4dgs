@@ -2,6 +2,6 @@
 const faImages = {
   prefix: 'fal',
   iconName: 'images',
-  icon: [16, 16, [], 'f000', 'M3 2h13v1h-13zM3 3h1v2h-1zM15 3h1v10h-1zM0 4h3v1h-3zM4 4h11v1h-11zM0 5h1v8h-1zM14 5h1v2h-1zM10 6h2v1h-2zM5 8h1v5h-1zM4 9h1v4h-1zM6 9h1v4h-1zM10 9h1v4h-1zM3 10h1v3h-1zM7 10h1v3h-1zM9 10h1v3h-1zM11 10h1v3h-1zM2 11h1v2h-1zM8 11h1v2h-1zM1 12h1v1h-1zM12 12h3v1h-3z'],
+  icon: [16, 16, [], 'f000', ['M10 6h2v1h-2z', 'M3 2h13v1h-13zM3 3h1v2h-1zM15 3h1v10h-1zM0 4h3v1h-3zM4 4h11v1h-11zM0 5h1v8h-1zM14 5h1v2h-1zM5 8h1v5h-1zM4 9h1v4h-1zM6 9h1v4h-1zM10 9h1v4h-1zM3 10h1v3h-1zM7 10h1v3h-1zM9 10h1v3h-1zM11 10h1v3h-1zM2 11h1v2h-1zM8 11h1v2h-1zM1 12h1v1h-1zM12 12h3v1h-3z']],
 };
 export default faImages;

@@ -2,6 +2,6 @@
 const faTriangleExclamation = {
   prefix: 'fal',
   iconName: 'triangle-exclamation',
-  icon: [16, 16, [], 'f000', 'M7 3h2v2h-2zM6 4h1v2h-1zM9 4h1v2h-1zM5 5h1v3h-1zM10 5h1v3h-1zM7 6h2v4h-2zM4 7h1v2h-1zM11 7h1v2h-1zM3 8h1v3h-1zM12 8h1v3h-1zM2 10h1v3h-1zM13 10h1v3h-1zM1 11h1v2h-1zM7 11h2v2h-2zM14 11h1v2h-1zM0 12h1v1h-1zM3 12h4v1h-4zM9 12h4v1h-4zM15 12h1v1h-1z'],
+  icon: [16, 16, [], 'f000', ['M7 4h2v2h-2zM6 5h1v7h-1zM9 5h1v6h-1zM5 7h1v5h-1zM10 7h1v5h-1zM4 8h1v4h-1zM11 8h1v4h-1zM3 10h1v2h-1zM7 10h2v1h-2zM12 10h1v2h-1zM2 11h1v1h-1zM7 11h1v1h-1zM13 11h1v1h-1z', 'M7 3h2v1h-2zM6 4h1v1h-1zM9 4h1v1h-1zM5 5h1v2h-1zM10 5h1v2h-1zM7 6h2v4h-2zM4 7h1v1h-1zM11 7h1v1h-1zM3 8h1v2h-1zM12 8h1v2h-1zM2 10h1v1h-1zM13 10h1v1h-1zM1 11h1v2h-1zM8 11h2v2h-2zM14 11h1v2h-1zM0 12h1v1h-1zM2 12h6v1h-6zM10 12h4v1h-4zM15 12h1v1h-1z']],
 };
 export default faTriangleExclamation;

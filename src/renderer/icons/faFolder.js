@@ -2,6 +2,6 @@
 const faFolder = {
   prefix: 'fal',
   iconName: 'folder',
-  icon: [16, 16, [], 'f000', 'M2 2h5v1h-5zM1 3h1v2h-1zM7 3h1v2h-1zM0 4h1v9h-1zM2 4h5v1h-5zM8 4h7v1h-7zM15 5h1v8h-1zM1 12h14v1h-14z'],
+  icon: [16, 16, [], 'f000', ['M2 3h5v1h-5zM1 5h14v7h-14z', 'M2 2h5v1h-5zM1 3h1v2h-1zM7 3h1v2h-1zM0 4h1v9h-1zM2 4h5v1h-5zM8 4h7v1h-7zM15 5h1v8h-1zM1 12h14v1h-14z']],
 };
 export default faFolder;

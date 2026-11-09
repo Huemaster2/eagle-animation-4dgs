@@ -2,6 +2,6 @@
 const faFileVideo = {
   prefix: 'fal',
   iconName: 'file-video',
-  icon: [16, 16, [], 'f000', 'M1 1h9v1h-9zM1 2h1v12h-1zM10 2h1v1h-1zM11 3h1v1h-1zM12 4h1v1h-1zM13 5h1v9h-1zM4 6h2v5h-2zM6 7h2v3h-2zM8 8h2v1h-2zM2 13h11v1h-11z'],
+  icon: [16, 16, [], 'f000', ['M4 6h2v5h-2zM6 7h2v3h-2zM8 8h2v1h-2z', 'M1 1h9v1h-9zM1 2h1v12h-1zM10 2h1v1h-1zM11 3h1v1h-1zM12 4h1v1h-1zM13 5h1v9h-1zM2 13h11v1h-11z']],
 };
 export default faFileVideo;

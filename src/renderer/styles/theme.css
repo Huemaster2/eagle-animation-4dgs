@@ -34,6 +34,10 @@ body[data-theme='light'] {
   --pf-fill-lavender: #fff;
   --pf-fill-peach: #fff;
   --pf-button-face: #ddd;
+  --pf-accent-yellow: #f2c230;
+  --pf-accent-green: #2fae4e;
+  --pf-accent-orange: #ef8a22;
+  --pf-accent-purple: #8f52d6;
   --pf-bevel: inset 1px 1px 0 #fff, inset -1px -1px 0 #888;
   --pf-glow: none;
   --pf-icon-glow: none;
@@ -76,6 +80,10 @@ body[data-theme='dark'] {
   --pf-fill-lavender: var(--color-theme-dark);
   --pf-fill-peach: var(--color-theme-dark);
   --pf-button-face: var(--color-theme-dark);
+  --pf-accent-yellow: #c8ffd9;
+  --pf-accent-green: #c8ffd9;
+  --pf-accent-orange: #c8ffd9;
+  --pf-accent-purple: #c8ffd9;
   --pf-bevel: none;
   --pf-glow: 0 0 4px rgb(77 255 136 / 55%);
   --pf-icon-glow: drop-shadow(0 0 2px rgb(77 255 136 / 70%));
@@ -141,6 +149,12 @@ body[data-theme='dark'] h3 {
 svg[data-prefix] {
   filter: var(--pf-icon-glow);
   shape-rendering: crispedges;
+}
+
+/* Two-tone icons: the accent layer keeps its colour (no blue or red; bright phosphor in dark) */
+svg[data-prefix] [class~="fa-secondary"] {
+  fill: var(--pf-accent, currentcolor) !important;
+  opacity: 1 !important;
 }
 
 ::selection {

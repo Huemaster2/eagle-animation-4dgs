@@ -2,6 +2,6 @@
 const faLightbulbOn = {
   prefix: 'fal',
   iconName: 'lightbulb-on',
-  icon: [16, 16, [], 'f000', 'M0 2h1v1h-1zM6 2h4v1h-4zM15 2h1v1h-1zM1 3h1v1h-1zM5 3h1v1h-1zM10 3h1v1h-1zM14 3h1v1h-1zM4 4h1v1h-1zM11 4h1v1h-1zM3 5h1v3h-1zM12 5h1v3h-1zM0 6h2v1h-2zM14 6h2v1h-2zM4 8h1v1h-1zM11 8h1v1h-1zM5 9h1v1h-1zM10 9h1v1h-1zM6 10h4v3h-4zM7 13h2v1h-2z'],
+  icon: [16, 16, [], 'f000', ['M6 3h4v7h-4zM5 4h1v5h-1zM10 4h1v5h-1zM4 5h1v3h-1zM11 5h1v3h-1z', 'M0 2h1v1h-1zM6 2h4v1h-4zM15 2h1v1h-1zM1 3h1v1h-1zM5 3h1v1h-1zM10 3h1v1h-1zM14 3h1v1h-1zM4 4h1v1h-1zM11 4h1v1h-1zM3 5h1v3h-1zM12 5h1v3h-1zM0 6h2v1h-2zM14 6h2v1h-2zM4 8h1v1h-1zM11 8h1v1h-1zM5 9h1v1h-1zM10 9h1v1h-1zM6 10h4v3h-4zM7 13h2v1h-2z']],
 };
 export default faLightbulbOn;
