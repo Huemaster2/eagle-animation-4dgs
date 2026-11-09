@@ -7,11 +7,20 @@ import { app, BrowserWindow, ipcMain, protocol, shell } from 'electron';
 
 import icon from '../../resources/icon.png?asset';
 import actions from './actions';
+import { appLog } from './core/appLog';
 import { ImageRoute } from './core/routes';
 import { shutdownStopMoCameraHelper, startStopMoCameraHelper } from './core/stopmoCamera';
 import { shutdownToucanCameraServer } from './core/toucan';
 
 let sendToRenderer = () => null;
+
+appLog(`--- StopMo ${app.getVersion()} starting: ${process.platform} ${process.arch}, electron ${process.versions.electron}, ${app.getAppPath()}`);
+process.on('uncaughtException', (err) => appLog('uncaught exception in main:', err));
+process.on('unhandledRejection', (err) => appLog('unhandled rejection in main:', err instanceof Error ? err : String(err)));
+process.on('exit', (code) => appLog(`main process exit ${code}`));
+app.on('render-process-gone', (_, __, details) => appLog('renderer gone:', details));
+app.on('child-process-gone', (_, details) => appLog('child process gone:', details));
+app.on('will-quit', () => appLog('will-quit'));
 
 protocol.registerSchemesAsPrivileged([{ scheme: 'ea', privileges: { bypassCSP: true, corsEnabled: true, standard: true, secure: true, supportFetchAPI: true } }]);
 
@@ -34,7 +43,14 @@ function createWindow() {
   });
 
   mainWindow.on('ready-to-show', () => {
+    appLog('window ready, showing');
     mainWindow.show();
+  });
+  mainWindow.webContents.on('did-fail-load', (_, code, desc) => appLog(`renderer failed to load: ${code} ${desc}`));
+  mainWindow.webContents.on('console-message', (event) => {
+    if (event.level === 'error') {
+      appLog(`renderer error: ${event.message}`);
+    }
   });
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
@@ -96,6 +112,7 @@ app.on('window-all-closed', () => {
 // otherwise it keeps holding the webcam handle (visible as an active
 // camera indicator in the parent terminal / VS Code).
 app.on('before-quit', () => {
+  appLog('before-quit');
   shutdownToucanCameraServer();
   shutdownStopMoCameraHelper();
 });
@@ -104,6 +121,7 @@ app.on('before-quit', () => {
 app.whenReady().then(() => startStopMoCameraHelper());
 
 const handleTerminationSignal = (signal) => {
+  appLog(`received ${signal}`);
   shutdownToucanCameraServer();
   shutdownStopMoCameraHelper();
   app.quit();

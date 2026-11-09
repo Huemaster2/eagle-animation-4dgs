@@ -5,6 +5,8 @@ import { homedir } from 'node:os';
 import path from 'node:path';
 import readline from 'node:readline';
 
+import { appLog } from './appLog';
+
 // StopMo camera helper (Swift, macOS only): drives the Canon 5D Mark II through
 // ImageCaptureCore + Canon EOS PTP, because Canon's current Mac SDK (used by
 // toucan-camera-server) no longer supports that body.
@@ -32,6 +34,7 @@ const findHelperPath = () => {
 };
 
 const remember = (line) => {
+  appLog(`camera helper: ${line}`);
   recentLog.push(line);
   if (recentLog.length > LOG_LINES) {
     recentLog.shift();
@@ -49,8 +52,23 @@ const launch = () => {
   }
   runtime = { port: null, token: null };
   // stdin stays open: the helper exits (and hands the camera back) when the app closes it
-  child = spawn(helperPath, [], { stdio: ['pipe', 'pipe', 'pipe'] });
+  try {
+    child = spawn(helperPath, [], { stdio: ['pipe', 'pipe', 'pipe'] });
+  } catch (err) {
+    remember(`could not start helper: ${err.message}`);
+    child = null;
+    return;
+  }
   remember(`started ${helperPath} pid ${child.pid}`);
+  // Without these an unexpected spawn or pipe error would take the whole app down
+  child.on('error', (err) => {
+    remember(`helper error: ${err.message}`);
+    // A process that never started emits no 'exit', so clear it here
+    if (child && !child.pid) {
+      child = null;
+    }
+  });
+  child.stdin.on('error', (err) => remember(`helper stdin: ${err.message}`));
 
   readline.createInterface({ input: child.stdout }).on('line', (line) => {
     const ready = line.match(/^STOPMO_CAMERA_READY (.+)$/);
