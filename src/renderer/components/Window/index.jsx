@@ -5,7 +5,8 @@ import { createPortal } from 'react-dom';
 
 import * as style from './style.module.css';
 
-const Window = ({ children, onClose = () => {}, isOpened = false, isFullScreen = false, zIndex = 0 }) => {
+// tone picks the window's fill from the colour kit (yellow, mint, lime, lavender, peach); title sits in the stripes
+const Window = ({ children, onClose = () => {}, isOpened = false, isFullScreen = false, zIndex = 0, title = '', tone = '' }) => {
   const ref = useRef();
   const mouseDownTarget = useRef();
 
@@ -38,7 +39,7 @@ const Window = ({ children, onClose = () => {}, isOpened = false, isFullScreen =
         mouseDownTarget.current = event.target;
       }}
     >
-      <div className={`${style.window} ${isFullScreen ? style.fullscreen : ''}`} ref={ref} data-window-root="true">
+      <div className={`${style.window} ${isFullScreen ? style.fullscreen : ''}`} style={tone ? { '--pf-window-fill': `var(--pf-fill-${tone})` } : undefined} ref={ref} data-window-root="true">
         <div className={style.titleBar}>
           <button
             type="button"
@@ -52,6 +53,8 @@ const Window = ({ children, onClose = () => {}, isOpened = false, isFullScreen =
             <FontAwesomeIcon icon={faXmark} />
           </button>
           <span className={style.stripes} />
+          {title && <span className={style.title}>{title}</span>}
+          {title && <span className={style.stripes} />}
         </div>
         <div className={style.content}>{children}</div>
       </div>

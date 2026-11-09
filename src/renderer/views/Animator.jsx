@@ -938,7 +938,7 @@ const Animator = ({ t }) => {
       {activeWindow === null && <KeyboardHandler onAction={handleAction} />}
       {!isPlaying && (
         <>
-          <Window isOpened={activeWindow === 'camera'} onClose={() => setActiveWindow(null)}>
+          <Window isOpened={activeWindow === 'camera'} onClose={() => setActiveWindow(null)} title={t('Camera')} tone="yellow">
             <CameraSettingsWindow
               cameraCapabilities={currentCameraCapabilities}
               onCapabilityChange={handleCapabilityChange}
@@ -950,7 +950,7 @@ const Animator = ({ t }) => {
               currentCameraId={currentCameraId}
             />
           </Window>
-          <Window isOpened={activeWindow === 'tools'} onClose={() => setActiveWindow(null)}>
+          <Window isOpened={activeWindow === 'tools'} onClose={() => setActiveWindow(null)} title={t('Tools')} tone="lime">
             <ToolsWindow
               onAction={handleAction}
               gridStatus={gridStatus}
@@ -962,13 +962,13 @@ const Animator = ({ t }) => {
               framePosition={framePosition}
             />
           </Window>
-          <Window isOpened={activeWindow === 'turntable'} onClose={() => setActiveWindow(null)}>
+          <Window isOpened={activeWindow === 'turntable'} onClose={() => setActiveWindow(null)} title={t('Turntable')} tone="peach">
             <TurntableWindow />
           </Window>
-          <Window isOpened={activeWindow === 'camera-test'} onClose={() => setActiveWindow(null)}>
+          <Window isOpened={activeWindow === 'camera-test'} onClose={() => setActiveWindow(null)} title={t('Canon camera')} tone="mint">
             <CameraTestWindow isOpened={activeWindow === 'camera-test'} settings={settings} onSettingsChange={settingsActions.setSettings} />
           </Window>
-          <Window isOpened={activeWindow === 'onion'} onClose={() => setActiveWindow(null)}>
+          <Window isOpened={activeWindow === 'onion'} onClose={() => setActiveWindow(null)} title={t('Onion skin & references')} tone="lavender">
             <OnionSkinWindow
               config={onionConfig}
               onChange={(config) => handleAction('ONION_SKIN_CHANGE', config)}
@@ -994,7 +994,7 @@ const Animator = ({ t }) => {
               />
             </OnionSkinWindow>
           </Window>
-          <Window isOpened={activeWindow === 'picture'} onClose={() => setActiveWindow(null)}>
+          <Window isOpened={activeWindow === 'picture'} onClose={() => setActiveWindow(null)} title={t('Frame')} tone="yellow">
             <PictureWindow
               onAction={(action, args) => {
                 handleAction(action, args);
@@ -1009,7 +1009,7 @@ const Animator = ({ t }) => {
               canUseMaskingEditor={!!currentFrame.masking}
             />
           </Window>
-          <Window isOpened={activeWindow === 'scenes'} onClose={() => setActiveWindow(null)}>
+          <Window isOpened={activeWindow === 'scenes'} onClose={() => setActiveWindow(null)} title={t('Scenes')} tone="lime">
             <SceneSelectorWindow
               scenes={visibleScenes.map((s) => ({ id: s.id, index: s.index, title: s.title, framerate: s.framerate, pictureCount: s.pictures?.filter((p) => !p.deleted).length ?? 0 }))}
               currentTrack={track}
@@ -1029,7 +1029,7 @@ const Animator = ({ t }) => {
               }}
             />
           </Window>
-          <Window isOpened={activeWindow === 'scene'} onClose={() => setActiveWindow(null)}>
+          <Window isOpened={activeWindow === 'scene'} onClose={() => setActiveWindow(null)} title={t('Scene settings')} tone="yellow">
             <SceneSettingsWindow
               key={sceneEditingIndex}
               title={editingScene?.title || ''}

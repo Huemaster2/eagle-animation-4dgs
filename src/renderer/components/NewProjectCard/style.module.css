@@ -1,6 +1,6 @@
 .card {
   align-items: center;
-  background: var(--color-theme-dark);
+  background: var(--pf-fill-lavender);
   border: 2px dashed var(--pf-line);
   border-radius: var(--border-radius-medium);
   box-sizing: border-box;

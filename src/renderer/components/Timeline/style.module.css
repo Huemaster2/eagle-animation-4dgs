@@ -5,7 +5,7 @@
 
 .container {
   /* Height img + scollbar */
-  background: var(--color-theme-dark);
+  background: var(--pf-fill-lime);
   border-top: 2px solid var(--pf-line);
   box-sizing: border-box;
   overflow: scroll hidden;

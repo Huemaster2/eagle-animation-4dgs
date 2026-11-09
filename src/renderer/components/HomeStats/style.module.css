@@ -1,6 +1,6 @@
 .stats {
   align-items: stretch;
-  background-color: var(--color-theme-dark);
+  background-color: var(--pf-fill-yellow);
   border: 1px solid var(--pf-line);
   border-radius: var(--border-radius-medium);
   display: flex;

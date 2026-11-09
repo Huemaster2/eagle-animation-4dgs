@@ -11,7 +11,7 @@
 }
 
 .window {
-  background: var(--color-theme-dark);
+  background: var(--pf-window-fill, var(--color-theme-dark));
   border-top: var(--pf-frame);
   bottom: 0;
   box-shadow: var(--pf-shadow);
@@ -55,7 +55,7 @@
   border-bottom: 1px solid var(--pf-line);
   display: flex;
   gap: 8px;
-  height: 22px;
+  height: 26px;
   padding: 0 calc(var(--space-medium) + var(--safe-area-right)) 0 calc(var(--space-medium) + var(--safe-area-left));
   position: sticky;
   top: 0;
@@ -67,6 +67,15 @@
   background: var(--pf-stripes);
   flex: 1;
   height: 11px;
+}
+
+.title {
+  color: var(--color-white);
+  font-size: var(--font-size-5);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 0 6px;
+  white-space: nowrap;
 }
 
 .close {

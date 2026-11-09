@@ -24,8 +24,15 @@ body[data-theme='light'] {
   --color-theme-extra-dark: #f4f3ec;
   --pf-line: #111;
   --pf-paper: #fffef8;
-  --pf-desk: #e9e8e1;
-  --pf-pattern: rgb(17 17 17 / 18%);
+  --pf-desk: #c8692e;
+  --pf-pattern: #6b3415;
+  --pf-pattern-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' shape-rendering='crispEdges'%3E%3Crect width='4' height='4'/%3E%3Crect x='4' y='4' width='4' height='4'/%3E%3C/svg%3E");
+  --pf-pattern-size: 8px 8px;
+  --pf-fill-yellow: #eef39a;
+  --pf-fill-mint: #8ff5b0;
+  --pf-fill-lime: #c6f57c;
+  --pf-fill-lavender: #c6a9ff;
+  --pf-fill-peach: #f6b47c;
   --pf-glow: none;
   --pf-icon-glow: none;
   --pf-frame: 2px solid var(--pf-line);
@@ -59,6 +66,13 @@ body[data-theme='dark'] {
   --pf-paper: #031008;
   --pf-desk: #010603;
   --pf-pattern: rgb(77 255 136 / 7%);
+  --pf-pattern-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4' shape-rendering='crispEdges'%3E%3Crect width='1' height='1'/%3E%3Crect x='2' y='2' width='1' height='1'/%3E%3C/svg%3E");
+  --pf-pattern-size: 4px 4px;
+  --pf-fill-yellow: var(--color-theme-dark);
+  --pf-fill-mint: var(--color-theme-dark);
+  --pf-fill-lime: var(--color-theme-dark);
+  --pf-fill-lavender: var(--color-theme-dark);
+  --pf-fill-peach: var(--color-theme-dark);
   --pf-glow: 0 0 4px rgb(77 255 136 / 55%);
   --pf-icon-glow: drop-shadow(0 0 2px rgb(77 255 136 / 70%));
   --pf-frame: 2px solid var(--pf-line);
@@ -80,14 +94,14 @@ html[data-theme='dark'] {
   font-size: 18px;
 }
 
-/* Desktop pattern from the UI kit, tinted by the theme */
+/* Desktop pattern from the UI kit (checker in Classic, fine dots in Phosphor), tinted by the theme */
 body::before {
   background-color: var(--pf-pattern);
   content: '';
   inset: 0;
-  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4' shape-rendering='crispEdges'%3E%3Crect width='1' height='1'/%3E%3Crect x='2' y='2' width='1' height='1'/%3E%3C/svg%3E");
+  mask-image: var(--pf-pattern-mask);
   mask-repeat: repeat;
-  mask-size: 4px 4px;
+  mask-size: var(--pf-pattern-size);
   pointer-events: none;
   position: fixed;
   z-index: 0;
