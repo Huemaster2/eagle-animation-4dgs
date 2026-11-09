@@ -20,7 +20,7 @@
   background: var(--color-theme-dark);
   border: 1px solid var(--pf-line);
   border-radius: var(--border-radius-medium);
-  box-shadow: 2px 2px 0 var(--pf-line);
+  box-shadow: 1px 1px 0 var(--pf-line);
   color: var(--color-white);
   cursor: pointer;
   display: flex;

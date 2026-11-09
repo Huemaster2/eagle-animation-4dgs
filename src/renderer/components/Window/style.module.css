@@ -19,6 +19,7 @@
   max-height: calc(100vh - var(--safe-area-top));
   min-height: 20vh;
   opacity: 0;
+  outline: 1px solid var(--pf-line);
   overflow: auto;
   padding-bottom: var(--safe-area-bottom);
   padding-left: var(--safe-area-left);

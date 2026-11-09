@@ -1,8 +1,9 @@
 .container {
   align-items: center;
-  background: var(--color-theme-dark);
+  background: var(--pf-button-face);
   border: 1px solid var(--pf-line);
   border-radius: var(--border-radius-small);
+  box-shadow: var(--pf-bevel);
   color: var(--color-white);
   display: flex;
   height: 26px;

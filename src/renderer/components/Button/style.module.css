@@ -11,9 +11,10 @@
   --font-size: var(--font-size-7);
 
   align-items: center;
-  background-color: var(--color-theme-dark);
+  background-color: var(--pf-button-face);
   border: 1px solid var(--pf-line);
   border-radius: var(--border-radius-small);
+  box-shadow: var(--pf-bevel);
   box-sizing: border-box;
   cursor: pointer;
   display: flex;

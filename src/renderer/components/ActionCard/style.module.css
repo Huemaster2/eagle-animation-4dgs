@@ -13,12 +13,13 @@
 
 .block {
   align-items: center;
-  background-color: var(--color-theme-dark);
-  border: 2px solid var(--pf-line);
+  background-color: var(--pf-button-face);
+  border: 1px solid var(--pf-line);
   border-radius: var(--border-radius-big);
   box-shadow:
-    0 0 0 2px var(--color-theme-dark),
-    0 0 0 4px var(--pf-line);
+    var(--pf-bevel),
+    0 0 0 2px var(--pf-window-fill, var(--color-theme-dark)),
+    0 0 0 5px var(--pf-line);
   cursor: pointer;
   display: flex;
   flex-direction: column;
@@ -39,7 +40,7 @@
 }
 
 .block.secondary {
-  box-shadow: none;
+  box-shadow: var(--pf-bevel);
 }
 
 .block.selected {
@@ -61,7 +62,7 @@
 }
 
 .block.disabled:hover {
-  background-color: var(--color-theme-dark);
+  background-color: var(--pf-button-face);
 }
 
 .block.disabled:hover .title,
