@@ -28,7 +28,7 @@ const DEFAULT_SETTINGS = {
   EVENT_MODE_ENABLED: false,
   EVENT_KEY: '',
   EVENT_API: PARTNER_API,
-  TOUCAN_CAMERA_SERVER_DISABLED: false,
+  TOUCAN_CAMERA_SERVER_DISABLED: /mac/i.test(globalThis?.navigator?.platform || ''),
   TOUCAN_CAMERA_SERVER_EXPOSE: false,
   TELEMETRY_ENABLED: true,
   TOURS_COMPLETED: [], // Keys of the guided tours the user has already seen

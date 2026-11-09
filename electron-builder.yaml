@@ -22,12 +22,14 @@ files:
   - package.json
   - out/**
   - "toucan-camera-server/bin/**"
+  - "stopmo-camera-helper/bin/**"
 
 asarUnpack:
   - "**/*.node"
   - "node_modules/@img/**"
   - "node_modules/sharp/**"
   - "toucan-camera-server/bin/**"
+  - "stopmo-camera-helper/bin/**"
 
 extraMetadata:
   main: out/main/index.js
@@ -46,7 +48,7 @@ mac:
   # Electron 44 requires macOS 13+; macOS 11/12 are covered by
   # electron-builder.legacy.yaml, which packages Electron 37.
   minimumSystemVersion: '13.0'
-  x64ArchFiles: "**/{node_modules/@img,node_modules/ffmpeg-static,node_modules/sharp,toucan-camera-server/bin}/**"
+  x64ArchFiles: "**/{node_modules/@img,node_modules/ffmpeg-static,node_modules/sharp,toucan-camera-server/bin,stopmo-camera-helper/bin}/**"
   artifactName: Eagle-Animation-${version}-mac.${ext}
   executableName: Eagle Animation
   category: public.app-category.photography

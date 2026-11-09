@@ -14,6 +14,7 @@ import { setDiscordActivity } from './core/discord';
 import { exportProjectScene, exportSaveTemporaryBuffer, getSyncList, saveSyncList } from './core/export';
 import { createProject, deleteProject, getProjectData, getProjectsList, projectSave, savePicture, saveReferenceFile } from './core/projects';
 import { getCameraSettings, getSettings, saveCameraSettings, saveSettings } from './core/settings';
+import { getNextCameraTestName, getProjectRawDir, getStopMoCameraConfig, logCameraTest } from './core/stopmoCamera';
 import { getToucanCameraServerConfig, setToucanCameraServerConfig, stopToucanCameraServer } from './core/toucan';
 import { selectFile, selectFolder } from './core/utils';
 
@@ -330,6 +331,24 @@ const actions = {
   },
   TOUCAN_CAMERA_SERVER_STOP: async () => {
     return stopToucanCameraServer();
+  },
+  STOPMO_CAMERA_GET_CONFIG: async () => {
+    return getStopMoCameraConfig();
+  },
+  STOPMO_CAMERA_NEXT_TEST_NAME: async () => {
+    return getNextCameraTestName();
+  },
+  STOPMO_CAMERA_LOG_TEST: async (evt, entry = {}) => {
+    return logCameraTest(entry);
+  },
+  STOPMO_CAMERA_PROJECT_RAW_DIR: async (evt, { project_id, track_id = 0 } = {}) => {
+    return getProjectRawDir(PROJECTS_PATH, project_id, track_id);
+  },
+  STOPMO_SHOW_PATH: async (evt, { path: target } = {}) => {
+    if (target) {
+      shell.showItemInFolder(target);
+    }
+    return true;
   },
 };
 

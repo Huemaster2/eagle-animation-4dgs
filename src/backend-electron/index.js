@@ -8,6 +8,7 @@ import { app, BrowserWindow, ipcMain, protocol, shell } from 'electron';
 import icon from '../../resources/icon.png?asset';
 import actions from './actions';
 import { ImageRoute } from './core/routes';
+import { shutdownStopMoCameraHelper, startStopMoCameraHelper } from './core/stopmoCamera';
 import { shutdownToucanCameraServer } from './core/toucan';
 
 let sendToRenderer = () => null;
@@ -96,10 +97,15 @@ app.on('window-all-closed', () => {
 // camera indicator in the parent terminal / VS Code).
 app.on('before-quit', () => {
   shutdownToucanCameraServer();
+  shutdownStopMoCameraHelper();
 });
+
+// The Canon 5D Mark II helper runs for the whole session so the body stays awake and tethered
+app.whenReady().then(() => startStopMoCameraHelper());
 
 const handleTerminationSignal = (signal) => {
   shutdownToucanCameraServer();
+  shutdownStopMoCameraHelper();
   app.quit();
   // Give Electron a moment to tear down, then force-exit if needed.
   setTimeout(() => process.exit(signal === 'SIGINT' ? 130 : 143), 1500).unref?.();

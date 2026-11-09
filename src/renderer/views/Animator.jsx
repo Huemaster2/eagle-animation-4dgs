@@ -1,4 +1,5 @@
 import CameraSettingsWindow from '@components/CameraSettingsWindow';
+import CameraTestWindow from '@components/CameraTestWindow';
 import ControlBar from '@components/ControlBar';
 import DesktopNavigation from '@components/DesktopNavigation';
 import ImportOverlay from '@components/ImportOverlay';
@@ -23,6 +24,7 @@ import { DEFAULT_FPS, MAX_FRAME_DUPLICATION } from '@config-web';
 import { normalizeOnionSkin } from '@core/onionSkin';
 import { parseRatio } from '@core/ratio';
 import { getAnimationPosition } from '@core/referenceSequence';
+import { getStopMoCameraStatus, setStopMoRawContext, STOPMO_CAMERA_AVAILABLE } from '@core/stopmoCamera';
 import useAppCapabilities from '@hooks/useAppCapabilities';
 import useCamera from '@hooks/useCamera';
 import useDiscordActivity from '@hooks/useDiscordActivity';
@@ -162,6 +164,28 @@ const Animator = ({ t }) => {
   const [onionValue, setOnionValue] = useState(1);
   const [referenceFrameId, setReferenceFrameId] = useState(null);
   const [referenceImport, setReferenceImport] = useState(null);
+  const [canonStatus, setCanonStatus] = useState(null);
+
+  // CR2 files from ordinary captures go to <project>/raw/<scene>
+  useEffect(() => {
+    setStopMoRawContext(id, track);
+  }, [id, track]);
+
+  // Clear camera connection indicator in the top bar
+  useEffect(() => {
+    if (!STOPMO_CAMERA_AVAILABLE) return undefined;
+    let alive = true;
+    const poll = () =>
+      getStopMoCameraStatus()
+        .then((s) => alive && setCanonStatus(s))
+        .catch(() => null);
+    poll();
+    const timer = setInterval(poll, 3000);
+    return () => {
+      alive = false;
+      clearInterval(timer);
+    };
+  }, []);
   const [gridStatus, setGridStatus] = useState(false);
   const [currentFrameId, setCurrentFrameId] = useState(false);
   const [deleteOnLiveViewConfirmation, setDeleteOnLiveViewConfirmation] = useState(false);
@@ -667,7 +691,18 @@ const Animator = ({ t }) => {
   // Actions
   const primaryActions = [{ title: t('Back'), icon: faArrowLeft, onClick: handleAction.bind(null, 'BACK') }];
 
-  const secondaryActions = canExport ? [{ title: t('Export'), icon: faBoxArrowDown, onClick: handleAction.bind(null, 'EXPORT') }] : [];
+  const canonAction = STOPMO_CAMERA_AVAILABLE
+    ? [
+        {
+          title: canonStatus?.ready ? t('{{model}} connected — camera test', { model: canonStatus.model || 'Canon' }) : t('Canon camera not connected — camera test'),
+          icon: faCamera,
+          onClick: () => setActiveWindow((v) => (v === 'camera-test' ? null : 'camera-test')),
+          selected: !!canonStatus?.ready,
+          warning: !canonStatus?.ready,
+        },
+      ]
+    : [];
+  const secondaryActions = [...canonAction, ...(canExport ? [{ title: t('Export'), icon: faBoxArrowDown, onClick: handleAction.bind(null, 'EXPORT') }] : [])];
 
   const mobileActionsTop = [
     {
@@ -838,6 +873,9 @@ const Animator = ({ t }) => {
               fps={fps}
               framePosition={framePosition}
             />
+          </Window>
+          <Window isOpened={activeWindow === 'camera-test'} onClose={() => setActiveWindow(null)}>
+            <CameraTestWindow isOpened={activeWindow === 'camera-test'} />
           </Window>
           <Window isOpened={activeWindow === 'onion'} onClose={() => setActiveWindow(null)}>
             <OnionSkinWindow

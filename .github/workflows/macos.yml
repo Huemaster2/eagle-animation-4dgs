@@ -7,9 +7,6 @@ on:
       - 'master'
       - 'stopmo'
       - 'stopmo/**'
-    paths-ignore:
-      - 'native/**'
-      - '.github/workflows/camera-test.yml'
 
 permissions:
   contents: write
@@ -29,6 +26,16 @@ jobs:
         uses: ./.github/actions/prepare
         with:
           sharp: darwin
+
+      - name: Build Canon camera helper (universal)
+        working-directory: native/camera-test
+        run: |
+          swift build -c release --arch arm64 --arch x86_64 --product stopmo-camera-helper
+          BIN="$(swift build -c release --arch arm64 --arch x86_64 --show-bin-path)/stopmo-camera-helper"
+          mkdir -p ../../stopmo-camera-helper/bin/macos
+          cp "$BIN" ../../stopmo-camera-helper/bin/macos/stopmo-camera-helper
+          codesign --force --sign - ../../stopmo-camera-helper/bin/macos/stopmo-camera-helper
+          lipo -info ../../stopmo-camera-helper/bin/macos/stopmo-camera-helper
 
       - name: Package macOS app
         run: |
