@@ -39,8 +39,10 @@ const Window = ({ children, onClose = () => {}, isOpened = false, isFullScreen =
       }}
     >
       <div className={`${style.window} ${isFullScreen ? style.fullscreen : ''}`} ref={ref} data-window-root="true">
-        <div>
-          <div
+        <div className={style.titleBar}>
+          <button
+            type="button"
+            aria-label="Close"
             className={style.close}
             onClick={(event) => {
               event.stopPropagation();
@@ -48,7 +50,8 @@ const Window = ({ children, onClose = () => {}, isOpened = false, isFullScreen =
             }}
           >
             <FontAwesomeIcon icon={faXmark} />
-          </div>
+          </button>
+          <span className={style.stripes} />
         </div>
         <div className={style.content}>{children}</div>
       </div>

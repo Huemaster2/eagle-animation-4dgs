@@ -145,7 +145,7 @@
   background-color: var(--color-primary);
   border: none;
   border-radius: var(--border-radius-small);
-  color: var(--color-white);
+  color: var(--color-on-primary);
   cursor: pointer;
   display: flex;
   font-size: var(--font-size-6);

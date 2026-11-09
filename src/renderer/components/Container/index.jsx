@@ -5,7 +5,7 @@ import * as style from './style.module.css';
 
 const Container = ({ children, t }) => {
   useLayoutEffect(() => {
-    document.title = t('Eagle Animation by Brick à Brack');
+    document.title = t('Philip Frame');
   }, [t]);
 
   return <div className={style.container}>{children}</div>;

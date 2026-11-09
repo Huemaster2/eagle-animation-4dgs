@@ -44,7 +44,7 @@
 
 .loader {
   animation: 1s linear infinite rotate;
-  background: var(--color-primary);
+  background: var(--pf-screen-ink);
   height: 48px;
   left: calc(50% - 24px);
   position: absolute;
@@ -54,7 +54,7 @@
 
 .info {
   bottom: 5%;
-  color: var(--color-white);
+  color: var(--pf-screen-ink);
   font-size: var(--font-size-5);
   left: 5%;
   position: absolute;

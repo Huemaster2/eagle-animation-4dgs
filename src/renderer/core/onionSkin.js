@@ -6,7 +6,7 @@ export const DEFAULT_ONION_SKIN = {
   ENABLED: true,
   PREVIOUS_COUNT: 2,
   PREVIOUS_OPACITIES: [1, 0.5, 0.3, 0.2, 0.1],
-  PREVIOUS_COLOR: '#ff5a5a',
+  PREVIOUS_COLOR: '#ffb000',
   NEXT_COUNT: 1,
   NEXT_OPACITIES: [0.6, 0.35, 0.2, 0.15, 0.1],
   NEXT_COLOR: '#4fd97f',

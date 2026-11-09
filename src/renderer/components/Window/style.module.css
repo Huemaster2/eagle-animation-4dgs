@@ -12,9 +12,9 @@
 
 .window {
   background: var(--color-theme-dark);
-  border-top: solid 3px var(--color-primary);
+  border-top: var(--pf-frame);
   bottom: 0;
-  box-shadow: 0 0 10px 0 rgb(114 114 114 / 10%);
+  box-shadow: var(--pf-shadow);
   box-sizing: border-box;
   max-height: calc(100vh - var(--safe-area-top));
   min-height: 20vh;
@@ -49,23 +49,42 @@
   transform: translate(0%, 0%);
 }
 
-.close {
-  color: var(--color-primary);
-  cursor: pointer;
-  display: inline-block;
-  height: 1.25rem;
-  opacity: 1;
-  position: absolute;
-  right: calc(var(--space-medium) + var(--safe-area-right));
-  top: var(--space-medium);
-  transition: opacity 0.3s ease-in-out;
-  user-select: none;
-  width: 1.25rem;
+.titleBar {
+  align-items: center;
+  background: var(--color-theme-dark);
+  border-bottom: 1px solid var(--pf-line);
+  display: flex;
+  gap: 8px;
+  height: 22px;
+  padding: 0 calc(var(--space-medium) + var(--safe-area-right)) 0 calc(var(--space-medium) + var(--safe-area-left));
+  position: sticky;
+  top: 0;
   z-index: 5;
 }
 
+/* Title bar stripes from the UI kit (a double rule in Phosphor), set per theme in theme.css */
+.stripes {
+  background: var(--pf-stripes);
+  flex: 1;
+  height: 11px;
+}
+
+.close {
+  align-items: center;
+  background: var(--color-theme-dark);
+  border: 1px solid var(--pf-line);
+  color: var(--pf-line);
+  cursor: pointer;
+  display: flex;
+  height: 14px;
+  justify-content: center;
+  padding: 1px;
+  width: 14px;
+}
+
 .close:hover {
-  opacity: 0.7;
+  background: var(--pf-line);
+  color: var(--color-theme-dark);
 }
 
 .close svg {

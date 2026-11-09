@@ -10,7 +10,7 @@ import Input from '@components/Input';
 import NumberInput from '@components/NumberInput';
 import Select from '@components/Select';
 import Switch from '@components/Switch';
-import { TOUCAN_CAMERA_SERVER_AVAILABLE, LANGUAGES } from '@config-web';
+import { LANGUAGES, TOUCAN_CAMERA_SERVER_AVAILABLE } from '@config-web';
 import { formatFileSize } from '@core/format';
 import useAppCapabilities from '@hooks/useAppCapabilities';
 import useAppVersion from '@hooks/useAppVersion';
@@ -28,7 +28,7 @@ import gridMarginsIcon from './assets/margins.png';
 const SettingsForm = ({ settings = {}, onUpdate = () => {}, t }) => {
   const { appCapabilities } = useAppCapabilities();
   const { path: dataFolderPath, actions: dataFolderActions } = useDataFolder();
-  const { currentVersion, latestVersion, canBeUpdated, actions: appVersionActions } = useAppVersion();
+  const { currentVersion } = useAppVersion();
   const { size: cacheSize, isClearing: isClearingCache, actions: cacheActions } = useCache(appCapabilities.includes('CLEAR_CACHE'));
   const { config: toucanCameraServerConfig } = useToucanCameraServer();
   const form = useForm({
@@ -60,20 +60,23 @@ const SettingsForm = ({ settings = {}, onUpdate = () => {}, t }) => {
         <FormGroup label={t('Language')} description={t('The application language to use')}>
           <Select options={LNGS_OPTIONS} control={control} register={register('LANGUAGE')} />
         </FormGroup>
+        <FormGroup label={t('Appearance')} description={t('Classic is ink on paper, Phosphor is a dark terminal. System follows your Mac.')}>
+          <Select
+            options={[
+              { value: 'system', label: t('System') },
+              { value: 'light', label: t('Classic (light)') },
+              { value: 'dark', label: t('Phosphor (dark)') },
+            ]}
+            control={control}
+            register={register('THEME')}
+          />
+        </FormGroup>
         <FormGroup label={t('Allow telemetry')} description={t('Send anonymous usage data to help improve the application')}>
           <div>
             <Switch register={register('TELEMETRY_ENABLED')} />
           </div>
         </FormGroup>
-        <FormGroup label={t('Update')} description={t('Stay up to date to enjoy the latest features and improvements')}>
-          <Button
-            size="small"
-            color="primary"
-            disabled={!canBeUpdated}
-            onClick={canBeUpdated ? appVersionActions.openUpdatePage : undefined}
-            label={canBeUpdated ? t('Update to {{version}}', { version: latestVersion }) : t('Already up to date ({{version}})', { version: currentVersion || t('Unknown') })}
-          />
-        </FormGroup>
+        <FormGroup label={t('About')} description={t('Philip Frame {{version}} — built on Eagle Animation by Brick à Brack, free software under the GNU GPL v3.', { version: currentVersion || '' })} />
         {appCapabilities.includes('LOCAL_DATA_FOLDER') && (
           <FormGroup label={t('Data folder')} description={dataFolderPath || t('(Unknown)')}>
             <Button size="small" label={t('Open folder')} onClick={dataFolderActions.openDataFolder} />

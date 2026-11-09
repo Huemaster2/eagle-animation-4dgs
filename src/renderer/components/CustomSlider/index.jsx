@@ -37,7 +37,7 @@ const CustomSlider = ({ step, min, max, value, disabled = false, maxWidth = null
     style={{ maxWidth: maxWidth || '500px', padding: '0', height: '10px', ...(disabled ? { cursor: 'not-allowed', opacity: '0.2' } : {}) }}
     styles={{
       track: {
-        backgroundColor: 'var(--color-theme-light)',
+        backgroundColor: 'var(--pf-line)',
         height: '10px',
       },
       rail: {
@@ -45,13 +45,14 @@ const CustomSlider = ({ step, min, max, value, disabled = false, maxWidth = null
         height: '10px',
       },
       handle: {
-        backgroundColor: '#486ee5',
+        backgroundColor: 'var(--color-theme-dark)',
+        border: '2px solid var(--pf-line)',
+        borderRadius: 'var(--border-radius-small)',
         height: `${HANDLE_SIZE}px`,
         width: `${HANDLE_SIZE}px`,
         marginLeft: `-${HANDLE_RADIUS}px`,
         marginTop: '-7px',
         boxShadow: 'none',
-        borderColor: 'rgba(0,0,0,0)',
         opacity: '1',
         transform: 'none',
         ...(disabled ? { cursor: 'not-allowed' } : {}),

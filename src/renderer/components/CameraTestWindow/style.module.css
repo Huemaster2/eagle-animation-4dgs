@@ -18,11 +18,11 @@
 }
 
 .ok {
-  background: #3ecf6e;
+  background: var(--color-success);
 }
 
 .bad {
-  background: #ef5350;
+  background: var(--color-alert);
 }
 
 .statusText {
@@ -38,9 +38,9 @@
 }
 
 .warning {
-  background: rgb(255 193 7 / 15%);
+  background: color-mix(in srgb, var(--color-warning) 15%, transparent);
   border-radius: 6px;
-  color: #ffd54f;
+  color: var(--color-warning);
   font-size: var(--font-size-6);
   margin: var(--space-small) 0;
   padding: var(--space-small) var(--space-medium);
@@ -56,7 +56,7 @@
 }
 
 .error {
-  color: #ef5350;
+  color: var(--color-alert);
   font-size: var(--font-size-6);
 }
 
@@ -102,10 +102,10 @@
 }
 
 .badRow td {
-  color: #ef9a9a;
+  color: var(--color-alert);
 }
 
 .okRow td:first-child {
-  color: #3ecf6e;
+  color: var(--color-success);
   font-weight: 700;
 }

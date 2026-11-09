@@ -4,7 +4,7 @@
   cursor: pointer;
   display: flex;
   flex-flow: row;
-  font-family: 'Open Sans', sans-serif;
+  font-family: var(--font), sans-serif;
   font-size: 20px;
   justify-content: center;
   line-height: 20px;

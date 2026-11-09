@@ -18,7 +18,7 @@ const IconTabs = ({ tabs = [], onClick = () => {} }) => {
       <div className={style.tabContainer}>
         <div className={style.backgroundTab} />
         {tabs.map((e, i) => (
-          <Action key={e.id || e.title || i} title={e.title} onClick={() => onClick(e, i)} className={`${style.tab} ${i === 0 ? style.tabFirst : ''} ${i === tabs.length - 1 ? style.tabLast : ''}`}>
+          <Action key={e.id || e.title || i} title={e.title} onClick={() => onClick(e, i)} className={`${style.tab} ${i === selectedIndex ? style.tabSelected : ''} ${i === 0 ? style.tabFirst : ''} ${i === tabs.length - 1 ? style.tabLast : ''}`}>
             {e.icon && <FontAwesomeIcon icon={e.icon} />}
           </Action>
         ))}

@@ -19,15 +19,15 @@
 }
 
 .ok {
-  background: #3ecf6e;
+  background: var(--color-success);
 }
 
 .busy {
-  background: #ffb300;
+  background: var(--color-warning);
 }
 
 .bad {
-  background: #ef5350;
+  background: var(--color-alert);
 }
 
 .statusText {
@@ -57,7 +57,7 @@
 }
 
 .error {
-  color: #ef5350;
+  color: var(--color-alert);
   font-size: var(--font-size-6);
   margin: var(--space-small) 0;
 }
@@ -147,14 +147,21 @@
 }
 
 .held {
-  background: var(--color-primary, #5e72e4);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
 }
 
 .stop {
-  background: #c62828;
+  background: var(--color-alert);
+  color: var(--pf-paper);
   flex: 0 0 120px;
   font-size: 1rem;
   font-weight: 700;
+}
+
+.chip {
+  font-variant-numeric: tabular-nums;
+  padding: 4px 8px;
 }
 
 .step:disabled,
@@ -189,13 +196,9 @@
   gap: 6px;
 }
 
-.chip {
-  font-variant-numeric: tabular-nums;
-  padding: 4px 8px;
-}
 
 .chipActive {
-  outline: 2px solid var(--color-primary, #5e72e4);
+  outline: 2px solid var(--color-primary);
 }
 
 .progress {

@@ -248,7 +248,7 @@ const ControlBar = ({
             className={style.fpsInput}
             onBlur={() => handleAction('FPS_BLUR')()}
             onFocus={() => handleAction('FPS_FOCUS')()}
-            style={{ marginLeft: '5px', height: '42px', borderRadius: '21px' }}
+            style={{ marginLeft: '5px', height: '42px', borderRadius: 'var(--border-radius-small)' }}
             min={1}
             max={60}
             tag={t('FPS')}

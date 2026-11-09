@@ -5,15 +5,15 @@
 }
 
 .mergeStart > * {
-  border-bottom-left-radius: 21px;
-  border-top-left-radius: 21px;
+  border-bottom-left-radius: var(--border-radius-medium);
+  border-top-left-radius: var(--border-radius-medium);
   margin-left: 5px;
   padding-left: 2px;
 }
 
 .mergeEnd > * {
-  border-bottom-right-radius: 21px;
-  border-top-right-radius: 21px;
+  border-bottom-right-radius: var(--border-radius-medium);
+  border-top-right-radius: var(--border-radius-medium);
   margin-right: 5px;
   padding-right: 2px;
 }

@@ -105,7 +105,7 @@
 }
 
 .sceneCardActive {
-  background: rgb(72 110 229 / 16%);
+  background: color-mix(in srgb, var(--color-primary) 16%, transparent);
   border-color: var(--color-primary);
 }
 

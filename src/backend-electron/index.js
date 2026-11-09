@@ -32,7 +32,7 @@ function createWindow() {
     height: 720,
     minWidth: 640,
     minHeight: 360,
-    title: 'Eagle Animation by Brick à Brack',
+    title: 'Philip Frame',
     show: false,
     autoHideMenuBar: true,
     ...(process.platform === 'linux' ? { icon } : {}),

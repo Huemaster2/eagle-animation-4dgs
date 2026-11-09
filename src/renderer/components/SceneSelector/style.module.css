@@ -17,9 +17,10 @@
 
 .button {
   align-items: center;
-  background: transparent;
-  border: 1px solid var(--color-theme-light);
-  border-radius: 6px;
+  background: var(--color-theme-dark);
+  border: 1px solid var(--pf-line);
+  border-radius: var(--border-radius-medium);
+  box-shadow: 2px 2px 0 var(--pf-line);
   color: var(--color-white);
   cursor: pointer;
   display: flex;

@@ -14,7 +14,7 @@
 }
 
 .withBorder {
-  border-bottom: 2px solid var(--color-theme-medium);
+  border-bottom: 2px solid var(--pf-line);
 }
 
 .logoMobile {

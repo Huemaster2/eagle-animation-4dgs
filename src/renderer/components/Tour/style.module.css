@@ -16,7 +16,7 @@
 .ring {
   border: 2px solid var(--color-primary);
   border-radius: var(--border-radius-medium);
-  box-shadow: 0 0 18px 0 rgb(72 110 229 / 60%);
+  box-shadow: var(--pf-shadow);
   box-sizing: border-box;
   pointer-events: all;
   position: absolute;

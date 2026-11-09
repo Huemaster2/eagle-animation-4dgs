@@ -1,13 +1,12 @@
 .card {
   align-items: center;
-  background: var(--color-theme-medium);
-  border: 2px dashed transparent;
+  background: var(--color-theme-dark);
+  border: 2px dashed var(--pf-line);
   border-radius: var(--border-radius-medium);
   box-sizing: border-box;
   color: var(--color-white);
   cursor: pointer;
   display: flex;
-  font-family: 'Open Sans', sans-serif;
   height: 240px;
   transition:
     border-color 0.2s ease-in-out,
@@ -31,8 +30,8 @@
 .icon {
   align-items: center;
   background: var(--color-primary);
-  border-radius: 50%;
-  color: #fff;
+  border-radius: var(--border-radius-small);
+  color: var(--color-on-primary);
   display: flex;
   flex: 0 0 auto;
   justify-content: center;

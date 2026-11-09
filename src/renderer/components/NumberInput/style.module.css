@@ -1,6 +1,7 @@
 .container {
   align-items: center;
-  background: var(--color-theme-medium);
+  background: var(--color-theme-dark);
+  border: 1px solid var(--pf-line);
   border-radius: var(--border-radius-small);
   color: var(--color-white);
   display: flex;

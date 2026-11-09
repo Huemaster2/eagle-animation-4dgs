@@ -1,36 +1,4 @@
-.block {
-  align-items: center;
-  background-color: var(--color-theme-medium);
-  border: 3px solid var(--color-theme-light);
-  border-radius: var(--border-radius-medium);
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-medium);
-  justify-content: space-between;
-  max-width: 200px;
-  overflow: hidden;
-  padding: var(--space-medium);
-  text-align: center;
-  transition: opacity 0.2s ease-in-out;
-  user-select: none;
-  width: 33.33%;
-}
-
-.block.sizeAuto {
-  min-width: 150px;
-  width: auto;
-}
-
-.block:hover {
-  opacity: 1;
-}
-
-.block.disabled {
-  cursor: not-allowed;
-  opacity: 0.3;
-}
-
+/* Push buttons from the UI kit: line border, the main one ringed like a default button; hover inverts */
 .icon svg {
   color: var(--color-white);
   height: 50px;
@@ -43,22 +11,60 @@
   font-weight: 600;
 }
 
-.block.selected {
-  border-color: var(--color-primary);
-  cursor: not-allowed;
-  opacity: 1;
+.block {
+  align-items: center;
+  background-color: var(--color-theme-dark);
+  border: 2px solid var(--pf-line);
+  border-radius: var(--border-radius-big);
+  box-shadow:
+    0 0 0 2px var(--color-theme-dark),
+    0 0 0 4px var(--pf-line);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-medium);
+  justify-content: space-between;
+  margin: 4px;
+  max-width: 200px;
+  overflow: hidden;
+  padding: var(--space-medium);
+  text-align: center;
+  user-select: none;
+  width: 33.33%;
 }
 
-.block.selected .icon svg,
-.block.secondary .icon svg {
-  color: var(--color-primary);
-}
-
-.block.selected .title,
-.block.secondary .title {
-  color: var(--color-primary);
+.block.sizeAuto {
+  min-width: 150px;
+  width: auto;
 }
 
 .block.secondary {
-  border-color: var(--color-primary);
+  box-shadow: none;
+}
+
+.block.selected {
+  cursor: not-allowed;
+}
+
+.block:hover {
+  background-color: var(--pf-line);
+}
+
+.block:hover .title,
+.block:hover .icon svg {
+  color: var(--color-theme-dark);
+}
+
+.block.disabled {
+  cursor: not-allowed;
+  opacity: 0.3;
+}
+
+.block.disabled:hover {
+  background-color: var(--color-theme-dark);
+}
+
+.block.disabled:hover .title,
+.block.disabled:hover .icon svg {
+  color: var(--color-white);
 }

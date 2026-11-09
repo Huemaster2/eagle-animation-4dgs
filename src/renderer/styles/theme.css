@@ -1,0 +1,145 @@
+/* Philip Frame themes. "Classic" (light) is 1-bit paper and ink after the early Mac UI kit;
+   "Phosphor" (dark) is a green phosphor terminal. Line art and icons use currentColor,
+   so both themes recolour the same artwork. Selections invert in both: accent fill, on-accent text. */
+
+body,
+body[data-theme='light'] {
+  --font: 'Pixelify Sans';
+  --font-scale: 1;
+  --border-radius-small: 0;
+  --border-radius-medium: 0;
+  --border-radius-big: 0;
+  --color-primary: #111;
+  --color-primary-hover: #333;
+  --color-on-primary: #fffef8;
+  --color-success: #111;
+  --color-alert: #111;
+  --color-warning: #111;
+  --color-info: #111;
+  --color-white: #111;
+  --color-theme-extra-light: #5b5b55;
+  --color-theme-light: #c9c8c0;
+  --color-theme-medium: #ecebe4;
+  --color-theme-dark: #fffef8;
+  --color-theme-extra-dark: #f4f3ec;
+  --pf-line: #111;
+  --pf-paper: #fffef8;
+  --pf-desk: #e9e8e1;
+  --pf-pattern: rgb(17 17 17 / 18%);
+  --pf-glow: none;
+  --pf-icon-glow: none;
+  --pf-frame: 2px solid var(--pf-line);
+  --pf-shadow: 3px 3px 0 var(--pf-line);
+  --pf-screen-ink: #f4f3ec;
+  --pf-stripes: repeating-linear-gradient(to bottom, var(--pf-line) 0 1px, transparent 1px 2px);
+
+  color-scheme: light;
+}
+
+body[data-theme='dark'] {
+  --font: 'VT323';
+  --font-scale: 1.15;
+  --border-radius-small: 0;
+  --border-radius-medium: 0;
+  --border-radius-big: 0;
+  --color-primary: #4dff88;
+  --color-primary-hover: #9dffbe;
+  --color-on-primary: #021007;
+  --color-success: #4dff88;
+  --color-alert: #d8ffe4;
+  --color-warning: #d8ffe4;
+  --color-info: #9dffbe;
+  --color-white: #7dffa6;
+  --color-theme-extra-light: #2fae5c;
+  --color-theme-light: #0f3a1d;
+  --color-theme-medium: #072010;
+  --color-theme-dark: #031008;
+  --color-theme-extra-dark: #010703;
+  --pf-line: #4dff88;
+  --pf-paper: #031008;
+  --pf-desk: #010603;
+  --pf-pattern: rgb(77 255 136 / 7%);
+  --pf-glow: 0 0 4px rgb(77 255 136 / 55%);
+  --pf-icon-glow: drop-shadow(0 0 2px rgb(77 255 136 / 70%));
+  --pf-frame: 2px solid var(--pf-line);
+  --pf-shadow: 0 0 10px rgb(77 255 136 / 22%), inset 0 0 6px rgb(77 255 136 / 10%);
+  --pf-screen-ink: #7dffa6;
+  --pf-stripes: linear-gradient(to bottom, transparent 3px, var(--pf-line) 3px 4px, transparent 4px 7px, var(--pf-line) 7px 8px, transparent 8px);
+
+  color-scheme: dark;
+}
+
+html,
+body {
+  background: var(--pf-desk) !important;
+  color: var(--color-white);
+}
+
+/* VT323 runs small, so Phosphor scales the whole interface text up a notch */
+html[data-theme='dark'] {
+  font-size: 18px;
+}
+
+/* Desktop pattern from the UI kit, tinted by the theme */
+body::before {
+  background-color: var(--pf-pattern);
+  content: '';
+  inset: 0;
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4' shape-rendering='crispEdges'%3E%3Crect width='1' height='1'/%3E%3Crect x='2' y='2' width='1' height='1'/%3E%3C/svg%3E");
+  mask-repeat: repeat;
+  mask-size: 4px 4px;
+  pointer-events: none;
+  position: fixed;
+  z-index: 0;
+}
+
+#root {
+  position: relative;
+  z-index: 1;
+}
+
+/* Phosphor glow and faint scanlines in the dark theme */
+body[data-theme='dark'] #root {
+  text-shadow: var(--pf-glow);
+}
+
+body[data-theme='dark']::after {
+  background: repeating-linear-gradient(to bottom, rgb(0 0 0 / 0%) 0, rgb(0 0 0 / 0%) 2px, rgb(0 0 0 / 22%) 3px);
+  content: '';
+  inset: 0;
+  pointer-events: none;
+  position: fixed;
+  z-index: 2147483000;
+}
+
+body[data-theme='dark'] h1,
+body[data-theme='dark'] h2,
+body[data-theme='dark'] h3 {
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* Pixel icons stay sharp at any size */
+svg[data-prefix] {
+  filter: var(--pf-icon-glow);
+  shape-rendering: crispedges;
+}
+
+::selection {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+input,
+select,
+textarea,
+button {
+  font-family: var(--font), monospace;
+}
+
+/* Square corners everywhere, inline styles and third-party widgets included */
+*,
+*::before,
+*::after {
+  border-radius: 0 !important;
+}

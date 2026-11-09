@@ -12,11 +12,11 @@
 }
 
 .error {
-  background: rgb(239 83 80 / 20%);
-  color: #ffab91;
+  background: color-mix(in srgb, var(--color-alert) 15%, transparent);
+  color: var(--color-alert);
 }
 
 .warning {
-  background: rgb(255 193 7 / 15%);
-  color: #ffd54f;
+  background: color-mix(in srgb, var(--color-warning) 15%, transparent);
+  color: var(--color-warning);
 }

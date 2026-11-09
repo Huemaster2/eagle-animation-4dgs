@@ -3,7 +3,7 @@
 }
 
 .button.colorPrimary:hover {
-  background-color: hsl(225deg 75% 62% / 100%);
+  background-color: var(--color-primary-hover);
 }
 
 .button {
@@ -11,8 +11,10 @@
   --font-size: var(--font-size-7);
 
   align-items: center;
-  background-color: var(--color-theme-medium);
-  border-radius: 50%;
+  background-color: var(--color-theme-dark);
+  border: 1px solid var(--pf-line);
+  border-radius: var(--border-radius-small);
+  box-sizing: border-box;
   cursor: pointer;
   display: flex;
   gap: 8px;
@@ -22,7 +24,7 @@
   place-content: center center;
   position: relative;
   text-align: center;
-  transition: all 0.3s ease-in-out;
+  transition: all 0.15s steps(2);
   user-select: none;
   width: var(--size);
 }
@@ -44,9 +46,9 @@
   --font-size: var(--font-size-5);
 }
 
-/* Text (pill) mode: a label turns the circle into an auto-width pill */
+/* Text mode: a label turns the square into an auto-width button */
 .hasLabel {
-  border-radius: 999px;
+  border-radius: var(--border-radius-medium);
   line-height: normal;
   padding: 0 calc(var(--size) / 2.2);
   width: auto;
@@ -83,6 +85,11 @@
   background-color: transparent;
 }
 
+.button.colorPrimary .label,
+.button.selected .label {
+  color: var(--color-on-primary);
+}
+
 .button.colorLink .label {
   opacity: 0.6;
   text-decoration: underline;
@@ -94,6 +101,7 @@
 
 .button.selected {
   background-color: var(--color-primary);
+  border-color: var(--color-primary);
 }
 
 .button.selectedWarning {
@@ -101,11 +109,12 @@
 }
 
 .button.selected:hover {
-  background-color: hsl(225deg 75% 62% / 100%);
+  background-color: var(--color-primary-hover);
 }
 
 .button.selectedWarning:hover {
-  background-color: hsl(0deg 75% 62% / 100%);
+  background-color: var(--color-alert);
+  filter: brightness(1.15);
 }
 
 .button > svg,
@@ -175,4 +184,11 @@
 .tag.warning {
   background: var(--color-warning);
   color: var(--color-theme-extra-dark);
+}
+
+/* Icons on an accent fill use the on-accent colour (selections invert in both themes) */
+.button.colorPrimary > svg path,
+.button.selected > svg path,
+.button.selectedWarning > svg path {
+  fill: var(--color-on-primary);
 }

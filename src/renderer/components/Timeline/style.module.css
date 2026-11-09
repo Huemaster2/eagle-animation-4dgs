@@ -5,7 +5,8 @@
 
 .container {
   /* Height img + scollbar */
-  background: linear-gradient(0deg, var(--color-theme-light) 0%, var(--color-theme-dark) 100%);
+  background: var(--color-theme-dark);
+  border-top: 2px solid var(--pf-line);
   box-sizing: border-box;
   overflow: scroll hidden;
   padding-bottom: var(--safe-area-bottom);
@@ -38,12 +39,12 @@
 }
 
 .shadowLeft {
-  background: linear-gradient(90deg, rgb(14 25 40 / 100%) 0%, rgb(14 25 40 / 0%) 100%);
+  background: linear-gradient(90deg, var(--color-theme-dark) 0%, transparent 100%);
   left: 0;
 }
 
 .shadowRight {
-  background: linear-gradient(270deg, rgb(14 25 40 / 100%) 0%, rgb(14 25 40 / 0%) 100%);
+  background: linear-gradient(270deg, var(--color-theme-dark) 0%, transparent 100%);
   right: 0;
 }
 
@@ -87,7 +88,7 @@
 
 .title {
   background-color: var(--color-primary);
-  color: var(--color-white);
+  color: var(--color-on-primary);
   font-size: var(--title-font);
   font-weight: 600;
   height: var(--title-size);
@@ -164,7 +165,7 @@
   background-color: var(--color-primary);
   border-top-right-radius: var(--border-radius-small);
   bottom: var(--padding-bottom);
-  color: var(--color-white);
+  color: var(--color-on-primary);
   height: var(--tag-size);
   left: 0;
   padding: var(--space-tiny) var(--space-small);
@@ -176,7 +177,7 @@
   background-color: var(--color-primary);
   border-top-left-radius: var(--border-radius-small);
   bottom: var(--padding-bottom);
-  color: var(--color-white);
+  color: var(--color-on-primary);
   font-size: calc(0.9 * var(--tag-size));
   height: var(--tag-size);
   line-height: var(--tag-size);
@@ -190,7 +191,7 @@
   background-color: var(--color-primary);
   border-top-right-radius: var(--border-radius-small);
   bottom: var(--padding-bottom);
-  color: var(--color-white);
+  color: var(--color-on-primary);
   font-size: calc(0.9 * var(--tag-size));
   height: var(--tag-size);
   left: 2px;

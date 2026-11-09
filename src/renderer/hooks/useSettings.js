@@ -33,6 +33,7 @@ const DEFAULT_SETTINGS = {
   STOPMO_SAVE_TARGET: 'both', // both | mac | card — where the Canon originals are kept
   STOPMO_STORAGE_FOLDER: '', // '' = inside each project
   TURNTABLE_PROFILES: [], // see core/turntableProfiles
+  THEME: 'system', // system | light (Classic) | dark (Phosphor)
   TURNTABLE_PROFILE_ID: null,
   TELEMETRY_ENABLED: true,
   TOURS_COMPLETED: [], // Keys of the guided tours the user has already seen
@@ -52,8 +53,18 @@ let SETTINGS_WRITE_QUEUE = Promise.resolve();
 // Latest settings for code that must not work from a stale render (frequent background writes)
 export const getCurrentSettings = () => CURRENT_SETTINGS;
 
+// Light = Classic (1-bit paper), dark = Phosphor (vector terminal); 'system' follows macOS
+const darkQuery = typeof window !== 'undefined' && window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+const applyTheme = (choice) => {
+  const theme = choice === 'light' || choice === 'dark' ? choice : darkQuery?.matches ? 'dark' : 'light';
+  if (document.body.dataset.theme !== theme) document.body.dataset.theme = theme;
+  if (document.documentElement.dataset.theme !== theme) document.documentElement.dataset.theme = theme;
+};
+darkQuery?.addEventListener?.('change', () => applyTheme(CURRENT_SETTINGS?.THEME));
+
 const broadcastSettings = (settings) => {
   CURRENT_SETTINGS = settings;
+  applyTheme(settings.THEME);
   window.setTelemetryEnabled?.(settings.TELEMETRY_ENABLED !== false);
   SETTINGS_LISTENERS.forEach((listener) => listener(settings));
 };

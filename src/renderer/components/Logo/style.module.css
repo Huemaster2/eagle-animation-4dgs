@@ -1,4 +1,5 @@
 .logo {
+  color: var(--color-white);
   display: flex;
   height: 100%;
   text-align: center;

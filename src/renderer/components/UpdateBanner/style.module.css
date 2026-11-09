@@ -4,7 +4,7 @@
   border: 2px solid transparent;
   border-radius: var(--border-radius-medium);
   box-sizing: border-box;
-  color: #fff;
+  color: var(--color-on-primary);
   cursor: pointer;
   display: flex;
   flex-wrap: wrap;

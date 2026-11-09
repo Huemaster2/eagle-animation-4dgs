@@ -1,7 +1,8 @@
 .select {
-  background: var(--color-theme-medium);
-  border: 0;
+  background: var(--color-theme-dark);
+  border: 1px solid var(--pf-line);
   border-radius: var(--border-radius-small);
+  box-shadow: 2px 2px 0 var(--pf-line);
   box-sizing: border-box;
   color: var(--color-white);
   display: inline-block;

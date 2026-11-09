@@ -25,7 +25,8 @@
 }
 
 .active {
-  background: var(--color-primary, #5e72e4);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
 }
 
 .uncalibrated {
@@ -40,5 +41,5 @@
 }
 
 .moving {
-  color: #ffb300;
+  color: var(--color-warning);
 }

@@ -62,7 +62,7 @@
 
 .label {
   color: #b8b8b8;
-  font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-family: var(--font), sans-serif;
   font-size: 14px;
   font-variant-numeric: tabular-nums;
   font-weight: 400;
@@ -76,7 +76,7 @@
 .indicator {
   background: var(--color-primary);
   border-radius: 2px;
-  box-shadow: 0 0 12px rgb(72 110 229 / 40%);
+  box-shadow: var(--pf-glow);
   height: 26px;
   left: 50%;
   pointer-events: none;

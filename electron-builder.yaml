@@ -1,5 +1,5 @@
-appId: com.eagle-animation.app
-productName: Eagle Animation
+appId: com.philipframe.app
+productName: Philip Frame
 #compression: maximum
 nativeRebuilder: legacy
 
@@ -34,10 +34,11 @@ asarUnpack:
 extraMetadata:
   main: out/main/index.js
   name: eagle-animation
+  productName: Philip Frame
   desktopName: eagle-animation.desktop
 
 win:
-  artifactName: Eagle-Animation-${version}-win.${ext}
+  artifactName: Philip-Frame-${version}-win.${ext}
   executableName: eagle-animation
   icon: out/renderer/favicon.ico
   target:
@@ -49,8 +50,8 @@ mac:
   # electron-builder.legacy.yaml, which packages Electron 37.
   minimumSystemVersion: '13.0'
   x64ArchFiles: "**/{node_modules/@img,node_modules/ffmpeg-static,node_modules/sharp,toucan-camera-server/bin,stopmo-camera-helper/bin}/**"
-  artifactName: Eagle-Animation-${version}-mac.${ext}
-  executableName: Eagle Animation
+  artifactName: Philip-Frame-${version}-mac.${ext}
+  executableName: Philip Frame
   category: public.app-category.photography
   icon: out/renderer/icon-mac.icns
   extendInfo:
@@ -62,12 +63,12 @@ mac:
     com.apple.security.device.camera: true
 
 linux:
-  artifactName: Eagle-Animation-${version}-linux.${ext}
+  artifactName: Philip-Frame-${version}-linux.${ext}
   executableName: eagle-animation
   syncDesktopName: true
   category: Photography
-  synopsis: EagleAnimation is an awesome, free and open-source animation software.
-  description: EagleAnimation is an awesome, free and open-source animation software.
+  synopsis: Philip Frame — stop motion and turntable capture.
+  description: Philip Frame — stop motion and turntable capture, built on Eagle Animation.
   icon: out/renderer/icon.png
   desktop:
     entry:

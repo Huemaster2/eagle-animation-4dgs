@@ -1,9 +1,10 @@
 /* ---------- Grid layout ---------- */
 
 .box {
-  background-color: var(--color-theme-medium);
-  border: 2px solid transparent;
+  background-color: var(--color-theme-dark);
+  border: 2px solid var(--pf-line);
   border-radius: var(--border-radius-medium);
+  box-shadow: var(--pf-shadow);
   box-sizing: border-box;
   color: var(--color-white);
   cursor: pointer;
@@ -18,7 +19,7 @@
 }
 
 .box:hover {
-  border-color: var(--color-theme-light);
+  border-color: var(--color-primary);
 }
 
 .banner {
@@ -66,7 +67,7 @@
 
 .badge {
   align-items: center;
-  background: rgb(11 19 33 / 78%);
+  background: color-mix(in srgb, var(--color-theme-extra-dark) 82%, transparent);
   border-radius: var(--border-radius-small);
   color: var(--color-white);
   display: flex;
@@ -87,7 +88,7 @@
 
 .star {
   align-items: center;
-  background: rgb(11 19 33 / 78%);
+  background: color-mix(in srgb, var(--color-theme-extra-dark) 82%, transparent);
   border: none;
   border-radius: 50%;
   color: var(--color-white);
@@ -124,7 +125,7 @@
 }
 
 .duration {
-  background: rgb(11 19 33 / 78%);
+  background: color-mix(in srgb, var(--color-theme-extra-dark) 82%, transparent);
   border-radius: var(--border-radius-small);
   bottom: var(--space-small);
   color: var(--color-white);

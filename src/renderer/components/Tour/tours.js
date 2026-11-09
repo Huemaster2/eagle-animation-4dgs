@@ -23,8 +23,8 @@
 const TOURS = {
   HOME: (t) => [
     {
-      title: t('Welcome to Eagle Animation!'),
-      content: t('Eagle Animation is a free and open-source stop motion animation software. Let us show you around!'),
+      title: t('Welcome to Philip Frame!'),
+      content: t('Philip Frame is a stop motion studio for your Canon and turntable rig. Let us show you around!'),
     },
     {
       selectors: ['[data-tour="new-project"]'],
