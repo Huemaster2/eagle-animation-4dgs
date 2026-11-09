@@ -1,4 +1,4 @@
-import AppKit
+import CoreGraphics
 import Foundation
 import ImageCaptureCore
 import ImageIO
@@ -16,10 +16,10 @@ import ImageIO
 
 /// Canon EOS ImageFormat (0xD120): n entries of [0x10, type, size, compression].
 /// type 1 = JPEG, 6 = RAW; size 0 = Large; compression 2/3 = JPEG normal/fine, 4 = RAW.
-enum RawQuality: Int {
+public enum RawQuality: Int, CaseIterable {
     case rawOnly = 0, rawPlusLargeFineJPEG = 1, largeFineJPEG = 2
 
-    var title: String {
+    public var title: String {
         switch self {
         case .rawOnly: return "RAW (CR2) only"
         case .rawPlusLargeFineJPEG: return "RAW + Large Fine JPEG"
@@ -27,7 +27,7 @@ enum RawQuality: Int {
         }
     }
 
-    var values: [UInt32] {
+    public var values: [UInt32] {
         switch self {
         case .rawOnly: return [1, 0x10, 6, 0, 4]
         case .rawPlusLargeFineJPEG: return [2, 0x10, 6, 0, 4, 0x10, 1, 0, 3]
@@ -36,7 +36,7 @@ enum RawQuality: Int {
     }
 }
 
-func describeImageFormat(_ values: [UInt32]) -> String {
+public func describeImageFormat(_ values: [UInt32]) -> String {
     guard let n = values.first, n > 0 else { return "unknown" }
     var parts: [String] = []
     var i = 1
@@ -56,12 +56,12 @@ func describeImageFormat(_ values: [UInt32]) -> String {
     return parts.joined(separator: " + ")
 }
 
-enum SaveTarget: Int {
+public enum SaveTarget: Int {
     case cardAndMac = 0   // camera writes to CF card, we copy the file to the Mac
     case macOnly = 1      // camera keeps image in RAM and hands it to the Mac (no card writes)
 }
 
-enum CamError: LocalizedError {
+public enum CamError: LocalizedError {
     case notConnected
     case timeout(UInt16)
     case transport(UInt16, String)
@@ -70,7 +70,7 @@ enum CamError: LocalizedError {
     case noImageArrived
     case writeFailed(String)
 
-    var errorDescription: String? {
+    public var errorDescription: String? {
         switch self {
         case .notConnected: return "No camera session is open."
         case .timeout(let op): return "Camera did not answer \(hex(op)) in time."
@@ -83,26 +83,26 @@ enum CamError: LocalizedError {
     }
 }
 
-final class Locked<T> {
+public final class Locked<T> {
     private var v: T
     private let l = NSLock()
-    init(_ v: T) { self.v = v }
-    var value: T {
+    public init(_ v: T) { self.v = v }
+    public var value: T {
         get { l.lock(); defer { l.unlock() }; return v }
         set { l.lock(); v = newValue; l.unlock() }
     }
 }
 
-final class CameraController: NSObject {
+public final class CameraController: NSObject {
 
     // UI callbacks — always delivered on the main thread.
-    var onLog: ((String) -> Void)?
-    var onStatus: ((String, Bool) -> Void)?
-    var onLiveFrame: ((NSImage, Double, CGSize) -> Void)?
-    var onCaptured: ((URL, String) -> Void)?
-    var onBusy: ((Bool) -> Void)?
+    public var onLog: ((String) -> Void)?
+    public var onStatus: ((String, Bool) -> Void)?
+    public var onLiveFrame: ((Data, Double, CGSize) -> Void)?
+    public var onCaptured: ((URL, String) -> Void)?
+    public var onBusy: ((Bool) -> Void)?
 
-    let captureDir: URL
+    public let captureDir: URL
     private let logFile: URL
 
     private let browser = ICDeviceBrowser()
@@ -119,7 +119,16 @@ final class CameraController: NSObject {
     private(set) var propValues: [UInt32: UInt32] = [:]
     private(set) var imageFormatValues: [UInt32] = []
     private(set) var lastObjectSizes: [String: UInt64] = [:]
-    var saveTarget: SaveTarget = .cardAndMac
+
+    // Helper-facing state
+    public let latestLiveJPEG = Locked<Data?>(nil)
+    public let liveFrameCounter = Locked<UInt64>(0)
+    private var activeDestination: (dir: URL, baseName: String?)?
+    private var captureRecords: [CaptureFile] = []
+    private var capturePreview: Data?
+    private let lastError = Locked<String?>(nil)
+    private var lastActivity = Date()
+    public var saveTarget: SaveTarget = .cardAndMac
 
     /// If the camera rejects SetDevicePropValueEx, try `defaults write com.stopmo.stage1 wrapOutData -bool YES`.
     private let wrapOutData = UserDefaults.standard.bool(forKey: "wrapOutData")
@@ -140,21 +149,21 @@ final class CameraController: NSObject {
     private(set) var hotplugEvents: [String] = []
 
     var camera: ICCameraDevice? { cameraRef.value }
-    var isReady: Bool { ready.value && sessionOpen.value }
-    var isLiveViewOn: Bool { liveViewOn.value }
+    public var isReady: Bool { ready.value && sessionOpen.value }
+    public var isLiveViewOn: Bool { liveViewOn.value }
 
-    override init() {
+    public init(captureDir: URL? = nil, logName: String = "stage1_log.txt") {
         let pics = FileManager.default.urls(for: .picturesDirectory, in: .userDomainMask).first
             ?? URL(fileURLWithPath: NSHomeDirectory())
-        captureDir = pics.appendingPathComponent("StopMo", isDirectory: true).appendingPathComponent("Camera_Test", isDirectory: true)
-        logFile = captureDir.appendingPathComponent("stage1_log.txt")
+        self.captureDir = captureDir ?? pics.appendingPathComponent("StopMo", isDirectory: true).appendingPathComponent("Camera_Test", isDirectory: true)
+        logFile = self.captureDir.appendingPathComponent(logName)
         super.init()
-        try? FileManager.default.createDirectory(at: captureDir, withIntermediateDirectories: true)
+        try? FileManager.default.createDirectory(at: self.captureDir, withIntermediateDirectories: true)
     }
 
     // MARK: Logging
 
-    func log(_ s: String) {
+    public func log(_ s: String) {
         let stamp = ISO8601DateFormatter.string(from: Date(), timeZone: .current,
                                                 formatOptions: [.withTime, .withColonSeparatorInTime, .withFractionalSeconds])
         let line = "[\(stamp)] \(s)"
@@ -178,7 +187,7 @@ final class CameraController: NSObject {
 
     // MARK: Discovery
 
-    func start() {
+    public func start() {
         log("StopMo Stage 1 starting. macOS \(ProcessInfo.processInfo.operatingSystemVersionString), \(machineArch())")
         log("Captures and logs go to: \(captureDir.path)")
         browser.delegate = self
@@ -202,7 +211,7 @@ final class CameraController: NSObject {
         }
     }
 
-    func reconnect() {
+    public func reconnect() {
         if let cam = camera {
             handleDisconnect(reason: "Manual reconnect")
             DispatchQueue.main.asyncAfter(deadline: .now() + 1) { self.connect(cam) }
@@ -235,7 +244,7 @@ final class CameraController: NSObject {
     }
 
     /// Called on quit: hand the camera back in a sane state.
-    func shutdown() {
+    public func shutdown() {
         let done = DispatchSemaphore(value: 0)
         liveViewOn.value = false
         ptpQueue.async {
@@ -363,7 +372,7 @@ final class CameraController: NSObject {
         return confirmed
     }
 
-    func setQuality(_ q: RawQuality) {
+    public func setQuality(_ q: RawQuality) {
         busy(true)
         ptpQueue.async {
             defer { self.busy(false) }
@@ -381,7 +390,7 @@ final class CameraController: NSObject {
 
     // MARK: Live view
 
-    func startLiveView() {
+    public func startLiveView() {
         busy(true)
         ptpQueue.async {
             defer { self.busy(false) }
@@ -394,7 +403,7 @@ final class CameraController: NSObject {
         }
     }
 
-    func stopLiveView() {
+    public func stopLiveView() {
         liveViewOn.value = false
         ptpQueue.async {
             _ = try? self.setEOSPropSync(EOSProp.evfOutputDevice, 1)
@@ -411,6 +420,8 @@ final class CameraController: NSObject {
         liveViewOn.value = true
         log("Live view requested; waiting for first frame (camera needs ~1 s to raise the mirror)")
     }
+
+    fileprivate func scheduleLiveViewTickInternal() { scheduleLiveViewTick() }
 
     private func scheduleLiveViewTick(after delay: TimeInterval = 0) {
         ptpQueue.asyncAfter(deadline: .now() + delay) { [weak self] in self?.liveViewTick() }
@@ -434,7 +445,7 @@ final class CameraController: NSObject {
     func fetchLiveViewFrameSync() -> Bool {
         do {
             let r = try ptp(PTPOp.eosGetViewFinderData, [0x0010_0000], timeout: 5)
-            if r.ok, let jpg = CanonEOS.extractJPEG(r.data), let img = NSImage(data: jpg) {
+            if r.ok, let jpg = CanonEOS.extractJPEG(r.data), let size = jpegPixelSize(jpg) {
                 lvFailures = 0
                 lvFrames += 1
                 let elapsed = Date().timeIntervalSince(lvWindowStart)
@@ -442,10 +453,11 @@ final class CameraController: NSObject {
                     lvFPS = Double(lvFrames) / elapsed
                     lvFrames = 0; lvWindowStart = Date()
                 }
-                let size = img.representations.first.map { CGSize(width: $0.pixelsWide, height: $0.pixelsHigh) } ?? img.size
                 lastLiveViewSize = size
+                latestLiveJPEG.value = jpg
+                liveFrameCounter.value &+= 1
                 let fps = lvFPS
-                DispatchQueue.main.async { self.onLiveFrame?(img, fps, size) }
+                DispatchQueue.main.async { self.onLiveFrame?(jpg, fps, size) }
                 return true
             }
             if r.code == PTPResp.eosNotReady || r.code == PTPResp.deviceBusy {
@@ -463,7 +475,7 @@ final class CameraController: NSObject {
 
     // MARK: Capture via Canon PTP (primary path)
 
-    func captureCanon() {
+    public func captureCanon() {
         busy(true)
         ptpQueue.async {
             defer { self.busy(false) }
@@ -482,6 +494,8 @@ final class CameraController: NSObject {
     /// Fires the shutter and downloads every file the camera produces (JPEG and/or CR2).
     func captureCanonSync() throws -> [URL] {
         try enableCanonModeSync()
+        captureRecords = []
+        capturePreview = nil
 
         switch saveTarget {
         case .macOnly:
@@ -565,6 +579,15 @@ final class CameraController: NSObject {
             name = ((name as NSString).deletingPathExtension) + "." + (kind ?? ((name as NSString).pathExtension.isEmpty ? "DAT" : (name as NSString).pathExtension))
             let url = try writeNoOverwrite(obj.data, originalName: name, frameNumber: frameNumber)
             if expected > 0 { lastObjectSizes[url.lastPathComponent] = UInt64(expected) }
+            if kind == "JPG" { capturePreview = obj.data }
+            if kind == "CR2", capturePreview == nil { capturePreview = extractCR2Preview(obj.data) }
+            let dims = imageDimensions(url)
+            captureRecords.append(CaptureFile(
+                path: url.path, kind: kind ?? "UNKNOWN", cameraName: name,
+                size: UInt64(obj.data.count), expectedSize: expected > 0 ? UInt64(expected) : nil,
+                sizeMatches: expected > 0 && UInt32(obj.data.count) == expected,
+                signatureOK: kind != nil, structureOK: kind == "CR2" ? true : nil,
+                width: dims?.0, height: dims?.1))
             log(String(format: "Saved %@ (%.1f MB in %.2f s)", url.lastPathComponent,
                        Double(obj.data.count) / 1_048_576, Date().timeIntervalSince(td)))
             urls.append(url)
@@ -574,7 +597,7 @@ final class CameraController: NSObject {
 
     // MARK: Capture via ImageCaptureCore (fallback path, used before Canon mode is on)
 
-    func captureNative(completion: ((URL?) -> Void)? = nil) {
+    public func captureNative(completion: ((URL?) -> Void)? = nil) {
         DispatchQueue.main.async {
             guard let cam = self.camera, self.isReady else {
                 self.log("Native capture: camera not ready"); completion?(nil); return
@@ -638,6 +661,25 @@ final class CameraController: NSObject {
     func writeNoOverwrite(_ data: Data, originalName: String, frameNumber: Int) throws -> URL {
         var ext = (originalName as NSString).pathExtension.uppercased()
         if ext.isEmpty { ext = "JPG" }
+        // Helper captures go to the folder (and base name) the app asked for
+        if let dest = activeDestination {
+            try FileManager.default.createDirectory(at: dest.dir, withIntermediateDirectories: true)
+            let base = dest.baseName ?? (originalName as NSString).deletingPathExtension
+            for n in 0..<100_000 {
+                let fileName = n == 0 ? "\(base).\(ext)" : "\(base)_\(n).\(ext)"
+                let url = dest.dir.appendingPathComponent(fileName)
+                if FileManager.default.fileExists(atPath: url.path) { continue }
+                do {
+                    try data.write(to: url, options: [.withoutOverwriting])
+                    return url
+                } catch CocoaError.fileWriteFileExists {
+                    continue
+                } catch {
+                    throw CamError.writeFailed(error.localizedDescription)
+                }
+            }
+            throw CamError.writeFailed("no free file name for \(base)")
+        }
         try FileManager.default.createDirectory(at: captureDir, withIntermediateDirectories: true)
         var n = frameNumber
         while true {
@@ -711,7 +753,7 @@ final class CameraController: NSObject {
 
     // MARK: Stage 1 automated test
 
-    func runStage1Test(completion: @escaping (URL) -> Void) {
+    public func runStage1Test(completion: @escaping (URL) -> Void) {
         busy(true)
         let wasLive = liveViewOn.value
         liveViewOn.value = false
@@ -859,6 +901,140 @@ final class CameraController: NSObject {
 }
 
 // MARK: - ImageCaptureCore delegates
+
+// MARK: - API used by the StopMo camera helper
+
+public struct CaptureFile: Codable {
+    public let path: String
+    public let kind: String
+    public let cameraName: String
+    public let size: UInt64
+    public let expectedSize: UInt64?
+    public let sizeMatches: Bool
+    public let signatureOK: Bool
+    public let structureOK: Bool?
+    public let width: Int?
+    public let height: Int?
+}
+
+public struct CaptureResult {
+    public let files: [CaptureFile]
+    public let preview: Data?
+    public let seconds: Double
+}
+
+extension CameraController {
+    public var modelName: String? { deviceInfo.map { "\($0.manufacturer.replacingOccurrences(of: " Inc.", with: "")) \($0.model)".trimmingCharacters(in: .whitespaces) } ?? camera?.name }
+    public var firmware: String? { deviceInfo?.deviceVersion }
+    public var currentQuality: RawQuality? {
+        RawQuality.allCases.first { Array(imageFormatValues.prefix($0.values.count)) == $0.values && imageFormatValues.count >= $0.values.count }
+    }
+    public var liveViewFPS: Double { lvFPS }
+
+    public func statusSnapshot() -> [String: Any] {
+        var d: [String: Any] = [
+            "connected": camera != nil,
+            "ready": isReady,
+            "liveView": isLiveViewOn,
+            "fps": (lvFPS * 10).rounded() / 10,
+        ]
+        if let m = modelName { d["model"] = m }
+        if let f = firmware { d["firmware"] = f }
+        if !imageFormatValues.isEmpty { d["quality"] = describeImageFormat(imageFormatValues) }
+        if let q = currentQuality { d["qualityId"] = q.rawValue }
+        var settings: [String: String] = [:]
+        for k in [EOSProp.autoExposureMode, EOSProp.aperture, EOSProp.shutterSpeed, EOSProp.iso, EOSProp.expCompensation, EOSProp.whiteBalance] {
+            if let v = propValues[k] { settings[EOSProp.name(k)] = hex(v) }
+        }
+        d["settingsRaw"] = settings
+        if let e = lastError.value { d["lastError"] = e }
+        return d
+    }
+
+    /// Opens remote mode and live view (idempotent).
+    public func prepareForShooting(completion: @escaping (Error?) -> Void) {
+        ptpQueue.async {
+            do {
+                try self.enableCanonModeSync()
+                if !self.isLiveViewOn {
+                    try self.startLiveViewSync()
+                    self.scheduleLiveViewTickPublic()
+                }
+                DispatchQueue.main.async { completion(nil) }
+            } catch {
+                self.lastError.value = error.localizedDescription
+                DispatchQueue.main.async { completion(error) }
+            }
+        }
+    }
+
+    public func setQualityAsync(_ q: RawQuality, completion: @escaping (Error?) -> Void) {
+        ptpQueue.async {
+            do {
+                let ok = try self.setQualitySync(q)
+                DispatchQueue.main.async { completion(ok ? nil : CamError.refused("Image quality change (not confirmed)", 0)) }
+            } catch {
+                DispatchQueue.main.async { completion(error) }
+            }
+        }
+    }
+
+    /// Fires the shutter and saves every file the camera sends into `dir` (base name optional),
+    /// verified and never overwriting. Live view resumes afterwards if it was on.
+    public func capture(into dir: URL, baseName: String?, completion: @escaping (Result<CaptureResult, Error>) -> Void) {
+        ptpQueue.async {
+            let t0 = Date()
+            self.activeDestination = (dir, baseName)
+            defer { self.activeDestination = nil; self.lastActivity = Date() }
+            do {
+                _ = try self.captureCanonSync()
+                let result = CaptureResult(files: self.captureRecords, preview: self.capturePreview, seconds: Date().timeIntervalSince(t0))
+                for f in result.files {
+                    self.log("Captured \(f.kind) \(f.path) \(f.size) bytes (camera said \(f.expectedSize.map(String.init) ?? "?"))")
+                }
+                self.lastError.value = nil
+                DispatchQueue.main.async { completion(.success(result)) }
+            } catch {
+                self.lastError.value = error.localizedDescription
+                self.log("Capture failed: \(error.localizedDescription)")
+                DispatchQueue.main.async { completion(.failure(error)) }
+            }
+        }
+    }
+
+    /// Canon bodies power off when nobody talks to them; poll events now and then while idle.
+    public func startKeepAlive(every seconds: TimeInterval = 15) {
+        Timer.scheduledTimer(withTimeInterval: seconds, repeats: true) { [weak self] _ in
+            guard let self, self.isReady, !self.isLiveViewOn else { return }
+            self.ptpQueue.async { _ = try? self.pollEventsSync() }
+        }
+    }
+
+    fileprivate func scheduleLiveViewTickPublic() { scheduleLiveViewTickInternal() }
+}
+
+/// CR2 files are TIFF containers whose first IFD holds a full-size JPEG preview.
+public func extractCR2Preview(_ d: Data) -> Data? {
+    let data = Data(d)
+    guard data.count > 16, data.prefix(4) == Data([0x49, 0x49, 0x2A, 0x00]),
+          let ifd0 = le32(data, 4).map(Int.init), let count = le16(data, ifd0) else { return nil }
+    var offset: UInt32?, length: UInt32?
+    for i in 0..<Int(count) {
+        let e = ifd0 + 2 + i * 12
+        if le16(data, e) == 0x0111 { offset = le32(data, e + 8) }
+        if le16(data, e) == 0x0117 { length = le32(data, e + 8) }
+    }
+    guard let o = offset.map(Int.init), let l = length.map(Int.init), o + l <= data.count, l > 2 else { return nil }
+    let jpeg = data.subdata(in: o..<(o + l))
+    return jpeg[0] == 0xFF && jpeg[1] == 0xD8 ? jpeg : nil
+}
+
+func jpegPixelSize(_ jpeg: Data) -> CGSize? {
+    guard let src = CGImageSourceCreateWithData(jpeg as CFData, nil),
+          let props = CGImageSourceCopyPropertiesAtIndex(src, 0, nil) as? [CFString: Any],
+          let w = props[kCGImagePropertyPixelWidth] as? Int, let h = props[kCGImagePropertyPixelHeight] as? Int else { return nil }
+    return CGSize(width: w, height: h)
+}
 
 extension CameraController: ICDeviceBrowserDelegate {
     func deviceBrowser(_ browser: ICDeviceBrowser, didAdd device: ICDevice, moreComing: Bool) {

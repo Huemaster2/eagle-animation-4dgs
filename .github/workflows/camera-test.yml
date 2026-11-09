@@ -28,11 +28,15 @@ jobs:
           swift --version
           ./build_app.sh
           ditto -c -k --keepParent "StopMo Stage 1.app" StopMo-Camera-Test.zip
+          swift build -c release --arch arm64 --arch x86_64 --product stopmo-camera-helper
+          BIN="$(swift build -c release --arch arm64 --arch x86_64 --show-bin-path)/stopmo-camera-helper"
+          lipo -info "$BIN"
+          cp "$BIN" stopmo-camera-helper && codesign --force --sign - stopmo-camera-helper
 
       - name: Publish as pre-release
         working-directory: native/camera-test
         run: |
-          gh release create "camera-test-${{ github.run_number }}" StopMo-Camera-Test.zip \
+          gh release create "camera-test-${{ github.run_number }}" StopMo-Camera-Test.zip stopmo-camera-helper \
             --target "${{ github.sha }}" --prerelease \
             --title "Camera test app ${{ github.run_number }}" \
             --notes "Canon 5D Mark II test app (ImageCaptureCore + Canon EOS PTP)."

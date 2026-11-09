@@ -7,7 +7,7 @@ cd "$(dirname "$0")"
 APP="StopMo Stage 1.app"
 ARCH="$(uname -m)"
 
-swift build -c release --arch "$ARCH"
+swift build -c release --arch "$ARCH" --product StopMoStage1
 BIN="$(swift build -c release --arch "$ARCH" --show-bin-path)/StopMoStage1"
 
 rm -rf "$APP"

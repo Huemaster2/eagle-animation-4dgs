@@ -1,4 +1,5 @@
 import AppKit
+import StopMoCamera
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var window: NSWindow!
@@ -199,8 +200,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 self?.fpsLabel.stringValue = ""
             }
         }
-        cam.onLiveFrame = { [weak self] img, fps, size in
-            self?.liveView.image = img
+        cam.onLiveFrame = { [weak self] jpeg, fps, size in
+            self?.liveView.image = NSImage(data: jpeg)
             self?.fpsLabel.stringValue = String(format: "Live view %d×%d  %.1f fps", Int(size.width), Int(size.height), fps)
         }
         cam.onCaptured = { [weak self] url, summary in
