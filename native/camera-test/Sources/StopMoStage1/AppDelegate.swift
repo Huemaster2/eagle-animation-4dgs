@@ -15,6 +15,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var liveButton: NSButton!
     private var captureButton: NSButton!
     private var targetPopup: NSPopUpButton!
+    private var qualityPopup: NSPopUpButton!
     private var keyMonitor: Any?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -108,13 +109,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         fpsLabel.textColor = .secondaryLabelColor
 
         // Controls
-        captureButton = button("Capture Frame  (Space)", #selector(capture(_:)))
+        captureButton = button("TEST SHUTTER  (Space)", #selector(capture(_:)))
         captureButton.bezelColor = .systemRed
         liveButton = button("Start Live View", #selector(toggleLive(_:)))
         let nativeButton = button("Capture via macOS (fallback)", #selector(captureNative(_:)))
         let reconnectButton = button("Reconnect", #selector(reconnect(_:)))
         let testButton = button("Run Stage 1 Test", #selector(runTest(_:)))
         let folderButton = button("Show Captures Folder", #selector(openFolder(_:)))
+
+        qualityPopup = NSPopUpButton(frame: .zero, pullsDown: false)
+        qualityPopup.addItems(withTitles: ["Quality: RAW (CR2) only", "Quality: RAW + Large Fine JPEG", "Quality: Large Fine JPEG only"])
+        qualityPopup.target = self
+        qualityPopup.action = #selector(qualityChanged(_:))
+        qualityPopup.translatesAutoresizingMaskIntoConstraints = false
 
         targetPopup = NSPopUpButton(frame: .zero, pullsDown: false)
         targetPopup.addItems(withTitles: ["Save to camera card + Mac", "Save to Mac only (no card writes)"])
@@ -142,7 +149,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         scroll.translatesAutoresizingMaskIntoConstraints = false
         scroll.setContentHuggingPriority(.defaultLow, for: .vertical)
 
-        let side = NSStackView(views: [statusRow, fpsLabel, captureButton, liveButton, targetPopup,
+        let side = NSStackView(views: [statusRow, fpsLabel, captureButton, liveButton, qualityPopup, targetPopup,
                                        nativeButton, testButton, reconnectButton, folderButton,
                                        lastCaptureView, lastCaptureLabel, scroll])
         side.orientation = .vertical
@@ -150,7 +157,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         side.spacing = 10
         side.edgeInsets = NSEdgeInsets(top: 14, left: 14, bottom: 14, right: 14)
         side.translatesAutoresizingMaskIntoConstraints = false
-        for v in [captureButton!, liveButton!, targetPopup!, nativeButton, testButton, reconnectButton,
+        for v in [captureButton!, liveButton!, qualityPopup!, targetPopup!, nativeButton, testButton, reconnectButton,
                   folderButton, lastCaptureView, scroll] as [NSView] {
             v.widthAnchor.constraint(equalTo: side.widthAnchor, constant: -28).isActive = true
         }
@@ -229,6 +236,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc func reconnect(_ sender: Any?) { cam.reconnect() }
+
+    @objc func qualityChanged(_ sender: NSPopUpButton) {
+        guard cam.isReady, let q = RawQuality(rawValue: sender.indexOfSelectedItem) else { NSSound.beep(); return }
+        cam.setQuality(q)
+    }
 
     @objc func targetChanged(_ sender: NSPopUpButton) {
         cam.saveTarget = SaveTarget(rawValue: sender.indexOfSelectedItem) ?? .cardAndMac

@@ -14,6 +14,48 @@ import ImageIO
 // runs on `ptpQueue` (serial) and blocks that queue until the camera answers, so commands
 // never overlap.
 
+/// Canon EOS ImageFormat (0xD120): n entries of [0x10, type, size, compression].
+/// type 1 = JPEG, 6 = RAW; size 0 = Large; compression 2/3 = JPEG normal/fine, 4 = RAW.
+enum RawQuality: Int {
+    case rawOnly = 0, rawPlusLargeFineJPEG = 1, largeFineJPEG = 2
+
+    var title: String {
+        switch self {
+        case .rawOnly: return "RAW (CR2) only"
+        case .rawPlusLargeFineJPEG: return "RAW + Large Fine JPEG"
+        case .largeFineJPEG: return "Large Fine JPEG only"
+        }
+    }
+
+    var values: [UInt32] {
+        switch self {
+        case .rawOnly: return [1, 0x10, 6, 0, 4]
+        case .rawPlusLargeFineJPEG: return [2, 0x10, 6, 0, 4, 0x10, 1, 0, 3]
+        case .largeFineJPEG: return [1, 0x10, 1, 0, 3]
+        }
+    }
+}
+
+func describeImageFormat(_ values: [UInt32]) -> String {
+    guard let n = values.first, n > 0 else { return "unknown" }
+    var parts: [String] = []
+    var i = 1
+    for _ in 0..<n {
+        guard i + 3 < values.count else { break }
+        let type = values[i + 1], size = values[i + 2], comp = values[i + 3]
+        let sizeName = [0: "Large", 1: "Medium", 2: "Small", 0xe: "S1", 0xf: "S2", 0x10: "S3"][Int(size)] ?? "size \(size)"
+        if type == 6 {
+            parts.append(size == 0 ? "RAW (CR2)" : "sRAW (\(sizeName))")
+        } else if type == 1 {
+            parts.append("\(sizeName) JPEG \(comp == 3 ? "Fine" : "Normal")")
+        } else {
+            parts.append("type \(type)")
+        }
+        i += Int(values[i] / 4)
+    }
+    return parts.joined(separator: " + ")
+}
+
 enum SaveTarget: Int {
     case cardAndMac = 0   // camera writes to CF card, we copy the file to the Mac
     case macOnly = 1      // camera keeps image in RAM and hands it to the Mac (no card writes)
@@ -75,6 +117,8 @@ final class CameraController: NSObject {
     private var canonModeOn = false
     private var originalCaptureDest: UInt32?
     private(set) var propValues: [UInt32: UInt32] = [:]
+    private(set) var imageFormatValues: [UInt32] = []
+    private(set) var lastObjectSizes: [String: UInt64] = [:]
     var saveTarget: SaveTarget = .cardAndMac
 
     /// If the camera rejects SetDevicePropValueEx, try `defaults write com.stopmo.stage1 wrapOutData -bool YES`.
@@ -283,8 +327,48 @@ final class CameraController: NSObject {
         let events = CanonEOS.parseEvents(r.data)
         for e in events where e.type == EOSEvent.propValueChanged {
             if let p = le32(e.payload, 0), let v = le32(e.payload, 4) { propValues[p] = v }
+            if le32(e.payload, 0) == EOSProp.imageFormat {
+                var vals: [UInt32] = []
+                var off = 4
+                while let v = le32(e.payload, off) { vals.append(v); off += 4 }
+                imageFormatValues = vals
+            }
         }
         return events
+    }
+
+    @discardableResult
+    func setEOSPropValuesSync(_ prop: UInt32, _ values: [UInt32]) throws -> PTPResponse {
+        var payload = Data()
+        payload.appendLE(UInt32(8 + 4 * values.count))
+        payload.appendLE(prop)
+        for v in values { payload.appendLE(v) }
+        let r = try ptp(PTPOp.eosSetDevicePropValueEx, out: payload)
+        log("Set \(EOSProp.name(prop)) = \(values.map { hex($0) }) → \(hex(r.code))")
+        return r
+    }
+
+    /// Switches the body's recording quality over USB and confirms it from the camera's own event report.
+    func setQualitySync(_ q: RawQuality) throws -> Bool {
+        try enableCanonModeSync()
+        let r = try setEOSPropValuesSync(EOSProp.imageFormat, q.values)
+        guard r.ok else { throw CamError.refused("Image quality change", r.code) }
+        for _ in 0..<20 {
+            _ = try? pollEventsSync()
+            if Array(imageFormatValues.prefix(q.values.count)) == q.values { break }
+            Thread.sleep(forTimeInterval: 0.1)
+        }
+        let confirmed = Array(imageFormatValues.prefix(q.values.count)) == q.values
+        log("Camera now records: \(describeImageFormat(imageFormatValues))\(confirmed ? "" : " (camera did not confirm the change)")")
+        return confirmed
+    }
+
+    func setQuality(_ q: RawQuality) {
+        busy(true)
+        ptpQueue.async {
+            defer { self.busy(false) }
+            do { _ = try self.setQualitySync(q) } catch { self.log("Quality change failed: \(error.localizedDescription)") }
+        }
     }
 
     func logExposureState() {
@@ -292,6 +376,7 @@ final class CameraController: NSObject {
                     EOSProp.expCompensation, EOSProp.whiteBalance, EOSProp.imageFormat, EOSProp.captureDestination]
         let parts = keys.map { k in "\(EOSProp.name(k))=\(propValues[k].map { hex($0) } ?? "?")" }
         log("Camera settings (raw Canon codes): " + parts.joined(separator: ", "))
+        log("Recording quality: \(describeImageFormat(imageFormatValues))")
     }
 
     // MARK: Live view
@@ -457,10 +542,13 @@ final class CameraController: NSObject {
             let obj = try ptp(PTPOp.getObject, [h], timeout: 120)
             guard obj.ok else { log("GetObject \(hex(h, width: 8)) → \(hex(obj.code))"); continue }
             if needsComplete || saveTarget == .macOnly { _ = try? ptp(PTPOp.eosTransferComplete, [h]) }
+            // An incomplete transfer is never saved as a good photograph
             if expected > 0 && UInt32(obj.data.count) != expected {
-                log("WARNING: received \(obj.data.count) bytes but camera said \(expected)")
+                log("INCOMPLETE TRANSFER: received \(obj.data.count) bytes but camera said \(expected) — not saved")
+                throw CamError.writeFailed("incomplete transfer of \(name)")
             }
             let url = try writeNoOverwrite(obj.data, originalName: name, frameNumber: frameNumber)
+            if expected > 0 { lastObjectSizes[url.lastPathComponent] = UInt64(expected) }
             log(String(format: "Saved %@ (%.1f MB in %.2f s)", url.lastPathComponent,
                        Double(obj.data.count) / 1_048_576, Date().timeIntervalSince(td)))
             urls.append(url)
@@ -612,19 +700,6 @@ final class CameraController: NSObject {
                 check(false, "Read PTP device info")
             }
 
-            // 3. Native capture (only meaningful before Canon remote mode is switched on)
-            if !self.canonModeOn {
-                let sem = DispatchSemaphore(value: 0)
-                var nativeURL: URL?
-                self.captureNative { url in nativeURL = url; sem.signal() }
-                _ = sem.wait(timeout: .now() + 30)
-                if let u = nativeURL {
-                    check(true, "macOS-native capture (fallback path)", self.imageSummary(u))
-                } else {
-                    lines.append("INFO  macOS-native capture not available — fine, the Canon path below is the primary one")
-                }
-            }
-
             // 4. Canon remote mode
             do {
                 try self.enableCanonModeSync()
@@ -634,6 +709,16 @@ final class CameraController: NSObject {
             } catch {
                 check(false, "Canon remote mode", error.localizedDescription)
                 self.finishReport(lines, completion); return
+            }
+
+            // 4b. RAW-only recording, set over USB
+            let originalFormat = self.imageFormatValues
+            note("Recording quality before test: \(describeImageFormat(originalFormat))")
+            do {
+                let ok = try self.setQualitySync(.rawOnly)
+                check(ok, "Camera switched to RAW (CR2) only over USB", describeImageFormat(self.imageFormatValues))
+            } catch {
+                check(false, "Camera switched to RAW (CR2) only over USB", error.localizedDescription)
             }
 
             // 5. Live view for 8 seconds
@@ -659,7 +744,7 @@ final class CameraController: NSObject {
 
             // 6. Three captures with live view running, verifying full resolution
             var captureTimes: [Double] = []
-            for i in 1...3 {
+            for i in 1...5 {
                 let t = Date()
                 do {
                     let urls = try self.captureCanonSync()
@@ -669,7 +754,11 @@ final class CameraController: NSObject {
                         let full = dims.map { $0.0 >= 5616 && $0.1 >= 3744 } ?? false
                         let isRaw = u.pathExtension.uppercased() == "CR2"
                         let rawOK = !isRaw || self.isCR2Signature(u)
-                        check(full && rawOK, "Capture \(i): full-resolution \(isRaw ? "CR2 RAW" : "JPEG") saved and decoded", self.imageSummary(u))
+                        let expectedSize = self.lastObjectSizes[u.lastPathComponent]
+                        let actualSize = ((try? FileManager.default.attributesOfItem(atPath: u.path))?[.size] as? NSNumber)?.uint64Value
+                        let complete = expectedSize == nil || expectedSize == actualSize
+                        check(full && rawOK && complete, "Capture \(i): full-resolution \(isRaw ? "CR2 RAW" : "JPEG") saved, complete and decoded",
+                              self.imageSummary(u) + (expectedSize.map { ", camera size \($0) bytes \(complete ? "matches" : "MISMATCH")" } ?? ""))
                         DispatchQueue.main.async { self.onCaptured?(u, self.imageSummary(u)) }
                     }
                 } catch {
