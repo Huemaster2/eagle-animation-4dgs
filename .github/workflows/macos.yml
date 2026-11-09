@@ -7,6 +7,9 @@ on:
       - 'master'
       - 'stopmo'
       - 'stopmo/**'
+    paths-ignore:
+      - 'native/**'
+      - '.github/workflows/camera-test.yml'
 
 permissions:
   contents: write
