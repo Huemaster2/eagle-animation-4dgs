@@ -68,7 +68,6 @@ import faImage from '@icons/faImage';
 import faImages from '@icons/faImages';
 import faMagnifyingGlass from '@icons/faMagnifyingGlass';
 import faPlay from '@icons/faPlay';
-import faRectangleHistory from '@icons/faRectangleHistory';
 import faRotate from '@icons/faRotate';
 import faSignal from '@icons/faSignal';
 import faSliders from '@icons/faSliders';
@@ -881,6 +880,7 @@ const Animator = ({ t }) => {
         return { playing: true, position: atEnd ? 0 : (p.position ?? 0) };
       });
     },
+    VIEW_ROWS: () => settingsActions.setSettings({ VIEW_ROWS: { OPEN: !settings.VIEW_ROWS?.OPEN } }),
     ONION_TOGGLE: () => {
       settingsActions.setSettings({ ONION_SKIN: { ...onionConfig, ENABLED: !onionConfig.ENABLED } });
     },
@@ -1132,16 +1132,6 @@ const Animator = ({ t }) => {
       ]
     : [];
   const liveActions = [
-    ...(viewRows.length
-      ? [
-          {
-            title: viewRowsOpen ? t('Hide the view timelines') : t('View timelines (one row per view)'),
-            icon: faRectangleHistory,
-            onClick: () => settingsActions.setSettings({ VIEW_ROWS: { OPEN: !viewRowsOpen } }),
-            selected: viewRowsOpen,
-          },
-        ]
-      : []),
     {
       title: xsheetLayout.OPEN ? t('Hide X-sheet') : t('X-sheet (frame list)'),
       icon: faXSheet,
@@ -1352,6 +1342,8 @@ const Animator = ({ t }) => {
             onionEnabled={onionEnabled}
             showOnionSettings={activeWindow === 'onion'}
             hasReferenceClip={referenceLength > 1}
+            hasViewRows={viewRows.length > 0}
+            viewRowsOpen={viewRowsOpen}
             referenceClipPlaying={referencePlay.playing}
             isPlaying={isPlaying}
             isCameraReady={!!currentCamera}

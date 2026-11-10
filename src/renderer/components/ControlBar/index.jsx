@@ -21,6 +21,7 @@ import faImageCirclePlus from '@icons/faImageCirclePlus';
 import faLayer from '@icons/faLayer';
 import faPen from '@icons/faPen';
 import faPlay from '@icons/faPlay';
+import faRectangleHistory from '@icons/faRectangleHistory';
 import faSliders from '@icons/faSliders';
 import faStop from '@icons/faStop';
 import faTrash from '@icons/faTrash';
@@ -60,6 +61,8 @@ const ControlBar = ({
   isCurrentFrameHidden = false,
   showCameraSettings = false,
   hasReferenceClip = false,
+  hasViewRows = false,
+  viewRowsOpen = false,
   referenceClipPlaying = false,
   onAction = null,
   totalAnimationFrames = 0,
@@ -174,6 +177,16 @@ const ControlBar = ({
                 icon: faLayer,
                 disabled: isPlaying,
               },
+              ...(hasViewRows
+                ? [
+                    {
+                      title: viewRowsOpen ? t('Hide the view timelines') : t('View timelines (one row per view)'),
+                      selected: viewRowsOpen,
+                      onClick: handleAction('VIEW_ROWS'),
+                      icon: faRectangleHistory,
+                    },
+                  ]
+                : []),
               ...(hasReferenceClip
                 ? [
                     {
