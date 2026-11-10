@@ -26,6 +26,8 @@ const SortableItem = memo(function SortableItem({
   onSelect,
   index,
   shots = 0,
+  shotAngle = null,
+  shotOff = false,
   expanded = false,
   onExpand,
 }) {
@@ -48,7 +50,14 @@ const SortableItem = memo(function SortableItem({
       onClick={() => onSelect(id)}
       className={`${style.containerImg} ${hidden ? style.isHidden : ''}`}
     >
-      <span className={style.img}>{link && <img alt="" className={style.imgcontent} src={getPictureLink(link, { w: 80, h: 80, m: 'cover', f: 'jpg' })} loading="lazy" />}</span>
+      <span className={`${style.img} ${shotOff ? style.imgOffView : ''}`}>
+        {link && <img alt="" className={style.imgcontent} src={getPictureLink(link, { w: 80, h: 80, m: 'cover', f: 'jpg' })} loading="lazy" />}
+      </span>
+      {shotAngle !== null && (
+        <span className={`${style.viewAngle} ${shotOff ? style.viewAngleOff : ''}`} title={shotOff ? t('No photo at this view: nearest is this one') : t('Photo taken at this view')}>
+          {`${(Math.round(shotAngle * 10) / 10) % 360}°`}
+        </span>
+      )}
       {hidden && <FontAwesomeIcon className={style.icon} icon={faEyeSlash} />}
       {isShortPlayBegining && <FontAwesomeIcon className={style.shortPlayIcon} icon={faForwardFast} />}
       {length > 1 && <span className={style.duplicated}>{`x${length}`}</span>}
@@ -128,6 +137,8 @@ const SortableList = memo(function SortableList({ sortableItemIds, visiblePictur
             onSelect={onSelect}
             isShortPlayBegining={shortPlayFrameId === img.id}
             shots={img.sequence?.shots?.length || 0}
+            shotAngle={img.shotAngle ?? null}
+            shotOff={!!img.shotOff}
             expanded={expandedId === img.id}
             onExpand={onExpand}
           />
@@ -219,7 +230,23 @@ const Timeline = ({
   let picturesKey = '';
   for (let i = 0; i < pictures.length; i++) {
     const p = pictures[i];
-    picturesKey += p.id + ',' + (p.hidden ? 1 : 0) + ',' + (p.masking ? 1 : 0) + ',' + (p.length || 0) + ',' + (p.link || '') + ',' + (p.sequence?.shots?.length || 0) + ';';
+    picturesKey +=
+      p.id +
+      ',' +
+      (p.hidden ? 1 : 0) +
+      ',' +
+      (p.masking ? 1 : 0) +
+      ',' +
+      (p.length || 0) +
+      ',' +
+      (p.link || '') +
+      ',' +
+      (p.sequence?.shots?.length || 0) +
+      ',' +
+      (p.shotAngle ?? '') +
+      ',' +
+      (p.shotOff ? 1 : 0) +
+      ';';
   }
 
   const sortableItemIds = useMemo(() => pictures.map((p) => p.id), [picturesKey]);

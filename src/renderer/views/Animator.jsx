@@ -358,7 +358,10 @@ const Animator = ({ t }) => {
   const viewPictures = pictures.map((p) => {
     if (!p.sequence || viewAngle === null) return p;
     const shot = nearestShot(p.sequence, viewAngle);
-    return shot?.link ? { ...p, link: shot.link } : p;
+    if (!shot?.link) return p;
+    // The timeline frame carries the angle it is showing, and whether the turn ever reached this view
+    const spacing = 360 / (2 * Math.max(1, p.sequence?.shotsPerPass || 1));
+    return { ...p, link: shot.link, shotAngle: shot.angle, shotOff: angleGap(shot.angle, viewAngle) > spacing + 0.5 };
   });
   const playerPictures = shotPreview
     ? viewPictures.map((p) => {

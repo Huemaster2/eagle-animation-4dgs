@@ -294,3 +294,27 @@
     --size: 54px;
   }
 }
+
+/* The angle of the photo the active view is showing */
+.viewAngle {
+  background-color: var(--color-theme-dark);
+  bottom: 2px;
+  color: var(--color-white);
+  font-size: calc(0.9 * var(--tag-size));
+  font-variant-numeric: tabular-nums;
+  left: 2px;
+  line-height: var(--tag-size);
+  padding: 0 3px;
+  pointer-events: none;
+  position: absolute;
+  z-index: 2;
+}
+
+/* The turn never reached this view: the nearest photo is shown instead */
+.viewAngleOff {
+  opacity: 0.6;
+}
+
+.imgOffView {
+  opacity: 0.45;
+}
