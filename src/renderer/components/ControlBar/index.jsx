@@ -177,32 +177,42 @@ const ControlBar = ({
                 icon: faLayer,
                 disabled: isPlaying,
               },
-              ...(hasViewRows
-                ? [
-                    {
-                      title: viewRowsOpen ? t('Hide the view timelines') : t('View timelines (one row per view)'),
-                      selected: viewRowsOpen,
-                      onClick: handleAction('VIEW_ROWS'),
-                      icon: faRectangleHistory,
-                    },
-                  ]
-                : []),
-              ...(hasReferenceClip
-                ? [
-                    {
-                      title: referenceClipPlaying ? t('Stop the reference clip') : t('Play the reference clip over the live view'),
-                      selected: referenceClipPlaying,
-                      onClick: handleAction('REFERENCE_CLIP'),
-                      icon: faFilm,
-                      disabled: isPlaying,
-                    },
-                  ]
-                : []),
             ]}
             tooltipPosition="TOP"
             merge={true}
           />
         </div>
+        {hasViewRows && (
+          <ButtonsGroup
+            groupClassName={style.liveViewActions}
+            actions={[
+              {
+                title: viewRowsOpen ? t('Hide the view timelines') : t('View timelines (one row per view)'),
+                selected: viewRowsOpen,
+                onClick: handleAction('VIEW_ROWS'),
+                icon: faRectangleHistory,
+              },
+            ]}
+            tooltipPosition="TOP"
+            merge={true}
+          />
+        )}
+        {hasReferenceClip && (
+          <ButtonsGroup
+            groupClassName={style.liveViewActions}
+            actions={[
+              {
+                title: referenceClipPlaying ? t('Stop the reference clip') : t('Play the reference clip over the live view'),
+                selected: referenceClipPlaying,
+                onClick: handleAction('REFERENCE_CLIP'),
+                icon: faFilm,
+                disabled: isPlaying,
+              },
+            ]}
+            tooltipPosition="TOP"
+            merge={true}
+          />
+        )}
 
         <div className={`${style.slider} ${onionSliderDisabled ? style.sliderDisabled : ''}`} id="onion" data-tooltip-id="onion" data-tour="onion">
           <CustomSlider step={0.01} min={0} max={1} value={onionValue} onChange={onionSliderDisabled ? () => {} : (value) => handleAction('ONION_CHANGE', value)()} />
