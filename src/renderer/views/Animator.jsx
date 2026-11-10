@@ -1524,7 +1524,11 @@ const Animator = ({ t }) => {
           onAlign={setAlignReferenceId}
           playback={referencePlay}
           playbackLength={referenceLength}
-          onPlayback={(next) => setReferencePlay((p) => ({ ...p, ...next }))}
+          onPlayback={(next) => {
+            // Watching the clip means watching it over the camera, so step off the selected frame
+            if (next.playing && currentFrameId !== false) handleSelectFrame(false);
+            setReferencePlay((p) => ({ ...p, ...next }));
+          }}
           onLayoutChange={setLivePanel}
           onClose={() => setLivePanel({ OPEN: false })}
           focusPeaking={settings.FOCUS_PEAKING}

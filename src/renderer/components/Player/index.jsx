@@ -301,10 +301,11 @@ class Player extends Component {
         })
       : [];
     // Reference sequences follow the animation position (holds counted, hidden frames skipped), during playback too
-    const showReferences = frameIndex !== false || isCameraReady;
-    // On the live view the reference can be scrubbed or played past the end of what has been shot
+    const showReferences = frameIndex !== false || isCameraReady || Number.isFinite(this.props.referencePosition);
+    // Scrubbing or playing the reference clip runs it past the end of what has been shot,
+    // whatever is selected; playing the timeline hands it back so playback still matches the frames
     const timelinePosition = getAnimationPosition(this.frames, frameIndex);
-    const animationPosition = frameIndex === false && Number.isFinite(this.props.referencePosition) ? this.props.referencePosition : timelinePosition;
+    const animationPosition = !isPlaying && Number.isFinite(this.props.referencePosition) ? this.props.referencePosition : timelinePosition;
     const references = (this.props.references || []).map(normalizeReference).filter((r) => r.enabled && r.frames.length && referenceMatchesPerspective(r, perspective));
     const legacyGhostOpacity = onion.ENABLED && !blendMode ? 0 : hasOnionFrame ? 1 - onionValue : 0;
 
