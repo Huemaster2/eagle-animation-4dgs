@@ -4,7 +4,7 @@ import Switch from '@components/Switch';
 import TurntableQuickControls from '@components/TurntableQuickControls';
 import { normalizeReference, sequenceNameFromFiles, sortSequenceFiles } from '@core/referenceSequence';
 import { PERSPECTIVES } from '@core/turntableMath';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { withTranslation } from 'react-i18next';
 
 import * as style from './style.module.css';
@@ -35,8 +35,10 @@ const ViewsPanel = ({
   parade,
   magnifier,
   exposure = [],
+  exposureAvailable = false,
   exposureBusy = false,
   onExposureChange = () => {},
+  onExposureRefresh = () => {},
   onSettingsChange = () => {},
 }) => {
   const input = useRef(null);
@@ -46,6 +48,13 @@ const ViewsPanel = ({
     setTab(next);
     onLayoutChange({ TAB: next });
   };
+
+  // The camera's dials are only known once it is awake, so read them when this tab comes up
+  const refresh = useRef(onExposureRefresh);
+  refresh.current = onExposureRefresh;
+  useEffect(() => {
+    if (tab === 'exposure') refresh.current();
+  }, [tab]);
 
   const handleFiles = (event) => {
     const files = sortSequenceFiles(Array.from(event.target.files || []));
@@ -89,7 +98,7 @@ const ViewsPanel = ({
   return (
     <FloatingPanel title={t('Live controls')} layout={layout} defaults={{ W: 320, H: 460, Y: 80 }} minWidth={240} minHeight={220} onLayoutChange={onLayoutChange} onClose={onClose}>
       <div className={style.tabs} role="tablist">
-        {[['views', t('Views')], ...(exposure.length ? [['exposure', t('Exposure')]] : []), ['turntable', t('Turntable')], ['live', t('Focus')]].map(([key, label]) => (
+        {[['views', t('Views')], ...(exposureAvailable ? [['exposure', t('Exposure')]] : []), ['turntable', t('Turntable')], ['live', t('Focus')]].map(([key, label]) => (
           <button key={key} type="button" role="tab" aria-selected={tab === key} className={`${style.tab} ${tab === key ? style.tabActive : ''}`} onClick={() => chooseTab(key)}>
             {label}
           </button>
@@ -110,8 +119,12 @@ const ViewsPanel = ({
               </select>
             </div>
           ))}
+          {!exposure.length && <p className={style.status}>{t('No dials reported yet — the camera has to be connected and awake.')}</p>}
           <p className={style.status}>{t('Set on the camera over USB. Its own dials stay locked while the app holds it, so change exposure here.')}</p>
           <p className={style.status}>{t('Shutter and aperture need the mode dial on M.')}</p>
+          <button type="button" className={style.small} disabled={exposureBusy} onClick={onExposureRefresh}>
+            {t('Read from the camera')}
+          </button>
         </div>
       )}
 

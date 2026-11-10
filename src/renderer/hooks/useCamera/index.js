@@ -237,6 +237,13 @@ function useCamera(options = {}) {
     eventsRefs.current = eventsRefs.current.filter((e) => e[0] !== name || e[1] !== callback);
   }, []);
 
+  // Re-read what the camera reports now: its dials are not known until the body is ready
+  const actionRefreshCapabilities = useCallback(async () => {
+    if (!currentCamera) return;
+    const caps = await currentCamera.getCapabilities().catch(() => null);
+    if (caps) setCameraCapabilities(caps);
+  }, [currentCamera]);
+
   // Action set capability
   const actionSetCapability = useCallback(
     async (id, value) => {
@@ -283,6 +290,7 @@ function useCamera(options = {}) {
       refreshDevices: actionRefreshDevices,
       takePicture: actionTakePicture,
       setCapability: actionSetCapability,
+      refreshCapabilities: actionRefreshCapabilities,
       addEventListener: actionAddEventListener,
       removeEventListener: actionRemoveEventListener,
     },

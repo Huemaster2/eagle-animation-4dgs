@@ -1476,7 +1476,9 @@ const Animator = ({ t }) => {
           references={sceneReferences}
           importProgress={referenceImport}
           exposure={currentCameraCapabilities.filter((c) => EXPOSURE_CAPABILITIES.includes(c.id))}
+          exposureAvailable={STOPMO_CAMERA_AVAILABLE}
           onExposureChange={handleCapabilityChange}
+          onExposureRefresh={() => cameraActions.refreshCapabilities()}
           onSelect={selectPerspective}
           onTurn={!reviewingFrames && activePerspective && !tableAtActiveView ? () => turnToPerspective(activePerspective) : null}
           onImport={importReferences}
