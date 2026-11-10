@@ -335,6 +335,8 @@ const Animator = ({ t }) => {
     playerRef.current.showFrame(selectedFrameId === false ? false : selectedFrameId);
   }, []);
 
+  const playerSetStream = useRef(null);
+
   // Shortcut if informations are not ready
   if (!project || !settings || !devices) {
     return (
@@ -976,7 +978,6 @@ const Animator = ({ t }) => {
     },
   };
 
-  const playerSetStream = useRef(null);
   const handlePlayerInit = (setStream) => {
     playerSetStream.current = setStream;
     cameraActions.setStream(setStream);
