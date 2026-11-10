@@ -107,6 +107,14 @@
   opacity: 1;
 }
 
+.multiSelected .img::after {
+  border: 3px solid var(--pf-line);
+  content: '';
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+}
+
 .isHidden .img {
   filter: grayscale(1);
   opacity: 0.2;

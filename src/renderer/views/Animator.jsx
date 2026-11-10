@@ -29,8 +29,10 @@ import Tour from '@components/Tour';
 import TurntableWindow from '@components/TurntableWindow';
 import ViewsPanel from '@components/ViewsPanel';
 import Window from '@components/Window';
+import XSheet from '@components/XSheet';
 import { DEFAULT_FPS, MAX_FRAME_DUPLICATION } from '@config-web';
 import { downscaleFrame, frameFolderName, nearestShot, nextSequenceNumber, planSequence, runSequence, shotAngle, shotBaseName } from '@core/captureSequence';
+import { selectionClick } from '@core/frameSelection';
 import { normalizeOnionSkin } from '@core/onionSkin';
 import { parseRatio } from '@core/ratio';
 import { getAnimationPosition } from '@core/referenceSequence';
@@ -61,6 +63,7 @@ import faEraser from '@icons/faEraser';
 import faFaceViewfinder from '@icons/faFaceViewfinder';
 import faFolder from '@icons/faFolder';
 import faImage from '@icons/faImage';
+import faImages from '@icons/faImages';
 import faMagnifyingGlass from '@icons/faMagnifyingGlass';
 import faPlay from '@icons/faPlay';
 import faRotate from '@icons/faRotate';
@@ -68,6 +71,7 @@ import faSignal from '@icons/faSignal';
 import faSliders from '@icons/faSliders';
 import faStop from '@icons/faStop';
 import faWaveform from '@icons/faWaveform';
+import faXSheet from '@icons/faXSheet';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { withTranslation } from 'react-i18next';
@@ -201,6 +205,9 @@ const Animator = ({ t }) => {
   const [notice, setNotice] = useState(null);
   const [rotationRun, setRotationRun] = useState(null);
   const [expandedFrameId, setExpandedFrameId] = useState(null);
+  // X-sheet selection and the frames queued to be replaced by the next captures
+  const [frameSelection, setFrameSelection] = useState({ selected: [], anchor: null });
+  const [replaceQueue, setReplaceQueue] = useState([]);
   // Rotation photo shown in place of a frame's timeline photo: { frameId, filename }
   const [shotPreview, setShotPreview] = useState(null);
   const rotationControl = useRef({ stop: false, continueHeight: null });
@@ -409,7 +416,7 @@ const Animator = ({ t }) => {
   const rotationEnabled = turntableState.connected && turntableProfile.rotationCapture;
 
   // Shutter with rotation capture on: a full turn of photos at every camera height, saved as one timeline frame
-  const runRotationCapture = async () => {
+  const runRotationCapture = async (replaceId = null) => {
     const profile = turntableProfile;
     const rev = turntable.state.stepsPerRev;
     const heights = profile.heights;
@@ -491,7 +498,13 @@ const Animator = ({ t }) => {
         shots,
       };
       try {
-        await projectActions.addFrame(track, heroFrame || firstFrame, isPlaying ? false : currentFrameId, null, { ...(startView ? { perspective: startView } : {}), sequence });
+        const extra = { ...(startView ? { perspective: startView } : {}), sequence };
+        if (replaceId) {
+          await projectActions.replaceFrame(track, replaceId, heroFrame || firstFrame, extra);
+          setReplaceQueue((q) => q.filter((id) => id !== replaceId));
+        } else {
+          await projectActions.addFrame(track, heroFrame || firstFrame, isPlaying ? false : currentFrameId, null, extra);
+        }
       } catch (err) {
         failure = failure || err;
       }
@@ -539,7 +552,7 @@ const Animator = ({ t }) => {
 
       if (rotationEnabled && maskingMode === 'DISABLED') {
         try {
-          await runRotationCapture();
+          await runRotationCapture(replaceQueue.find((id) => pictures.some((p) => p.id === id)) || null);
         } finally {
           flushSync(() => {
             setIsTakingPicture(false);
@@ -571,7 +584,11 @@ const Animator = ({ t }) => {
           }
 
           // Save frame
-          if (pendingBackgroundFrame || maskingMode === 'DISABLED') {
+          const replaceId = maskingMode === 'DISABLED' ? replaceQueue.find((id) => pictures.some((p) => p.id === id)) : null;
+          if (replaceId) {
+            await projectActions.replaceFrame(track, replaceId, frame, activePerspective ? { perspective: activePerspective } : {});
+            setReplaceQueue((q) => q.filter((id) => id !== replaceId));
+          } else if (pendingBackgroundFrame || maskingMode === 'DISABLED') {
             await projectActions.addFrame(track, frame, isPlaying ? false : currentFrameId, pendingBackgroundFrame || null, activePerspective ? { perspective: activePerspective } : {});
           } else if (maskingMode === 'UNIQUE' || !pendingBackgroundFrame) {
             setPendingBackgroundFrame(await projectActions.savePicture(track, frame));
@@ -960,7 +977,27 @@ const Animator = ({ t }) => {
     setMagnifierCenter(c);
     setMagnifier({ CX: c.cx, CY: c.cy });
   };
+  const xsheetLayout = { OPEN: false, ...(settings.XSHEET || {}) };
+  const setXsheetLayout = (patch) => settingsActions.setSettings({ XSHEET: { ...xsheetLayout, ...patch } });
+  const captureModeAction = turntableState.connected
+    ? [
+        {
+          title: turntableProfile.rotationCapture
+            ? t('Full turn: {{n}} × {{h}} heights per frame (click for single photo)', { n: turntableProfile.shotsPerPass, h: turntableProfile.heights })
+            : t('Single photo per frame (click for full turn)'),
+          icon: turntableProfile.rotationCapture ? faImages : faCamera,
+          onClick: () => turntableActions.updateProfile({ rotationCapture: !turntableProfile.rotationCapture }),
+          selected: !!turntableProfile.rotationCapture,
+        },
+      ]
+    : [];
   const liveActions = [
+    {
+      title: xsheetLayout.OPEN ? t('Hide X-sheet') : t('X-sheet (frame list)'),
+      icon: faXSheet,
+      onClick: () => setXsheetLayout({ OPEN: !xsheetLayout.OPEN }),
+      selected: !!xsheetLayout.OPEN,
+    },
     {
       title: livePanel.OPEN ? t('Hide live controls') : t('Live controls (views, turntable, focus aids, scopes)'),
       icon: faFaceViewfinder,
@@ -1000,7 +1037,13 @@ const Animator = ({ t }) => {
       setReferenceImport(null);
     }
   };
-  const secondaryActions = [...liveActions, ...canonAction, ...turntableAction, ...(canExport ? [{ title: t('Export'), icon: faBoxArrowDown, onClick: handleAction.bind(null, 'EXPORT') }] : [])];
+  const secondaryActions = [
+    ...liveActions,
+    ...captureModeAction,
+    ...canonAction,
+    ...turntableAction,
+    ...(canExport ? [{ title: t('Export'), icon: faBoxArrowDown, onClick: handleAction.bind(null, 'EXPORT') }] : []),
+  ];
 
   const mobileActionsTop = [
     {
@@ -1109,7 +1152,18 @@ const Animator = ({ t }) => {
           onMagnifierCommit={commitMagnifierCentre}
         />
         <div>
-          <NoticeBanner message={notice?.message} tone={notice?.tone} onDismiss={() => setNotice(null)} />
+          {replaceQueue.length > 0 ? (
+            <NoticeBanner
+              tone="warning"
+              message={t('Replace mode: the next capture replaces frame {{n}}{{more}}. Close this to cancel.', {
+                n: pictures.findIndex((p) => p.id === replaceQueue[0]) + 1,
+                more: replaceQueue.length > 1 ? ` (${t('{{n}} to go', { n: replaceQueue.length })})` : '',
+              })}
+              onDismiss={() => setReplaceQueue([])}
+            />
+          ) : (
+            <NoticeBanner message={notice?.message} tone={notice?.tone} onDismiss={() => setNotice(null)} />
+          )}
           {showPerspectives && !livePanel.OPEN && (
             <PerspectiveBar
               active={activePerspective}
@@ -1165,12 +1219,21 @@ const Animator = ({ t }) => {
           )}
           <Timeline
             pictures={viewPictures}
+            selectedIds={frameSelection.selected}
             expandedId={expandedFrameId}
             onExpand={(frameId) => {
               setShotPreview(null);
               setExpandedFrameId((current) => (current === frameId ? null : frameId));
             }}
-            onSelect={handleSelectFrame}
+            onSelect={(frameId, modifiers = {}) => {
+              if (frameId === false) {
+                handleSelectFrame(false);
+                return;
+              }
+              const order = viewPictures.map((p) => p.id);
+              setFrameSelection((sel) => selectionClick({ order, selected: sel.selected, anchor: sel.anchor }, frameId, modifiers));
+              handleSelectFrame(frameId);
+            }}
             onMove={handleFrameMove}
             select={currentFrameId}
             playing={isPlaying}
@@ -1214,6 +1277,42 @@ const Animator = ({ t }) => {
         />
       )}
       <RotationCaptureProgress run={rotationRun} onContinue={continueRotation} onStop={stopRotation} />
+      {xsheetLayout.OPEN && (
+        <XSheet
+          layout={xsheetLayout}
+          pictures={viewPictures}
+          projectTitle={project.title}
+          sceneNumber={visibleScenes.findIndex((sc) => sc.index === Number(track)) + 1}
+          fps={fps}
+          current={currentFrameId}
+          selected={frameSelection.selected}
+          anchor={frameSelection.anchor}
+          replacing={replaceQueue}
+          onSelectionChange={(selected, anchor) => setFrameSelection({ selected, anchor })}
+          onShowFrame={handleSelectFrame}
+          onDelete={(ids) => {
+            projectActions.deleteFrames(track, ids);
+            setFrameSelection({ selected: [], anchor: null });
+            setReplaceQueue((q) => q.filter((id) => !ids.includes(id)));
+            if (ids.includes(currentFrameId)) handleSelectFrame(false);
+          }}
+          onReplaceWithCapture={(ids) => {
+            setReplaceQueue(ids);
+            handleSelectFrame(false);
+          }}
+          onReplaceWithFile={async (frameId, file) => {
+            try {
+              await projectActions.replaceFrame(track, frameId, { type: file.type || 'image/jpeg', buffer: await file.arrayBuffer() });
+            } catch (err) {
+              setNotice({ tone: 'error', message: `${t('Could not replace the frame')}: ${err?.message || err}` });
+            }
+          }}
+          onCancelReplace={() => setReplaceQueue([])}
+          onNote={(frameId, note) => projectActions.setFrameNote(track, frameId, note)}
+          onLayoutChange={setXsheetLayout}
+          onClose={() => setXsheetLayout({ OPEN: false })}
+        />
+      )}
       {livePanel.OPEN && !isPlaying && (
         <ViewsPanel
           layout={livePanel}

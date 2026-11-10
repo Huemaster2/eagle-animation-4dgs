@@ -148,6 +148,7 @@ const Timeline = ({
   frameCaptureMode = false,
   expandedId = null,
   onExpand = () => {},
+  selectedIds = [],
 }) => {
   const ref = useRef(null);
   const shadowLeftRef = useRef(null);
@@ -171,10 +172,13 @@ const Timeline = ({
   latestRef.current = { pictures, onSelect, onMove, onExpand };
 
   // Stable handlers — same identity for the entire Timeline lifetime.
-  const stableOnSelect = useCallback((id) => latestRef.current.onSelect(id), []);
+  // Modifier keys of the last press, so a click (which dnd-kit may turn into a drag end) still knows about Shift/Cmd/Ctrl
+  const modifiersRef = useRef({ shift: false, toggle: false });
+  const stableOnSelect = useCallback((id) => latestRef.current.onSelect(id, modifiersRef.current), []);
   const stableOnExpand = useCallback((id) => latestRef.current.onExpand(id), []);
   const stableOnDragEnd = useCallback(({ active, over }) => {
     const { pictures, onSelect, onMove } = latestRef.current;
+    const modifiers = modifiersRef.current;
     const getIdx = (id) => pictures.findIndex((e) => `${e.id}` === `${id}`);
     const evt = {
       oldIndex: getIdx(active.id),
@@ -183,7 +187,7 @@ const Timeline = ({
     if (active && over && active.id === over.id) {
       const picture = pictures[evt.oldIndex];
       if (picture) {
-        onSelect(picture.id);
+        onSelect(picture.id, modifiers);
       }
       return;
     }
@@ -230,6 +234,15 @@ const Timeline = ({
     if (el) el.classList.add(style.selected);
     prevSelectedElRef.current = el;
   }, [select, picturesKey]);
+
+  // Same imperative approach for the multi-selection made in the X-sheet or with Shift/Cmd-click
+  const selectedKey = selectedIds.join(',');
+  useLayoutEffect(() => {
+    document.querySelectorAll(`.${style.multiSelected}`).forEach((el) => el.classList.remove(style.multiSelected));
+    if (selectedIds.length > 1) {
+      for (const id of selectedIds) document.getElementById(`timeline-frame-${id}`)?.classList.add(style.multiSelected);
+    }
+  }, [selectedKey, picturesKey]);
 
   const prevScrollRef = useRef({ key: null, select: null });
   useLayoutEffect(() => {
@@ -279,7 +292,17 @@ const Timeline = ({
 
   return (
     <div className={style.wrapper} data-tour="timeline">
-      <aside className={`${style.container} ${playing ? style.playing : ''}`} ref={ref} onScroll={updateShadows}>
+      <aside
+        className={`${style.container} ${playing ? style.playing : ''}`}
+        ref={ref}
+        onScroll={updateShadows}
+        onMouseDownCapture={(e) => {
+          modifiersRef.current = { shift: e.shiftKey, toggle: e.metaKey || e.ctrlKey };
+        }}
+        onTouchStartCapture={() => {
+          modifiersRef.current = { shift: false, toggle: false };
+        }}
+      >
         <SortableList
           sortableItemIds={sortableItemIds}
           visiblePictures={visiblePictures}

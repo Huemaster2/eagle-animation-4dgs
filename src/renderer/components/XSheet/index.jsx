@@ -58,14 +58,18 @@ const XSheet = ({
     list.current.querySelector(`[data-frame-id="${current}"]`)?.scrollIntoView({ block: 'nearest' });
   }, [current]);
 
+  // Latest selection, so quick successive clicks build on each other before the next render
+  const latest = useRef({ selected: sel, anchor });
+  latest.current = { selected: sel, anchor };
   const select = (next, show = null) => {
+    latest.current = { selected: next.selected, anchor: next.anchor };
     onSelectionChange(next.selected, next.anchor);
     if (show !== null) onShowFrame(show);
   };
 
   const handleRowClick = (event, id) => {
     const toggle = event.metaKey || event.ctrlKey;
-    const next = selectionClick({ order, selected: sel, anchor }, id, { shift: event.shiftKey, toggle });
+    const next = selectionClick({ order, ...latest.current }, id, { shift: event.shiftKey, toggle });
     setFocus(id);
     select(next, event.shiftKey || toggle ? null : id);
   };
