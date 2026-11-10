@@ -983,9 +983,10 @@ const Animator = ({ t }) => {
     cameraActions.setStream(setStream);
   };
 
-  // After the camera has been handed back to its own dials, this reconnects it and restarts live view
+  // After the camera has been handed back to its own dials, this reconnects it and restarts live view.
+  // It goes straight to the camera module: the hook's connect is a no-op while this camera is the active one.
   const retakeCameraControl = async () => {
-    if (playerSetStream.current) await cameraActions.setStream(playerSetStream.current);
+    if (currentCamera && playerSetStream.current) await currentCamera.connect({ setStream: playerSetStream.current });
   };
 
   const handleCapabilityChange = async (id, value) => {
