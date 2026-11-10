@@ -12,6 +12,7 @@ import faEllipsisVertical from '@icons/faEllipsisVertical';
 import faEraser from '@icons/faEraser';
 import faEye from '@icons/faEye';
 import faEyeSlash from '@icons/faEyeSlash';
+import faFilm from '@icons/faFilm';
 import faForwardFast from '@icons/faForwardFast';
 import faFrame from '@icons/faFrame';
 import faImage from '@icons/faImage';
@@ -58,6 +59,8 @@ const ControlBar = ({
   canUseMaskingEditor = false,
   isCurrentFrameHidden = false,
   showCameraSettings = false,
+  hasReferenceClip = false,
+  referenceClipPlaying = false,
   onAction = null,
   totalAnimationFrames = 0,
   t,
@@ -171,6 +174,17 @@ const ControlBar = ({
                 icon: faLayer,
                 disabled: isPlaying,
               },
+              ...(hasReferenceClip
+                ? [
+                    {
+                      title: referenceClipPlaying ? t('Stop the reference clip') : t('Play the reference clip over the live view'),
+                      selected: referenceClipPlaying,
+                      onClick: handleAction('REFERENCE_CLIP'),
+                      icon: faFilm,
+                      disabled: isPlaying,
+                    },
+                  ]
+                : []),
             ]}
             tooltipPosition="TOP"
             merge={true}

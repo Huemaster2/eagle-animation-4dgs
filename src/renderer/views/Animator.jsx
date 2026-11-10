@@ -57,6 +57,7 @@ import useSettings from '@hooks/useSettings';
 import useTurntable from '@hooks/useTurntable';
 import faArrowLeft from '@icons/faArrowLeft';
 import faBoxArrowDown from '@icons/faBoxArrowDown';
+import faBrightness from '@icons/faBrightness';
 import faCamera from '@icons/faCamera';
 import faCrosshairs from '@icons/faCrosshairs';
 import faEllipsisVertical from '@icons/faEllipsisVertical';
@@ -871,6 +872,15 @@ const Animator = ({ t }) => {
     ONION_SETTINGS: () => {
       setActiveWindow((v) => (v === 'onion' ? null : 'onion'));
     },
+    // Plays the reference sequence over the live view; from the top again once it has run out
+    REFERENCE_CLIP: () => {
+      if (currentFrameId !== false) handleSelectFrame(false);
+      setReferencePlay((p) => {
+        if (p.playing) return { ...p, playing: false };
+        const atEnd = (p.position ?? 0) >= referenceTick.current.length - 1;
+        return { playing: true, position: atEnd ? 0 : (p.position ?? 0) };
+      });
+    },
     ONION_TOGGLE: () => {
       settingsActions.setSettings({ ONION_SKIN: { ...onionConfig, ENABLED: !onionConfig.ENABLED } });
     },
@@ -1058,7 +1068,17 @@ const Animator = ({ t }) => {
     (appCapabilities.includes('EXPORT_VIDEO') || appCapabilities.includes('EXPORT_FRAMES') || (appCapabilities.includes('BACKGROUND_SYNC') && settings?.EVENT_MODE_ENABLED));
 
   // Actions
-  const primaryActions = [{ title: t('Back'), icon: faArrowLeft, onClick: handleAction.bind(null, 'BACK') }];
+  // Light is Classic, dark is Phosphor; 'system' follows macOS until it is switched here
+  const isDarkTheme = (document.body.dataset.theme || 'light') === 'dark';
+  const primaryActions = [
+    { title: t('Back'), icon: faArrowLeft, onClick: handleAction.bind(null, 'BACK') },
+    {
+      title: isDarkTheme ? t('Switch to the light theme') : t('Switch to the dark theme'),
+      icon: faBrightness,
+      selected: isDarkTheme,
+      onClick: () => settingsActions.setSettings({ THEME: isDarkTheme ? 'light' : 'dark' }),
+    },
+  ];
 
   const canonAction = STOPMO_CAMERA_AVAILABLE
     ? [
@@ -1331,6 +1351,8 @@ const Animator = ({ t }) => {
             onionValue={onionValue}
             onionEnabled={onionEnabled}
             showOnionSettings={activeWindow === 'onion'}
+            hasReferenceClip={referenceLength > 1}
+            referenceClipPlaying={referencePlay.playing}
             isPlaying={isPlaying}
             isCameraReady={!!currentCamera}
             isTakingPicture={isTakingPicture}
