@@ -19,10 +19,12 @@ const ViewsPanel = ({
   active = null,
   status = '',
   busy = false,
+  reviewing = false,
   calibrated = {},
   references = [],
   importProgress = null,
   onSelect = () => {},
+  onTurn = null,
   onImport = () => {},
   onUpdateReference = () => {},
   onLayoutChange = () => {},
@@ -62,7 +64,13 @@ const ViewsPanel = ({
       className={`${style.view} ${style[`pos${view}`]} ${active === view ? style.active : ''} ${calibrated[view] ? '' : style.uncalibrated}`}
       disabled={busy}
       aria-pressed={active === view}
-      title={calibrated[view] ? t('Turn to {{view}} and show its references', { view: t(view) }) : t('{{view}}: references only (not calibrated on the turntable)', { view: t(view) })}
+      title={
+        reviewing
+          ? t('Show every full turn from {{view}} (the table does not move)', { view: t(view) })
+          : calibrated[view]
+            ? t('Turn to {{view}} and show its references', { view: t(view) })
+            : t('{{view}}: references only (not calibrated on the turntable)', { view: t(view) })
+      }
       onClick={() => onSelect(active === view ? null : view)}
     >
       {t(view)}
@@ -115,6 +123,13 @@ const ViewsPanel = ({
               {t('ALL')}
             </button>
           </div>
+          {onTurn && (
+            <p className={style.status}>
+              <button type="button" className={style.small} disabled={busy} onClick={onTurn}>
+                {t('Turn table here')}
+              </button>
+            </p>
+          )}
           {active && !calibrated[active] && (
             <p className={style.status}>
               {t('{{view}} is not set yet. Its references show on the picture: open the Turntable tab to line the table up with them and set it.', { view: t(active) })}{' '}
@@ -123,7 +138,16 @@ const ViewsPanel = ({
               </button>
             </p>
           )}
-          <p className={`${style.status} ${busy ? style.moving : ''}`}>{status || (active ? t('Showing {{view}}', { view: t(active) }) : t('Showing all views'))}</p>
+          <p className={`${style.status} ${busy ? style.moving : ''}`}>
+            {reviewing
+              ? active
+                ? t('Timeline and playback from {{view}}', { view: t(active) })
+                : t('Timeline and playback as captured')
+              : active
+                ? t('Showing {{view}}', { view: t(active) })
+                : t('Showing all views')}
+          </p>
+          {status && <p className={`${style.status} ${busy ? style.moving : ''}`}>{status}</p>}
 
           <input ref={input} type="file" className={style.hidden} onChange={handleFiles} {...{ webkitdirectory: '', directory: '' }} />
           {importProgress && <p className={style.status}>{t('Importing {{done}} / {{total}} frames…', importProgress)}</p>}

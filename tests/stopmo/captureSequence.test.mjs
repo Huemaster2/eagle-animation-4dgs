@@ -80,6 +80,54 @@ const stopped = await runSequence({ plan: small, moveTo, settle: async () => {},
 assert.equal(stopped.complete, false);
 assert.equal(kept.length, 4);
 
+// Pausing holds before a shot and never moves the table meanwhile; resuming carries on where it left off
+const paused = [];
+let held = 0;
+let moves = 0;
+const pausedRun = await runSequence({
+  plan: small,
+  shots: paused,
+  moveTo: async (s) => {
+    moves += 1;
+    position = s;
+    return s;
+  },
+  settle: async () => {},
+  capture,
+  askHeight: async () => true,
+  gate: async (shot) => {
+    if (shot.height !== 1 || shot.index !== 2) return;
+    held += 1;
+    const movesWhilePaused = moves;
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    assert.equal(moves, movesWhilePaused);
+  },
+});
+assert.equal(held, 1);
+assert.equal(pausedRun.complete, true);
+assert.equal(paused.length, 8);
+
+// Stopping while paused keeps the shots taken so far and takes no more
+const stoppedWhilePaused = [];
+let release = null;
+let stop = false;
+const run = runSequence({
+  plan: small,
+  shots: stoppedWhilePaused,
+  moveTo,
+  settle: async () => {},
+  capture,
+  askHeight: async () => true,
+  isStopped: () => stop,
+  gate: (shot) => (shot.height === 1 && shot.index === 2 ? new Promise((resolve) => (release = resolve)) : Promise.resolve()),
+});
+await new Promise((resolve) => setTimeout(resolve, 20));
+stop = true;
+release();
+const afterStop = await run;
+assert.equal(afterStop.complete, false);
+assert.equal(stoppedWhilePaused.length, 2);
+
 // A table that stops short is an error, and the shots before it are still in the caller's list
 const partial = [];
 await assert.rejects(

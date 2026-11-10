@@ -60,7 +60,19 @@ export const shotAngle = (steps, stepsPerRev) => {
 };
 
 // Runs a plan with injected hardware and prompts; records go into the caller's `shots`, so a stop or error keeps them
-export const runSequence = async ({ plan, moveTo, settle, settleMs = 0, capture, askHeight, onProgress = () => {}, isStopped = () => false, needsFirstHeight = false, shots = [] }) => {
+export const runSequence = async ({
+  plan,
+  moveTo,
+  settle,
+  settleMs = 0,
+  capture,
+  askHeight,
+  gate = async () => {},
+  onProgress = () => {},
+  isStopped = () => false,
+  needsFirstHeight = false,
+  shots = [],
+}) => {
   let done = 0;
   let lastHeight = null;
   const report = (extra) => onProgress({ done, total: plan.total, ...extra });
@@ -74,6 +86,9 @@ export const runSequence = async ({ plan, moveTo, settle, settleMs = 0, capture,
     }
     lastHeight = pass.height;
     for (const shot of pass.shots) {
+      if (isStopped()) return { shots, complete: false, endHeight: lastHeight };
+      // Holds here while the run is paused, so the table never moves under a hand
+      await gate(shot);
       if (isStopped()) return { shots, complete: false, endHeight: lastHeight };
       report({ phase: 'moving', height: pass.height, index: shot.index });
       const arrived = await moveTo(shot.steps);

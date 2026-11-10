@@ -1,42 +1,11 @@
-.panel {
-  background: var(--color-theme-dark);
-  border: var(--pf-frame);
-  box-shadow: var(--pf-shadow);
-  left: 50%;
-  position: fixed;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  width: min(420px, 90vw);
-  z-index: 999998;
-}
-
-.titleBar {
-  align-items: center;
-  border-bottom: 1px solid var(--pf-line);
-  display: flex;
-  gap: 8px;
-  height: 22px;
-  padding: 0 8px;
-}
-
-/* Same stripes as the dialog windows, defined per theme */
-.stripes {
-  background: var(--pf-stripes);
-  flex: 1;
-  height: 11px;
-}
-
-.title {
-  color: var(--color-white);
-  font-size: var(--font-size-6);
-  font-weight: 600;
-}
-
 .body {
   display: flex;
+  flex: 1;
   flex-direction: column;
   gap: 8px;
-  padding: 14px 16px 16px;
+  min-height: 0;
+  overflow: auto;
+  padding: 12px 14px 14px;
 }
 
 .big {
@@ -54,6 +23,7 @@
 
 .bar {
   border: 1px solid var(--pf-line);
+  flex-shrink: 0;
   height: 12px;
   position: relative;
 }
@@ -68,7 +38,8 @@
   display: flex;
   gap: 8px;
   justify-content: flex-end;
-  margin-top: 4px;
+  margin-top: auto;
+  padding-top: 4px;
 }
 
 .button {

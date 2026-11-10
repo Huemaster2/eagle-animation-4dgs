@@ -28,6 +28,7 @@ import ToolsWindow from '@components/ToolsWindow';
 import Tour from '@components/Tour';
 import TurntableWindow from '@components/TurntableWindow';
 import ViewsPanel from '@components/ViewsPanel';
+import ViewTimelines from '@components/ViewTimelines';
 import Window from '@components/Window';
 import XSheet from '@components/XSheet';
 import { DEFAULT_FPS, MAX_FRAME_DUPLICATION } from '@config-web';
@@ -66,6 +67,7 @@ import faImage from '@icons/faImage';
 import faImages from '@icons/faImages';
 import faMagnifyingGlass from '@icons/faMagnifyingGlass';
 import faPlay from '@icons/faPlay';
+import faRectangleHistory from '@icons/faRectangleHistory';
 import faRotate from '@icons/faRotate';
 import faSignal from '@icons/faSignal';
 import faSliders from '@icons/faSliders';
@@ -378,6 +380,34 @@ const Animator = ({ t }) => {
   );
   // The view buttons appear once the rig has views set up or a reference sequence is tied to a view
   const showPerspectives = STOPMO_CAMERA_AVAILABLE && (turntableState.connected || PERSPECTIVES.some((v) => turntableProfile.perspectives[v] !== null) || sceneReferences.some((r) => r.perspective));
+  // Looking at captured frames rather than the live view: the views then only change which photo is shown
+  const reviewingFrames = currentFrameId !== false || isPlaying;
+  const rotationFrameCount = pictures.filter((p) => p.sequence?.shots?.length).length;
+  const activeViewSteps = activePerspective ? turntableProfile.perspectives[activePerspective] : null;
+  const tableAtActiveView =
+    activeViewSteps === null || activeViewSteps === undefined || !turntableState.connected
+      ? true
+      : Math.abs(nearestEquivalent(activeViewSteps, turntableState.position ?? activeViewSteps, turntableState.stepsPerRev) - (turntableState.position ?? 0)) <= 2;
+  // One timeline per calibrated view: every frame's photo taken at that view's angle
+  const viewRows = PERSPECTIVES.map((view) => ({ view, steps: turntableProfile.perspectives[view] }))
+    .filter(({ steps }) => steps !== null && steps !== undefined)
+    .map(({ view, steps }) => {
+      const angle = angleOf(steps, turntableState.stepsPerRev);
+      return {
+        view,
+        angle,
+        frames: pictures.map((p) => {
+          const shot = p.sequence ? nearestShot(p.sequence, angle) : null;
+          return { id: p.id, link: shot?.link || p.link, angle: shot ? shot.angle : null, own: !shot?.link };
+        }),
+      };
+    });
+  const perspectiveHint = () => {
+    if (!activePerspective || !reviewingFrames) return perspectiveStatus;
+    if (viewAngle === null) return t('{{view}} is not set on the turntable, so the frames cannot follow it', { view: t(activePerspective) });
+    if (!rotationFrameCount) return t('No frame has a full turn yet, so every view shows the same photos');
+    return t('{{n}} of {{total}} frames have a full turn and follow this view', { n: rotationFrameCount, total: pictures.length });
+  };
   const totalAnimationFrames = pictures.reduce((acc, e) => acc + (!e.deleted && !e.hidden ? e.length || 1 : 0), 0);
 
   const visibleScenes = project.scenes.map((s, index) => ({ ...s, index })).filter((s) => !s.deleted);
@@ -434,7 +464,7 @@ const Animator = ({ t }) => {
     let heroFrame = null;
     let firstFrame = null;
     let failure = null;
-    rotationControl.current = { stop: false, continueHeight: null, retryShot: null };
+    rotationControl.current = { stop: false, paused: false, resume: null, continueHeight: null, retryShot: null };
     const show = (patch) => setRotationRun((r) => ({ ...(r || {}), heights, shotsPerPass: profile.shotsPerPass, folder: saveTarget === 'card' ? null : folder, ...patch }));
     show({ phase: 'starting', done: 0, total: plan.total });
 
@@ -461,6 +491,16 @@ const Animator = ({ t }) => {
             rotationControl.current.continueHeight = resolve;
             show({ phase: 'height', height, isFirst });
           }),
+        // Pause holds the turn between photos: the table keeps its angle until Resume
+        gate: async (shot) => {
+          if (!rotationControl.current.paused || rotationControl.current.stop) return;
+          await new Promise((resolve) => {
+            rotationControl.current.resume = resolve;
+            show({ phase: 'paused', height: shot.height, index: shot.index, pausing: false });
+          });
+          rotationControl.current.resume = null;
+          rotationControl.current.paused = false;
+        },
         capture: async (shot) => {
           let frame;
           // A failed photo pauses the turn: retry it in place, or stop and keep what was taken
@@ -495,6 +535,7 @@ const Animator = ({ t }) => {
     } finally {
       turntable.unlock(key);
       rotationControl.current.continueHeight = null;
+      rotationControl.current.resume = null;
     }
 
     if (shots.length) {
@@ -536,19 +577,34 @@ const Animator = ({ t }) => {
 
   const continueRotation = () => rotationControl.current.continueHeight?.(true);
   const retryRotationShot = () => rotationControl.current.retryShot?.(true);
+  const pauseRotation = () => {
+    rotationControl.current.paused = true;
+    setRotationRun((r) => (r ? { ...r, pausing: true } : r));
+  };
+  const resumeRotation = () => {
+    rotationControl.current.paused = false;
+    setRotationRun((r) => (r ? { ...r, pausing: false } : r));
+    rotationControl.current.resume?.();
+  };
   const stopRotation = () => {
     rotationControl.current.stop = true;
+    rotationControl.current.paused = false;
     if (rotationControl.current.continueHeight) rotationControl.current.continueHeight(false);
     if (rotationControl.current.retryShot) rotationControl.current.retryShot(false);
+    if (rotationControl.current.resume) rotationControl.current.resume();
     setRotationRun((r) => (r ? { ...r, stopping: true } : r));
   };
 
   const takePictures =
     (nbPicturesToTake = null) =>
     async () => {
-      // During a rotation capture the shutter key means "camera is at the next height, continue"
+      // During a rotation capture the shutter key means "camera is in place, carry on"
       if (rotationRun?.phase === 'height') {
         continueRotation();
+        return;
+      }
+      if (rotationRun?.phase === 'paused') {
+        resumeRotation();
         return;
       }
       if (isTakingPicture || !currentCamera) {
@@ -628,14 +684,18 @@ const Animator = ({ t }) => {
       });
     };
 
-  // Switching views never touches the shutter: it moves the table, swaps references and keeps the current frame
+  // Switching views never touches the shutter. While posing it turns the table to that view;
+  // while reviewing captured frames it only swaps the photos shown, so a review never moves the rig.
   const selectPerspective = async (view) => {
     if (turntable.state.moving || turntable.state.locked) return;
     setActivePerspective(view);
-    if (!view) {
-      setPerspectiveStatus('');
-      return;
-    }
+    setPerspectiveStatus('');
+    if (!view || reviewingFrames) return;
+    await turnToPerspective(view);
+  };
+
+  const turnToPerspective = async (view) => {
+    if (turntable.state.moving || turntable.state.locked) return;
     const target = turntableProfile.perspectives[view];
     if (!turntable.state.connected || target === null) {
       setPerspectiveStatus(turntable.state.connected ? t('{{view}} is not set on the turntable yet: line it up with the reference, then Set here', { view: t(view) }) : '');
@@ -992,6 +1052,8 @@ const Animator = ({ t }) => {
     setMagnifierCenter(c);
     setMagnifier({ CX: c.cx, CY: c.cy });
   };
+  const rotationLayout = { ...(settings.ROTATION_PANEL || {}) };
+  const viewRowsOpen = !!settings.VIEW_ROWS?.OPEN;
   const xsheetLayout = { OPEN: false, ...(settings.XSHEET || {}) };
   const setXsheetLayout = (patch) => settingsActions.setSettings({ XSHEET: { ...xsheetLayout, ...patch } });
   const captureModeAction = turntableState.connected
@@ -1007,6 +1069,16 @@ const Animator = ({ t }) => {
       ]
     : [];
   const liveActions = [
+    ...(viewRows.length
+      ? [
+          {
+            title: viewRowsOpen ? t('Hide the view timelines') : t('View timelines (one row per view)'),
+            icon: faRectangleHistory,
+            onClick: () => settingsActions.setSettings({ VIEW_ROWS: { OPEN: !viewRowsOpen } }),
+            selected: viewRowsOpen,
+          },
+        ]
+      : []),
     {
       title: xsheetLayout.OPEN ? t('Hide X-sheet') : t('X-sheet (frame list)'),
       icon: faXSheet,
@@ -1182,10 +1254,12 @@ const Animator = ({ t }) => {
           {showPerspectives && !livePanel.OPEN && (
             <PerspectiveBar
               active={activePerspective}
-              status={perspectiveStatus}
+              status={perspectiveHint()}
               busy={turntableState.moving}
+              reviewing={reviewingFrames}
               calibrated={Object.fromEntries(PERSPECTIVES.map((v) => [v, turntableState.connected && turntableProfile.perspectives[v] !== null]))}
               onSelect={selectPerspective}
+              onTurn={!reviewingFrames && activePerspective && !tableAtActiveView ? () => turnToPerspective(activePerspective) : null}
             />
           )}
           {settings?.EVENT_MODE_ENABLED && (
@@ -1229,6 +1303,33 @@ const Animator = ({ t }) => {
               onClose={() => {
                 setExpandedFrameId(null);
                 setShotPreview(null);
+              }}
+            />
+          )}
+          {viewRowsOpen && (
+            <ViewTimelines
+              rows={viewRows}
+              active={activePerspective}
+              current={currentFrameId}
+              onPick={(frameId, view) => {
+                setShotPreview(null);
+                // Picking a photo shows that frame from that view; the row name alone follows the live rules
+                if (frameId === false) {
+                  selectPerspective(view);
+                  return;
+                }
+                setActivePerspective(view);
+                setPerspectiveStatus('');
+                handleSelectFrame(frameId);
+                setFrameSelection({ selected: [frameId], anchor: frameId });
+              }}
+              onPlay={(view) => {
+                setShotPreview(null);
+                flushSync(() => {
+                  setActivePerspective(view);
+                  setPerspectiveStatus('');
+                });
+                playerRef.current.play(settings.PLAY_FROM_BEGINING);
               }}
             />
           )}
@@ -1291,7 +1392,16 @@ const Animator = ({ t }) => {
           onClose={() => settingsActions.setSettings({ HISTOGRAM: { ...settings.HISTOGRAM, ENABLED: false } })}
         />
       )}
-      <RotationCaptureProgress run={rotationRun} onContinue={continueRotation} onRetry={retryRotationShot} onStop={stopRotation} />
+      <RotationCaptureProgress
+        run={rotationRun}
+        layout={rotationLayout}
+        onLayoutChange={(patch) => settingsActions.setSettings({ ROTATION_PANEL: { ...rotationLayout, ...patch } })}
+        onContinue={continueRotation}
+        onPause={pauseRotation}
+        onResume={resumeRotation}
+        onRetry={retryRotationShot}
+        onStop={stopRotation}
+      />
       {xsheetLayout.OPEN && (
         <XSheet
           layout={xsheetLayout}
@@ -1332,12 +1442,14 @@ const Animator = ({ t }) => {
         <ViewsPanel
           layout={livePanel}
           active={activePerspective}
-          status={perspectiveStatus}
+          status={perspectiveHint()}
+          reviewing={reviewingFrames}
           busy={turntableState.moving}
           calibrated={Object.fromEntries(PERSPECTIVES.map((v) => [v, turntableState.connected && turntableProfile.perspectives[v] !== null]))}
           references={sceneReferences}
           importProgress={referenceImport}
           onSelect={selectPerspective}
+          onTurn={!reviewingFrames && activePerspective && !tableAtActiveView ? () => turnToPerspective(activePerspective) : null}
           onImport={importReferences}
           onUpdateReference={(referenceId, patch) => projectActions.updateReference(track, referenceId, patch)}
           onLayoutChange={setLivePanel}

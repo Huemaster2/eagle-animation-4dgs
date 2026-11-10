@@ -21,7 +21,20 @@ const clampRect = ({ x, y, w, h }, minW, minH) => {
 
 // Floating window that stays over the live view: drag by the title bar, resize from the corner,
 // collapse to its title bar (System 7 window shade). Layout is reported as { X, Y, W, H, COLLAPSED }.
-const FloatingPanel = ({ t, title = '', layout = {}, defaults = {}, minWidth = 200, minHeight = 120, keepFocus = false, onLayoutChange = () => {}, onClose = () => {}, children }) => {
+const FloatingPanel = ({
+  t,
+  title = '',
+  layout = {},
+  defaults = {},
+  minWidth = 200,
+  minHeight = 120,
+  keepFocus = false,
+  closable = true,
+  collapsible = true,
+  onLayoutChange = () => {},
+  onClose = () => {},
+  children,
+}) => {
   const [rect, setRect] = useState(() =>
     clampRect(
       {
@@ -34,7 +47,7 @@ const FloatingPanel = ({ t, title = '', layout = {}, defaults = {}, minWidth = 2
       minHeight
     )
   );
-  const [collapsed, setCollapsed] = useState(!!layout.COLLAPSED);
+  const [collapsed, setCollapsed] = useState(collapsible && !!layout.COLLAPSED);
   const [layer, setLayer] = useState(() => ++topLayer);
   const rectRef = useRef(rect);
   rectRef.current = rect;
@@ -85,24 +98,28 @@ const FloatingPanel = ({ t, title = '', layout = {}, defaults = {}, minWidth = 2
       <div
         className={style.titleBar}
         onPointerDown={(event) => !event.target.closest('button') && track(event, (s, dx, dy) => ({ ...s, x: s.x + dx, y: s.y + dy }))}
-        onDoubleClick={(event) => !event.target.closest('button') && toggleCollapsed()}
+        onDoubleClick={(event) => !event.target.closest('button') && collapsible && toggleCollapsed()}
       >
-        <button type="button" aria-label={t('Close')} title={t('Close')} className={style.box} onClick={onClose}>
-          <FontAwesomeIcon icon={faXmark} />
-        </button>
+        {closable && (
+          <button type="button" aria-label={t('Close')} title={t('Close')} className={style.box} onClick={onClose}>
+            <FontAwesomeIcon icon={faXmark} />
+          </button>
+        )}
         <span className={style.stripes} />
         <span className={style.title}>{title}</span>
         <span className={style.stripes} />
-        <button
-          type="button"
-          aria-label={collapsed ? t('Expand') : t('Collapse')}
-          title={collapsed ? t('Expand') : t('Collapse')}
-          aria-expanded={!collapsed}
-          className={`${style.box} ${collapsed ? style.flip : ''}`}
-          onClick={toggleCollapsed}
-        >
-          <FontAwesomeIcon icon={faChevronDown} />
-        </button>
+        {collapsible && (
+          <button
+            type="button"
+            aria-label={collapsed ? t('Expand') : t('Collapse')}
+            title={collapsed ? t('Expand') : t('Collapse')}
+            aria-expanded={!collapsed}
+            className={`${style.box} ${collapsed ? style.flip : ''}`}
+            onClick={toggleCollapsed}
+          >
+            <FontAwesomeIcon icon={faChevronDown} />
+          </button>
+        )}
       </div>
       {!collapsed && (
         <>
