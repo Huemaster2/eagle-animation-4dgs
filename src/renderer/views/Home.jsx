@@ -1,4 +1,5 @@
 import DesktopNavigation from '@components/DesktopNavigation';
+import FlySwarm from '@components/FlySwarm';
 import HomeStats from '@components/HomeStats';
 import HomeToolbar from '@components/HomeToolbar';
 import MobileNavigation from '@components/MobileNavigation';
@@ -41,6 +42,7 @@ const HomeView = ({ t }) => {
   const [search, setSearch] = useState('');
   const [favoritesOnly, setFavoritesOnly] = useState(false);
   const [sort, setSort] = useState('UPDATED');
+  const [swarm, setSwarm] = useState(false);
 
   useEffect(() => {
     // Trigger background sync
@@ -84,8 +86,8 @@ const HomeView = ({ t }) => {
     if (action === 'EXIT_FULLSCREEN') {
       exitFullscreen();
     }
-    if (action === 'OPEN_WEBSITE') {
-      window.EA('OPEN_LINK', { link: 'https://eagle-animation.com/?source=app' });
+    if (action === 'SWARM') {
+      setSwarm(true);
     }
   };
 
@@ -145,8 +147,9 @@ const HomeView = ({ t }) => {
 
   return (
     <PageLayout hasMobileLeftBar={true}>
-      <DesktopNavigation showLogo={true} leftActions={primaryActions} rightActions={secondaryActions} onLogoClick={handleAction('OPEN_WEBSITE')} />
-      <MobileNavigation showLogo={true} topLeftActions={primaryActions} bottomLeftActions={secondaryActions} showLeftActions={true} onLogoClick={handleAction('OPEN_WEBSITE')} />
+      <DesktopNavigation showLogo={true} leftActions={primaryActions} rightActions={secondaryActions} onLogoClick={handleAction('SWARM')} />
+      <MobileNavigation showLogo={true} topLeftActions={primaryActions} bottomLeftActions={secondaryActions} showLeftActions={true} onLogoClick={handleAction('SWARM')} />
+      <FlySwarm show={swarm} onDone={() => setSwarm(false)} />
       <VersionTagOverlay />
       <PageContent>
         {projects !== null && (
