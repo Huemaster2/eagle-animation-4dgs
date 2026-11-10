@@ -318,3 +318,33 @@
 .imgOffView {
   opacity: 0.45;
 }
+
+/* Which view the strip is showing; stays put while the strip scrolls */
+.viewTag {
+  align-items: center;
+  background: var(--color-theme-dark);
+  border-right: 1px solid var(--pf-line);
+  display: inline-flex;
+  flex-direction: column;
+  height: var(--size);
+  justify-content: center;
+  left: 0;
+  position: sticky;
+  user-select: none;
+  vertical-align: top;
+  width: 66px;
+  z-index: 3;
+}
+
+.viewTagName {
+  color: var(--color-white);
+  font-size: calc(1.1 * var(--tag-size));
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.viewTagAngle {
+  color: var(--color-theme-extra-light);
+  font-size: var(--tag-size);
+  font-variant-numeric: tabular-nums;
+}

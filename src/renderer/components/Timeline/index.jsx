@@ -160,6 +160,7 @@ const Timeline = ({
   expandedId = null,
   onExpand = () => {},
   selectedIds = [],
+  viewLabel = null,
 }) => {
   const ref = useRef(null);
   const shadowLeftRef = useRef(null);
@@ -330,6 +331,12 @@ const Timeline = ({
           modifiersRef.current = { shift: false, toggle: false };
         }}
       >
+        {viewLabel && (
+          <span className={style.viewTag} title={viewLabel.hint || ''}>
+            <span className={style.viewTagName}>{viewLabel.name}</span>
+            <span className={style.viewTagAngle}>{viewLabel.detail}</span>
+          </span>
+        )}
         <SortableList
           sortableItemIds={sortableItemIds}
           visiblePictures={visiblePictures}

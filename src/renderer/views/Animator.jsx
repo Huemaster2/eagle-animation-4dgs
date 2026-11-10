@@ -1340,6 +1340,15 @@ const Animator = ({ t }) => {
             />
           )}
           <Timeline
+            viewLabel={
+              viewRows.length || showPerspectives
+                ? {
+                    name: activePerspective ? t(activePerspective) : t('ALL'),
+                    detail: activePerspective && viewAngle !== null ? `${(Math.round(viewAngle * 10) / 10) % 360}°` : t('as shot'),
+                    hint: activePerspective ? t('The timeline is showing every frame from {{view}}', { view: t(activePerspective) }) : t('The timeline is showing each frame as it was captured'),
+                  }
+                : null
+            }
             pictures={viewPictures}
             selectedIds={frameSelection.selected}
             expandedId={expandedFrameId}
