@@ -180,6 +180,9 @@ const getFirstFrameId = (list) => {
   return false;
 };
 
+// The camera dials shown beside the viewer
+const EXPOSURE_CAPABILITIES = ['shutter_speed', 'aperture', 'iso'];
+
 const Animator = ({ t }) => {
   const { id, track } = useParams();
   const navigate = useNavigate();
@@ -1472,6 +1475,8 @@ const Animator = ({ t }) => {
           calibrated={Object.fromEntries(PERSPECTIVES.map((v) => [v, turntableState.connected && turntableProfile.perspectives[v] !== null]))}
           references={sceneReferences}
           importProgress={referenceImport}
+          exposure={currentCameraCapabilities.filter((c) => EXPOSURE_CAPABILITIES.includes(c.id))}
+          onExposureChange={handleCapabilityChange}
           onSelect={selectPerspective}
           onTurn={!reviewingFrames && activePerspective && !tableAtActiveView ? () => turnToPerspective(activePerspective) : null}
           onImport={importReferences}

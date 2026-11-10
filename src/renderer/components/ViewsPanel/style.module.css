@@ -172,3 +172,28 @@
   font-size: var(--font-size-6);
   font-variant-numeric: tabular-nums;
 }
+
+.exposureRow {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+  padding: 3px 0;
+}
+
+.exposureLabel {
+  color: var(--color-white);
+  font-size: var(--font-size-6);
+  font-weight: 700;
+}
+
+.exposureSelect {
+  background: var(--pf-button-face);
+  border: 1px solid var(--pf-line);
+  box-shadow: var(--pf-bevel);
+  color: var(--color-white);
+  font-family: inherit;
+  font-size: var(--font-size-6);
+  min-width: 120px;
+  padding: 3px 4px;
+}

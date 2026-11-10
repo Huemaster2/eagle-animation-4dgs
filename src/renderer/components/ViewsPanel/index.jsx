@@ -10,7 +10,8 @@ import { withTranslation } from 'react-i18next';
 import * as style from './style.module.css';
 
 const ALL = 'ALL';
-const TABS = ['views', 'turntable', 'live'];
+const EXPOSURE_LABELS = { shutter_speed: 'Shutter', aperture: 'Aperture', iso: 'ISO' };
+const TABS = ['views', 'exposure', 'turntable', 'live'];
 
 // Floating live controls: views and their references, turntable, focus peaking. Nothing here fires the shutter.
 const ViewsPanel = ({
@@ -33,6 +34,9 @@ const ViewsPanel = ({
   histogram,
   parade,
   magnifier,
+  exposure = [],
+  exposureBusy = false,
+  onExposureChange = () => {},
   onSettingsChange = () => {},
 }) => {
   const input = useRef(null);
@@ -85,16 +89,31 @@ const ViewsPanel = ({
   return (
     <FloatingPanel title={t('Live controls')} layout={layout} defaults={{ W: 320, H: 460, Y: 80 }} minWidth={240} minHeight={220} onLayoutChange={onLayoutChange} onClose={onClose}>
       <div className={style.tabs} role="tablist">
-        {[
-          ['views', t('Views')],
-          ['turntable', t('Turntable')],
-          ['live', t('Focus')],
-        ].map(([key, label]) => (
+        {[['views', t('Views')], ...(exposure.length ? [['exposure', t('Exposure')]] : []), ['turntable', t('Turntable')], ['live', t('Focus')]].map(([key, label]) => (
           <button key={key} type="button" role="tab" aria-selected={tab === key} className={`${style.tab} ${tab === key ? style.tabActive : ''}`} onClick={() => chooseTab(key)}>
             {label}
           </button>
         ))}
       </div>
+
+      {tab === 'exposure' && (
+        <div className={style.body}>
+          {exposure.map((cap) => (
+            <div key={cap.id} className={style.exposureRow}>
+              <span className={style.exposureLabel}>{EXPOSURE_LABELS[cap.id] ? t(EXPOSURE_LABELS[cap.id]) : cap.id}</span>
+              <select className={style.exposureSelect} value={cap.value ?? ''} disabled={exposureBusy || cap.disabled} onChange={(e) => onExposureChange(cap.id, e.target.value)}>
+                {(cap.values || []).map((v) => (
+                  <option key={v.value} value={v.value}>
+                    {v.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ))}
+          <p className={style.status}>{t('Set on the camera over USB. Its own dials stay locked while the app holds it, so change exposure here.')}</p>
+          <p className={style.status}>{t('Shutter and aperture need the mode dial on M.')}</p>
+        </div>
+      )}
 
       {tab === 'turntable' && (
         <div className={style.body}>
