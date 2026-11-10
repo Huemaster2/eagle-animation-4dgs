@@ -2,6 +2,12 @@
 const faDownLeftAndUpRightToCenter = {
   prefix: 'fal',
   iconName: 'down-left-and-up-right-to-center',
-  icon: [16, 16, [], 'f000', 'M7 1h1v7h-1zM13 1h1v1h-1zM12 2h1v1h-1zM11 3h1v1h-1zM10 4h1v1h-1zM9 5h1v1h-1zM8 6h1v2h-1zM9 7h5v1h-5zM2 9h7v1h-7zM7 10h2v1h-2zM6 11h1v1h-1zM8 11h1v4h-1zM5 12h1v1h-1zM4 13h1v1h-1zM3 14h1v1h-1z'],
+  icon: [
+    16,
+    16,
+    [],
+    'f000',
+    'M7 1h1v7h-1zM13 1h1v1h-1zM12 2h1v1h-1zM11 3h1v1h-1zM10 4h1v1h-1zM9 5h1v1h-1zM8 6h1v2h-1zM9 7h5v1h-5zM2 9h7v1h-7zM7 10h2v1h-2zM6 11h1v1h-1zM8 11h1v4h-1zM5 12h1v1h-1zM4 13h1v1h-1zM3 14h1v1h-1z',
+  ],
 };
 export default faDownLeftAndUpRightToCenter;

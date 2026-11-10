@@ -2,6 +2,15 @@
 const faSun = {
   prefix: 'fal',
   iconName: 'sun',
-  icon: [16, 16, [], 'f000', ['M6 5h3v5h-3zM5 6h1v3h-1zM9 6h1v3h-1z', 'M7 1h1v2h-1zM2 2h1v1h-1zM12 2h1v1h-1zM3 3h1v1h-1zM11 3h1v1h-1zM6 4h3v1h-3zM5 5h1v1h-1zM9 5h1v1h-1zM4 6h1v3h-1zM10 6h1v3h-1zM0 7h3v1h-3zM12 7h3v1h-3zM5 9h1v1h-1zM9 9h1v1h-1zM6 10h3v1h-3zM3 11h1v1h-1zM11 11h1v1h-1zM2 12h1v1h-1zM7 12h1v2h-1zM12 12h1v1h-1z']],
+  icon: [
+    16,
+    16,
+    [],
+    'f000',
+    [
+      'M6 5h3v5h-3zM5 6h1v3h-1zM9 6h1v3h-1z',
+      'M7 1h1v2h-1zM2 2h1v1h-1zM12 2h1v1h-1zM3 3h1v1h-1zM11 3h1v1h-1zM6 4h3v1h-3zM5 5h1v1h-1zM9 5h1v1h-1zM4 6h1v3h-1zM10 6h1v3h-1zM0 7h3v1h-3zM12 7h3v1h-3zM5 9h1v1h-1zM9 9h1v1h-1zM6 10h3v1h-3zM3 11h1v1h-1zM11 11h1v1h-1zM2 12h1v1h-1zM7 12h1v2h-1zM12 12h1v1h-1z',
+    ],
+  ],
 };
 export default faSun;

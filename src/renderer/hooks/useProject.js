@@ -13,6 +13,9 @@ function cleanProjectData(data) {
     for (const picture of scene.pictures) {
       delete picture.link;
       delete picture.metaLink;
+      for (const shot of picture.sequence?.shots || []) {
+        delete shot.link;
+      }
       for (const layer of ['background', 'foreground', 'transparent']) {
         if (picture.masking?.[layer]) {
           delete picture.masking[layer].link;
@@ -138,6 +141,31 @@ function useProject(options) {
       let d = structuredClone(oldData);
       if (d.project.scenes[sceneId]) {
         d.project.scenes[sceneId].pictures = d.project.scenes[sceneId].pictures.map((p) => (`${p.id}` !== `${frameId}` ? p : { ...p, deleted: true }));
+      }
+      return d;
+    });
+  }, []);
+
+  // Action delete several frames at once (one undo step); files stay on disk, frames are only flagged
+  const actionDeleteFrames = useCallback(async (trackId, frameIds = []) => {
+    const sceneId = Number(trackId);
+    const ids = new Set(frameIds.map((id) => `${id}`));
+    setProjectData((oldData) => {
+      let d = structuredClone(oldData);
+      if (d.project.scenes[sceneId]) {
+        d.project.scenes[sceneId].pictures = d.project.scenes[sceneId].pictures.map((p) => (ids.has(`${p.id}`) ? { ...p, deleted: true } : p));
+      }
+      return d;
+    });
+  }, []);
+
+  // Action set a frame's x-sheet note
+  const actionSetFrameNote = useCallback(async (trackId, frameId, note = '') => {
+    const sceneId = Number(trackId);
+    setProjectData((oldData) => {
+      let d = structuredClone(oldData);
+      if (d.project.scenes[sceneId]) {
+        d.project.scenes[sceneId].pictures = d.project.scenes[sceneId].pictures.map((p) => (`${p.id}` === `${frameId}` ? { ...p, note: `${note}` } : p));
       }
       return d;
     });
@@ -373,6 +401,36 @@ function useProject(options) {
     [projectId, actionSavePicture]
   );
 
+  // Action replace a frame's picture in place (same position, hold and note). The old file stays on disk and is listed in `replaced`.
+  const actionReplaceFrame = useCallback(
+    async (trackId, frameId, frameBlob, extra = {}) => {
+      const sceneId = Number(trackId);
+      const saved = await actionSavePicture(trackId, frameBlob);
+      setProjectData((oldData) => {
+        let d = structuredClone(oldData);
+        if (d.project.scenes[sceneId]) {
+          d.project.scenes[sceneId].pictures = d.project.scenes[sceneId].pictures.map((p) => {
+            if (`${p.id}` !== `${frameId}`) return p;
+            const kept = { ...p };
+            // The old picture's masking layers and rotation belong to the old picture
+            delete kept.masking;
+            delete kept.sequence;
+            delete kept.perspective;
+            return {
+              ...kept,
+              ...saved,
+              ...extra,
+              id: p.id,
+              replaced: [...(p.replaced || []), { filename: p.filename, sequenceFolder: p.sequence?.folder || null, at: new Date().toISOString() }],
+            };
+          });
+        }
+        return d;
+      });
+    },
+    [actionSavePicture]
+  );
+
   // Action save a live-view snapshot of the pose being worked on, as seen from one view (FRONT/RIGHT/BACK/LEFT)
   const actionSavePerspectiveView = useCallback(
     async (trackId, view, blob) => {
@@ -473,6 +531,9 @@ function useProject(options) {
       applyDuplicateFrameOffset: actionApplyDuplicateFrameOffset,
       cloneFrame: actionCloneFrame,
       deleteFrame: actionDeleteFrame,
+      deleteFrames: actionDeleteFrames,
+      setFrameNote: actionSetFrameNote,
+      replaceFrame: actionReplaceFrame,
       rename: actionRename,
       moveFrame: actionMoveFrame,
       addFrame: actionAddFrame,

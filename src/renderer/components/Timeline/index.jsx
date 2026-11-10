@@ -15,7 +15,21 @@ import * as style from './style.module.css';
 const MOUSE_OPTIONS = { activationConstraint: { distance: 0 } };
 const TOUCH_OPTIONS = { activationConstraint: { delay: 250, tolerance: 5 } };
 
-const SortableItem = memo(function SortableItem({ id, link = '', hidden = false, length = 0, hasMasking = false, maskingLabel = '', isShortPlayBegining = false, onSelect, index }) {
+const SortableItem = memo(function SortableItem({
+  id,
+  link = '',
+  hidden = false,
+  length = 0,
+  hasMasking = false,
+  maskingLabel = '',
+  isShortPlayBegining = false,
+  onSelect,
+  index,
+  shots = 0,
+  expanded = false,
+  onExpand,
+}) {
+  const { t } = useTranslation();
   const { setNodeRef, isDragging, transform, transition, listeners, attributes, active } = useSortable({ id });
   return (
     <span
@@ -39,6 +53,32 @@ const SortableItem = memo(function SortableItem({ id, link = '', hidden = false,
       {isShortPlayBegining && <FontAwesomeIcon className={style.shortPlayIcon} icon={faForwardFast} />}
       {length > 1 && <span className={style.duplicated}>{`x${length}`}</span>}
       {hasMasking && <span className={style.masking}>{maskingLabel}</span>}
+      {shots > 0 && (
+        // Opens the frame's full rotation; kept out of drag-and-drop so a click never moves the frame
+        <span
+          role="button"
+          tabIndex={0}
+          className={`${style.sequence} ${expanded ? style.sequenceOpen : ''}`}
+          title={expanded ? t('Hide the {{n}} rotation photos', { n: shots }) : t('Show all {{n}} rotation photos of this frame', { n: shots })}
+          onPointerDown={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              e.stopPropagation();
+              onExpand(id);
+            }
+          }}
+          onClick={(e) => {
+            e.stopPropagation();
+            onExpand(id);
+          }}
+        >
+          {expanded ? '▾' : '▸'}
+          {shots}
+        </span>
+      )}
       <span className={style.title}>{`#${index + 1}`}</span>
     </span>
   );
@@ -71,7 +111,7 @@ const LiveItem = ({ select, onSelect, frameCaptureMode }) => {
 
 // Memoized inner list: receives ONLY stable props. Never re-renders on play tick
 // (no `select`/`playing`), so neither DndContext nor SortableContext re-emit context.
-const SortableList = memo(function SortableList({ sortableItemIds, visiblePictures, maskingLabel, shortPlayFrameId, onSelect, onDragEnd, sensors }) {
+const SortableList = memo(function SortableList({ sortableItemIds, visiblePictures, maskingLabel, shortPlayFrameId, onSelect, onDragEnd, sensors, expandedId, onExpand }) {
   return (
     <DndContext sensors={sensors} onDragEnd={onDragEnd}>
       <SortableContext items={sortableItemIds} strategy={horizontalListSortingStrategy}>
@@ -87,6 +127,9 @@ const SortableList = memo(function SortableList({ sortableItemIds, visiblePictur
             maskingLabel={maskingLabel}
             onSelect={onSelect}
             isShortPlayBegining={shortPlayFrameId === img.id}
+            shots={img.sequence?.shots?.length || 0}
+            expanded={expandedId === img.id}
+            onExpand={onExpand}
           />
         ))}
       </SortableContext>
@@ -94,7 +137,18 @@ const SortableList = memo(function SortableList({ sortableItemIds, visiblePictur
   );
 });
 
-const Timeline = ({ onSelect, onMove, select = false, pictures = [], playing = false, shortPlayStatus = false, shortPlayFrames = 0, frameCaptureMode = false }) => {
+const Timeline = ({
+  onSelect,
+  onMove,
+  select = false,
+  pictures = [],
+  playing = false,
+  shortPlayStatus = false,
+  shortPlayFrames = 0,
+  frameCaptureMode = false,
+  expandedId = null,
+  onExpand = () => {},
+}) => {
   const ref = useRef(null);
   const shadowLeftRef = useRef(null);
   const shadowRightRef = useRef(null);
@@ -113,11 +167,12 @@ const Timeline = ({ onSelect, onMove, select = false, pictures = [], playing = f
   }, []);
 
   // Latest-ref pattern: keep callbacks/data accessible from stable handlers without re-creating them.
-  const latestRef = useRef({ pictures, onSelect, onMove });
-  latestRef.current = { pictures, onSelect, onMove };
+  const latestRef = useRef({ pictures, onSelect, onMove, onExpand });
+  latestRef.current = { pictures, onSelect, onMove, onExpand };
 
   // Stable handlers — same identity for the entire Timeline lifetime.
   const stableOnSelect = useCallback((id) => latestRef.current.onSelect(id), []);
+  const stableOnExpand = useCallback((id) => latestRef.current.onExpand(id), []);
   const stableOnDragEnd = useCallback(({ active, over }) => {
     const { pictures, onSelect, onMove } = latestRef.current;
     const getIdx = (id) => pictures.findIndex((e) => `${e.id}` === `${id}`);
@@ -160,7 +215,7 @@ const Timeline = ({ onSelect, onMove, select = false, pictures = [], playing = f
   let picturesKey = '';
   for (let i = 0; i < pictures.length; i++) {
     const p = pictures[i];
-    picturesKey += p.id + ',' + (p.hidden ? 1 : 0) + ',' + (p.masking ? 1 : 0) + ',' + (p.length || 0) + ',' + (p.link || '') + ';';
+    picturesKey += p.id + ',' + (p.hidden ? 1 : 0) + ',' + (p.masking ? 1 : 0) + ',' + (p.length || 0) + ',' + (p.link || '') + ',' + (p.sequence?.shots?.length || 0) + ';';
   }
 
   const sortableItemIds = useMemo(() => pictures.map((p) => p.id), [picturesKey]);
@@ -233,6 +288,8 @@ const Timeline = ({ onSelect, onMove, select = false, pictures = [], playing = f
           onSelect={stableOnSelect}
           onDragEnd={stableOnDragEnd}
           sensors={sensors}
+          expandedId={expandedId}
+          onExpand={stableOnExpand}
         />
         <LiveItem select={select} onSelect={stableOnSelect} frameCaptureMode={frameCaptureMode} />
       </aside>

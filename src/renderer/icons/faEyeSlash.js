@@ -2,6 +2,15 @@
 const faEyeSlash = {
   prefix: 'fal',
   iconName: 'eye-slash',
-  icon: [16, 16, [], 'f000', 'M1 3h1v1h-1zM2 4h1v1h-1zM5 4h6v1h-6zM3 5h3v1h-3zM11 5h2v1h-2zM1 6h2v1h-2zM4 6h1v1h-1zM7 6h2v2h-2zM13 6h2v1h-2zM0 7h1v2h-1zM5 7h2v2h-2zM9 7h1v1h-1zM15 7h1v2h-1zM8 8h1v2h-1zM10 8h1v1h-1zM1 9h2v1h-2zM7 9h1v1h-1zM11 9h1v2h-1zM13 9h2v1h-2zM3 10h2v1h-2zM12 10h2v1h-2zM5 11h6v1h-6zM13 11h1v1h-1zM14 12h1v1h-1z'],
+  icon: [
+    16,
+    16,
+    [],
+    'f000',
+    [
+      'M6 5h5v1h-5zM3 6h1v4h-1zM5 6h2v1h-2zM9 6h4v1h-4zM1 7h2v2h-2zM4 7h1v3h-1zM10 7h5v1h-5zM9 8h1v3h-1zM11 8h4v1h-4zM5 9h2v2h-2zM10 9h1v2h-1zM12 9h1v1h-1zM7 10h2v1h-2z',
+      'M1 3h1v1h-1zM2 4h1v1h-1zM5 4h6v1h-6zM3 5h3v1h-3zM11 5h2v1h-2zM1 6h2v1h-2zM4 6h1v1h-1zM7 6h2v2h-2zM13 6h2v1h-2zM0 7h1v2h-1zM5 7h2v2h-2zM9 7h1v1h-1zM15 7h1v2h-1zM8 8h1v2h-1zM10 8h1v1h-1zM1 9h2v1h-2zM7 9h1v1h-1zM11 9h1v2h-1zM13 9h2v1h-2zM3 10h2v1h-2zM12 10h2v1h-2zM5 11h6v1h-6zM13 11h1v1h-1zM14 12h1v1h-1z',
+    ],
+  ],
 };
 export default faEyeSlash;

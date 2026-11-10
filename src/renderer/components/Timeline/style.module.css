@@ -187,6 +187,27 @@
   right: 2px;
 }
 
+.sequence {
+  background-color: var(--color-theme-dark);
+  border: 1px solid var(--pf-line);
+  color: var(--color-white);
+  cursor: pointer;
+  font-size: calc(0.9 * var(--tag-size));
+  font-variant-numeric: tabular-nums;
+  line-height: var(--tag-size);
+  padding: 0 3px;
+  position: absolute;
+  right: 2px;
+  top: 2px;
+  z-index: 2;
+}
+
+.sequence:hover,
+.sequenceOpen {
+  background-color: var(--pf-line);
+  color: var(--pf-paper);
+}
+
 .masking {
   background-color: var(--color-primary);
   border-top-right-radius: var(--border-radius-small);

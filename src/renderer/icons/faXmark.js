@@ -2,6 +2,12 @@
 const faXmark = {
   prefix: 'fal',
   iconName: 'xmark',
-  icon: [16, 16, [], 'f000', 'M2 2h2v2h-2zM12 2h2v2h-2zM4 3h1v3h-1zM11 3h1v3h-1zM3 4h1v1h-1zM5 4h1v3h-1zM10 4h1v3h-1zM12 4h1v1h-1zM6 5h1v6h-1zM9 5h1v6h-1zM7 6h2v4h-2zM5 9h1v3h-1zM10 9h1v3h-1zM4 10h1v3h-1zM11 10h1v3h-1zM3 11h1v3h-1zM12 11h1v3h-1zM2 12h1v2h-1zM13 12h1v2h-1z'],
+  icon: [
+    16,
+    16,
+    [],
+    'f000',
+    'M2 2h2v2h-2zM12 2h2v2h-2zM4 3h1v3h-1zM11 3h1v3h-1zM3 4h1v1h-1zM5 4h1v3h-1zM10 4h1v3h-1zM12 4h1v1h-1zM6 5h1v6h-1zM9 5h1v6h-1zM7 6h2v4h-2zM5 9h1v3h-1zM10 9h1v3h-1zM4 10h1v3h-1zM11 10h1v3h-1zM3 11h1v3h-1zM12 11h1v3h-1zM2 12h1v2h-1zM13 12h1v2h-1z',
+  ],
 };
 export default faXmark;

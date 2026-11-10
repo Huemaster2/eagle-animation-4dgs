@@ -18,9 +18,11 @@ import PerspectiveBar from '@components/PerspectiveBar';
 import PictureWindow from '@components/PictureWindow';
 import Player from '@components/Player';
 import ReferenceSequencesPanel from '@components/ReferenceSequencesPanel';
+import RotationCaptureProgress from '@components/RotationCaptureProgress';
 import SceneSelector from '@components/SceneSelector';
 import SceneSelectorWindow from '@components/SceneSelectorWindow';
 import SceneSettingsWindow from '@components/SceneSettingsWindow';
+import SequenceStrip from '@components/SequenceStrip';
 import Timeline from '@components/Timeline';
 import ToolsWindow from '@components/ToolsWindow';
 import Tour from '@components/Tour';
@@ -28,12 +30,22 @@ import TurntableWindow from '@components/TurntableWindow';
 import ViewsPanel from '@components/ViewsPanel';
 import Window from '@components/Window';
 import { DEFAULT_FPS, MAX_FRAME_DUPLICATION } from '@config-web';
+import { downscaleFrame, frameFolderName, nearestShot, nextSequenceNumber, planSequence, runSequence, shotAngle, shotBaseName } from '@core/captureSequence';
 import { normalizeOnionSkin } from '@core/onionSkin';
 import { parseRatio } from '@core/ratio';
 import { getAnimationPosition } from '@core/referenceSequence';
-import { getStopMoCameraStatus, setStopMoCaptureOptions, setStopMoRawContext, STOPMO_CAMERA_AVAILABLE, stopmoGrabLiveFrame } from '@core/stopmoCamera';
+import {
+  getLastStopMoCaptureFiles,
+  getStopMoCameraStatus,
+  getStopMoCaptureOptions,
+  setStopMoCaptureNaming,
+  setStopMoCaptureOptions,
+  setStopMoRawContext,
+  STOPMO_CAMERA_AVAILABLE,
+  stopmoGrabLiveFrame,
+} from '@core/stopmoCamera';
 import { turntable } from '@core/turntable';
-import { nearestEquivalent, PERSPECTIVES } from '@core/turntableMath';
+import { angleOf, nearestEquivalent, PERSPECTIVES } from '@core/turntableMath';
 import useAppCapabilities from '@hooks/useAppCapabilities';
 import useCamera from '@hooks/useCamera';
 import useDiscordActivity from '@hooks/useDiscordActivity';
@@ -187,6 +199,13 @@ const Animator = ({ t }) => {
   const [activePerspective, setActivePerspective] = useState(null);
   const [perspectiveStatus, setPerspectiveStatus] = useState('');
   const [notice, setNotice] = useState(null);
+  const [rotationRun, setRotationRun] = useState(null);
+  const [expandedFrameId, setExpandedFrameId] = useState(null);
+  // Rotation photo shown in place of a frame's timeline photo: { frameId, filename }
+  const [shotPreview, setShotPreview] = useState(null);
+  const rotationControl = useRef({ stop: false, continueHeight: null });
+  // Height the camera was last left at by a rotation capture (null until the first one: the app asks)
+  const cameraHeightRef = useRef(null);
   const { state: turntableState, profile: turntableProfile, actions: turntableActions } = useTurntable();
 
   // The Arduino forgets its position on reset, so every stop is remembered in the rig profile
@@ -324,6 +343,22 @@ const Animator = ({ t }) => {
   const referenceFramePosition = referenceFrameId === null ? null : pictures.findIndex((p) => p.id === referenceFrameId) + 1 || null;
   const currentFrame = currentFrameId === false ? false : pictures.find((p) => p.id === currentFrameId) || false;
   const sceneReferences = project.scenes[track]?.references || [];
+  // Frames with a rotation play from the active view: each shows its photo nearest that view's angle
+  const viewSteps = activePerspective ? turntableProfile.perspectives[activePerspective] : null;
+  const viewAngle = viewSteps === null || viewSteps === undefined ? null : angleOf(viewSteps, turntableState.stepsPerRev);
+  const viewPictures = pictures.map((p) => {
+    if (!p.sequence || viewAngle === null) return p;
+    const shot = nearestShot(p.sequence, viewAngle);
+    return shot?.link ? { ...p, link: shot.link } : p;
+  });
+  const playerPictures = shotPreview
+    ? viewPictures.map((p) => {
+        if (p.id !== shotPreview.frameId) return p;
+        const shot = p.sequence?.shots?.find((sh) => sh.filename === shotPreview.filename);
+        return shot?.link ? { ...p, link: shot.link } : p;
+      })
+    : viewPictures;
+  const expandedFrame = expandedFrameId ? pictures.find((p) => p.id === expandedFrameId) || null : null;
   const expandedFrames = pictures.reduce((acc, e) => [...acc, ...new Array(e.length || 1).fill(e)], []);
   const animationPosition = getAnimationPosition(
     expandedFrames,
@@ -371,9 +406,123 @@ const Animator = ({ t }) => {
     window.track('frame_moved', { projectId: `${id}`, trackId: `${track}`, frameId: `${frameId}` });
   };
 
+  const rotationEnabled = turntableState.connected && turntableProfile.rotationCapture;
+
+  // Shutter with rotation capture on: a full turn of photos at every camera height, saved as one timeline frame
+  const runRotationCapture = async () => {
+    const profile = turntableProfile;
+    const rev = turntable.state.stepsPerRev;
+    const heights = profile.heights;
+    const heroHeight = Math.min(profile.heroHeight, heights);
+    const startView = PERSPECTIVES.includes(profile.rotationStart) && profile.perspectives[profile.rotationStart] !== null ? profile.rotationStart : null;
+    const current = turntable.state.position ?? 0;
+    const anchor = startView ? profile.perspectives[startView] : current;
+    // Exact (unrounded) start on the revolution nearest the table, so rounding never drifts frame to frame
+    const start = anchor + Math.round((current - anchor) / rev) * rev;
+    const plan = planSequence({ start, stepsPerRev: rev, shotsPerPass: profile.shotsPerPass, heights, currentHeight: cameraHeightRef.current, serpentine: profile.alternateHeights });
+    const number = nextSequenceNumber(pictures);
+    const folder = frameFolderName(number);
+    const saveTarget = STOPMO_CAMERA_AVAILABLE ? getStopMoCaptureOptions().saveTarget : 'mac';
+    const shots = [];
+    let heroFrame = null;
+    let firstFrame = null;
+    let failure = null;
+    rotationControl.current = { stop: false, continueHeight: null };
+    const show = (patch) => setRotationRun((r) => ({ ...(r || {}), heights, shotsPerPass: profile.shotsPerPass, folder: saveTarget === 'card' ? null : folder, ...patch }));
+    show({ phase: 'starting', done: 0, total: plan.total });
+
+    const key = turntable.lock();
+    let result = null;
+    try {
+      // Turn to the start view first; the photos then follow the plan
+      const first = Math.round(start);
+      if (turntable.state.position !== first) await turntable.moveTo(first, { key });
+      result = await runSequence({
+        plan,
+        shots,
+        settleMs: profile.settleMs,
+        needsFirstHeight: cameraHeightRef.current !== plan.passes[0].height,
+        moveTo: (steps) => (turntable.state.position === steps ? Promise.resolve(steps) : turntable.moveTo(steps, { key })),
+        settle: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+        isStopped: () => rotationControl.current.stop,
+        onProgress: (progress) => {
+          if (progress.phase === 'moving') cameraHeightRef.current = progress.height;
+          show(progress);
+        },
+        askHeight: (height, isFirst) =>
+          new Promise((resolve) => {
+            rotationControl.current.continueHeight = resolve;
+            show({ phase: 'height', height, isFirst });
+          }),
+        capture: async (shot) => {
+          setStopMoCaptureNaming({ subDir: folder, baseName: shotBaseName(shot.height, shot.index) });
+          let frame;
+          try {
+            frame = await cameraActions.takePicture(1, settings.REVERSE_X, settings.REVERSE_Y);
+          } finally {
+            setStopMoCaptureNaming(null);
+          }
+          if (settings.SOUNDS) playSound(soundShutter);
+          const files = STOPMO_CAMERA_AVAILABLE ? getLastStopMoCaptureFiles().map((f) => ({ path: f.path, kind: f.kind, onCard: !!f.onCard })) : [];
+          if (!firstFrame) firstFrame = frame;
+          if (shot.height === heroHeight && shot.index === 0) heroFrame = frame;
+          const saved = await projectActions.savePicture(track, await downscaleFrame(frame));
+          return { height: shot.height, index: shot.index, angle: shotAngle(shot.steps, rev), offset: shot.offset, filename: saved.filename, link: saved.link, files };
+        },
+      });
+    } catch (err) {
+      failure = err;
+    } finally {
+      turntable.unlock(key);
+      rotationControl.current.continueHeight = null;
+    }
+
+    if (shots.length) {
+      show({ phase: 'saving' });
+      const sequence = {
+        number,
+        folder,
+        saveTarget,
+        shotsPerPass: profile.shotsPerPass,
+        heights,
+        heroHeight,
+        startView,
+        complete: !!result?.complete,
+        shots,
+      };
+      try {
+        await projectActions.addFrame(track, heroFrame || firstFrame, isPlaying ? false : currentFrameId, null, { ...(startView ? { perspective: startView } : {}), sequence });
+      } catch (err) {
+        failure = failure || err;
+      }
+    }
+    setRotationRun(null);
+    if (failure) {
+      if (settings.SOUNDS) playSound(soundError);
+      console.error('Rotation capture failed', failure);
+      setNotice({ tone: 'error', message: t('Rotation capture stopped after {{n}} of {{total}} photos: {{error}}', { n: shots.length, total: plan.total, error: failure?.message || failure }) });
+    } else if (!result?.complete) {
+      setNotice({ tone: 'warning', message: t('Rotation capture stopped: {{n}} of {{total}} photos kept as frame {{folder}}.', { n: shots.length, total: plan.total, folder }) });
+    } else {
+      setNotice(null);
+    }
+  };
+
+  const continueRotation = () => rotationControl.current.continueHeight?.(true);
+  const stopRotation = () => {
+    rotationControl.current.stop = true;
+    if (rotationControl.current.continueHeight) rotationControl.current.continueHeight(false);
+    setRotationRun((r) => (r ? { ...r, stopping: true } : r));
+  };
+
   const takePictures =
     (nbPicturesToTake = null) =>
     async () => {
+      // During a rotation capture the shutter key means "camera is at the next height, continue"
+      if (rotationRun?.phase === 'height') {
+        continueRotation();
+        return;
+      }
       if (isTakingPicture || !currentCamera) {
         return;
       }
@@ -387,6 +536,17 @@ const Animator = ({ t }) => {
       });
 
       setStartedAt((oldValue) => (oldValue ? oldValue : new Date().getTime() / 1000));
+
+      if (rotationEnabled && maskingMode === 'DISABLED') {
+        try {
+          await runRotationCapture();
+        } finally {
+          flushSync(() => {
+            setIsTakingPicture(false);
+          });
+        }
+        return;
+      }
 
       const numberOfFramesToTake = Number(nbPicturesToTake !== null ? nbPicturesToTake : settings.CAPTURE_FRAMES) || 1;
       for (let i = 0; i < numberOfFramesToTake; i++) {
@@ -438,7 +598,7 @@ const Animator = ({ t }) => {
 
   // Switching views never touches the shutter: it moves the table, swaps references and keeps the current frame
   const selectPerspective = async (view) => {
-    if (turntable.state.moving) return;
+    if (turntable.state.moving || turntable.state.locked) return;
     setActivePerspective(view);
     if (!view) {
       setPerspectiveStatus('');
@@ -919,7 +1079,7 @@ const Animator = ({ t }) => {
           onFrameChange={setCurrentFrameId}
           onPlayingStatusChange={setIsPlaying}
           isPlaying={isPlaying}
-          pictures={pictures}
+          pictures={playerPictures}
           onionValue={onionValue}
           onionSkin={onionConfig}
           referenceFrameId={referenceFramePosition ? referenceFrameId : null}
@@ -988,8 +1148,28 @@ const Animator = ({ t }) => {
             totalAnimationFrames={totalAnimationFrames}
             maskingMode={maskingMode}
           />
+          {expandedFrame && !isPlaying && (
+            <SequenceStrip
+              frame={expandedFrame}
+              frameNumber={pictures.findIndex((p) => p.id === expandedFrame.id) + 1}
+              selected={shotPreview?.frameId === expandedFrame.id ? shotPreview.filename : null}
+              onPreview={(filename) => {
+                setShotPreview(filename ? { frameId: expandedFrame.id, filename } : null);
+                if (filename) handleSelectFrame(expandedFrame.id);
+              }}
+              onClose={() => {
+                setExpandedFrameId(null);
+                setShotPreview(null);
+              }}
+            />
+          )}
           <Timeline
-            pictures={pictures}
+            pictures={viewPictures}
+            expandedId={expandedFrameId}
+            onExpand={(frameId) => {
+              setShotPreview(null);
+              setExpandedFrameId((current) => (current === frameId ? null : frameId));
+            }}
             onSelect={handleSelectFrame}
             onMove={handleFrameMove}
             select={currentFrameId}
@@ -1033,6 +1213,7 @@ const Animator = ({ t }) => {
           onClose={() => settingsActions.setSettings({ HISTOGRAM: { ...settings.HISTOGRAM, ENABLED: false } })}
         />
       )}
+      <RotationCaptureProgress run={rotationRun} onContinue={continueRotation} onStop={stopRotation} />
       {livePanel.OPEN && !isPlaying && (
         <ViewsPanel
           layout={livePanel}

@@ -2,6 +2,15 @@
 const faShutterSpeed = {
   prefix: 'fal',
   iconName: 'shutter-speed',
-  icon: [16, 16, [], 'f000', 'M5 1h6v1h-6zM3 2h2v1h-2zM11 2h2v1h-2zM2 3h1v1h-1zM13 3h1v1h-1zM1 4h1v1h-1zM7 4h1v7h-1zM14 4h1v1h-1zM0 5h1v5h-1zM8 5h1v5h-1zM15 5h1v5h-1zM9 6h1v3h-1zM10 7h1v1h-1zM1 10h1v1h-1zM14 10h1v1h-1zM2 11h1v1h-1zM13 11h1v1h-1zM3 12h2v1h-2zM11 12h2v1h-2zM5 13h6v1h-6z'],
+  icon: [
+    16,
+    16,
+    [],
+    'f000',
+    [
+      'M5 2h6v2h-6zM3 3h2v9h-2zM11 3h2v9h-2zM2 4h1v7h-1zM5 4h2v9h-2zM8 4h3v1h-3zM13 4h1v7h-1zM1 5h1v5h-1zM9 5h2v1h-2zM14 5h1v5h-1zM10 6h1v1h-1zM10 8h1v5h-1zM9 9h1v4h-1zM8 10h1v3h-1zM7 11h1v2h-1z',
+      'M5 1h6v1h-6zM3 2h2v1h-2zM11 2h2v1h-2zM2 3h1v1h-1zM13 3h1v1h-1zM1 4h1v1h-1zM7 4h1v7h-1zM14 4h1v1h-1zM0 5h1v5h-1zM8 5h1v5h-1zM15 5h1v5h-1zM9 6h1v3h-1zM10 7h1v1h-1zM1 10h1v1h-1zM14 10h1v1h-1zM2 11h1v1h-1zM13 11h1v1h-1zM3 12h2v1h-2zM11 12h2v1h-2zM5 13h6v1h-6z',
+    ],
+  ],
 };
 export default faShutterSpeed;

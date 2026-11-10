@@ -2,6 +2,15 @@
 const faImage = {
   prefix: 'fal',
   iconName: 'image',
-  icon: [16, 16, [], 'f000', ['M11 4h2v3h-2zM10 5h1v1h-1zM13 5h1v1h-1z', 'M0 2h16v1h-16zM0 3h1v11h-1zM15 3h1v11h-1zM6 8h1v6h-1zM5 9h1v5h-1zM7 9h1v5h-1zM4 10h1v4h-1zM8 10h1v4h-1zM12 10h1v4h-1zM3 11h1v3h-1zM9 11h1v3h-1zM11 11h1v3h-1zM13 11h1v1h-1zM2 12h1v2h-1zM10 12h1v2h-1zM1 13h1v1h-1zM13 13h2v1h-2z']],
+  icon: [
+    16,
+    16,
+    [],
+    'f000',
+    [
+      'M1 3h14v5h-14zM1 8h5v1h-5zM7 8h8v1h-8zM1 9h4v1h-4zM8 9h7v1h-7zM1 10h3v1h-3zM9 10h3v1h-3zM13 10h2v1h-2zM1 11h2v1h-2zM10 11h1v1h-1zM14 11h1v2h-1zM1 12h1v1h-1zM13 12h1v1h-1z',
+      'M0 2h16v1h-16zM0 3h1v11h-1zM15 3h1v11h-1zM6 8h1v6h-1zM5 9h1v5h-1zM7 9h1v5h-1zM4 10h1v4h-1zM8 10h1v4h-1zM12 10h1v4h-1zM3 11h1v3h-1zM9 11h1v3h-1zM11 11h1v3h-1zM13 11h1v1h-1zM2 12h1v2h-1zM10 12h1v2h-1zM1 13h1v1h-1zM13 13h2v1h-2z',
+    ],
+  ],
 };
 export default faImage;

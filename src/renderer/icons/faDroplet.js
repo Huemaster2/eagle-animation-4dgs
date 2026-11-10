@@ -2,6 +2,15 @@
 const faDroplet = {
   prefix: 'fal',
   iconName: 'droplet',
-  icon: [16, 16, [], 'f000', ['M7 3h1v10h-1zM6 4h1v9h-1zM8 4h1v9h-1zM5 5h1v6h-1zM9 5h1v8h-1zM4 6h1v3h-1zM10 6h1v7h-1zM3 7h1v4h-1zM11 7h1v5h-1zM12 9h1v2h-1zM4 11h1v1h-1zM5 12h1v1h-1z', 'M7 2h1v1h-1zM6 3h1v1h-1zM8 3h1v1h-1zM5 4h1v1h-1zM9 4h1v1h-1zM4 5h1v1h-1zM10 5h1v1h-1zM3 6h1v1h-1zM11 6h1v1h-1zM2 7h1v4h-1zM12 7h1v2h-1zM4 9h1v2h-1zM13 9h1v2h-1zM3 11h1v1h-1zM5 11h1v1h-1zM12 11h1v1h-1zM4 12h1v1h-1zM11 12h1v1h-1zM5 13h6v1h-6z']],
+  icon: [
+    16,
+    16,
+    [],
+    'f000',
+    [
+      'M7 3h1v10h-1zM6 4h1v9h-1zM8 4h1v9h-1zM5 5h1v6h-1zM9 5h1v8h-1zM4 6h1v3h-1zM10 6h1v7h-1zM3 7h1v4h-1zM11 7h1v5h-1zM12 9h1v2h-1zM4 11h1v1h-1zM5 12h1v1h-1z',
+      'M7 2h1v1h-1zM6 3h1v1h-1zM8 3h1v1h-1zM5 4h1v1h-1zM9 4h1v1h-1zM4 5h1v1h-1zM10 5h1v1h-1zM3 6h1v1h-1zM11 6h1v1h-1zM2 7h1v4h-1zM12 7h1v2h-1zM4 9h1v2h-1zM13 9h1v2h-1zM3 11h1v1h-1zM5 11h1v1h-1zM12 11h1v1h-1zM4 12h1v1h-1zM11 12h1v1h-1zM5 13h6v1h-6z',
+    ],
+  ],
 };
 export default faDroplet;

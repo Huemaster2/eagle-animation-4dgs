@@ -2,6 +2,15 @@
 const faFileExport = {
   prefix: 'fal',
   iconName: 'file-export',
-  icon: [16, 16, [], 'f000', 'M0 1h9v1h-9zM0 2h1v12h-1zM9 2h1v1h-1zM10 3h1v1h-1zM11 4h1v10h-1zM14 5h1v2h-1zM15 6h1v4h-1zM5 7h6v2h-6zM12 7h2v2h-2zM14 9h1v2h-1zM1 13h10v1h-10z'],
+  icon: [
+    16,
+    16,
+    [],
+    'f000',
+    [
+      'M1 2h8v5h-8zM9 3h1v4h-1zM10 4h1v3h-1zM1 7h4v6h-4zM5 9h6v4h-6z',
+      'M0 1h9v1h-9zM0 2h1v12h-1zM9 2h1v1h-1zM10 3h1v1h-1zM11 4h1v10h-1zM14 5h1v2h-1zM15 6h1v4h-1zM5 7h6v2h-6zM12 7h2v2h-2zM14 9h1v2h-1zM1 13h10v1h-10z',
+    ],
+  ],
 };
 export default faFileExport;

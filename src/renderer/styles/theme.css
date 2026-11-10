@@ -4,8 +4,7 @@
 
 body,
 body[data-theme='light'] {
-  --font: 'Pixelify Sans';
-  --font-scale: 1;
+  --font: 'Screenstar Small';
   --border-radius-small: 0;
   --border-radius-medium: 0;
   --border-radius-big: 0;
@@ -38,6 +37,7 @@ body[data-theme='light'] {
   --pf-accent-green: #2fae4e;
   --pf-accent-orange: #ef8a22;
   --pf-accent-purple: #8f52d6;
+  --pf-accent-paper: #fff;
   --pf-bevel: inset 1px 1px 0 #fff, inset -1px -1px 0 #888;
   --pf-glow: none;
   --pf-icon-glow: none;
@@ -50,8 +50,7 @@ body[data-theme='light'] {
 }
 
 body[data-theme='dark'] {
-  --font: 'VT323';
-  --font-scale: 1.15;
+  --font: 'Screenstar Small';
   --border-radius-small: 0;
   --border-radius-medium: 0;
   --border-radius-big: 0;
@@ -84,6 +83,7 @@ body[data-theme='dark'] {
   --pf-accent-green: #b8b8b8;
   --pf-accent-orange: #b8b8b8;
   --pf-accent-purple: #b8b8b8;
+  --pf-accent-paper: transparent;
   --pf-bevel: none;
   --pf-glow: 0 0 4px rgb(255 255 255 / 40%);
   --pf-icon-glow: drop-shadow(0 0 2px rgb(255 255 255 / 50%));
@@ -99,11 +99,6 @@ html,
 body {
   background: var(--pf-desk) !important;
   color: var(--color-white);
-}
-
-/* VT323 runs small, so Phosphor scales the whole interface text up a notch */
-html[data-theme='dark'] {
-  font-size: 18px;
 }
 
 /* Desktop pattern from the UI kit (grid in Classic, fine dots in Phosphor), tinted by the theme */
@@ -146,6 +141,11 @@ svg[data-prefix] {
 svg[data-prefix] [class~="fa-secondary"] {
   fill: var(--pf-accent, currentcolor) !important;
   opacity: 1 !important;
+}
+
+/* Classic shades the colour fill like the System 7 control strip: highlight line top/left, shadow line bottom/right */
+html[data-theme='light'] svg[data-prefix] [class~="fa-secondary"] {
+  filter: url('#pf-bevel');
 }
 
 ::selection {

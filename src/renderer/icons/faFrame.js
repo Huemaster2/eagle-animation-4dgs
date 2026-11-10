@@ -2,6 +2,6 @@
 const faFrame = {
   prefix: 'fal',
   iconName: 'frame',
-  icon: [16, 16, [], 'f000', 'M3 2h1v11h-1zM12 2h1v11h-1zM1 4h2v1h-2zM4 4h8v1h-8zM13 4h2v1h-2zM1 10h2v1h-2zM4 10h8v1h-8zM13 10h2v1h-2z'],
+  icon: [16, 16, [], 'f000', ['M4 5h8v5h-8z', 'M3 2h1v11h-1zM12 2h1v11h-1zM1 4h2v1h-2zM4 4h8v1h-8zM13 4h2v1h-2zM1 10h2v1h-2zM4 10h8v1h-8zM13 10h2v1h-2z']],
 };
 export default faFrame;

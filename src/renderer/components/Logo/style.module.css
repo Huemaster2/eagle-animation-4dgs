@@ -7,7 +7,19 @@
   width: 100%;
 }
 
-.logo svg {
+.full {
+  align-items: center;
+  gap: 10px;
+}
+
+.fly {
   height: 100%;
-  width: 100%;
+  image-rendering: pixelated;
+  object-fit: contain;
+  width: auto;
+}
+
+.wordmark {
+  height: 36%;
+  width: auto;
 }

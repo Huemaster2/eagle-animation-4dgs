@@ -2,6 +2,15 @@
 const faFilmGear = {
   prefix: 'fal',
   iconName: 'film-gear',
-  icon: [16, 16, [], 'f000', 'M0 2h16v1h-16zM0 3h1v10h-1zM2 3h1v10h-1zM13 3h1v10h-1zM15 3h1v5h-1zM1 4h1v1h-1zM14 4h1v1h-1zM1 6h1v1h-1zM10 6h1v1h-1zM14 6h1v1h-1zM3 7h6v1h-6zM11 7h1v2h-1zM1 8h1v1h-1zM8 8h3v1h-3zM12 8h1v6h-1zM7 9h2v3h-2zM1 10h1v1h-1zM6 10h1v1h-1zM10 10h1v1h-1zM14 10h1v1h-1zM1 12h1v1h-1zM3 12h4v1h-4zM8 12h4v1h-4zM9 13h1v1h-1z'],
+  icon: [
+    16,
+    16,
+    [],
+    'f000',
+    [
+      'M3 3h10v3h-10zM3 6h7v1h-7zM11 6h2v1h-2zM9 7h2v1h-2zM12 7h1v1h-1zM3 8h5v1h-5zM3 9h4v1h-4zM9 9h3v1h-3zM3 10h3v2h-3zM9 10h1v2h-1zM11 10h1v2h-1zM6 11h1v1h-1zM10 11h1v1h-1z',
+      'M0 2h16v1h-16zM0 3h1v10h-1zM2 3h1v10h-1zM13 3h1v10h-1zM15 3h1v5h-1zM1 4h1v1h-1zM14 4h1v1h-1zM1 6h1v1h-1zM10 6h1v1h-1zM14 6h1v1h-1zM3 7h6v1h-6zM11 7h1v2h-1zM1 8h1v1h-1zM8 8h3v1h-3zM12 8h1v6h-1zM7 9h2v3h-2zM1 10h1v1h-1zM6 10h1v1h-1zM10 10h1v1h-1zM14 10h1v1h-1zM1 12h1v1h-1zM3 12h4v1h-4zM8 12h4v1h-4zM9 13h1v1h-1z',
+    ],
+  ],
 };
 export default faFilmGear;

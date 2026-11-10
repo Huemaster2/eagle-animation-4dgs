@@ -2,6 +2,15 @@
 const faCameraSettings = {
   prefix: 'fas',
   iconName: 'camera-settings',
-  icon: [16, 16, [], 'f000', 'M5 1h6v1h-6zM4 2h1v1h-1zM11 2h1v1h-1zM1 3h3v1h-3zM12 3h3v1h-3zM0 4h1v9h-1zM15 4h1v5h-1zM6 5h4v1h-4zM5 6h1v1h-1zM10 6h1v1h-1zM4 7h1v3h-1zM11 7h1v3h-1zM9 8h1v3h-1zM13 8h1v3h-1zM10 9h1v1h-1zM12 9h1v1h-1zM5 10h1v1h-1zM8 10h1v4h-1zM14 10h1v3h-1zM6 11h2v1h-2zM9 12h1v3h-1zM13 12h1v3h-1zM1 13h7v1h-7zM11 13h2v1h-2zM11 14h1v1h-1z'],
+  icon: [
+    16,
+    16,
+    [],
+    'f000',
+    [
+      'M6 6h4v2h-4zM5 7h1v3h-1zM10 7h1v2h-1zM6 8h3v2h-3zM6 10h2v1h-2z',
+      'M5 1h6v1h-6zM4 2h1v1h-1zM11 2h1v1h-1zM1 3h3v1h-3zM12 3h3v1h-3zM0 4h1v9h-1zM15 4h1v5h-1zM6 5h4v1h-4zM5 6h1v1h-1zM10 6h1v1h-1zM4 7h1v3h-1zM11 7h1v3h-1zM9 8h1v3h-1zM13 8h1v3h-1zM10 9h1v1h-1zM12 9h1v1h-1zM5 10h1v1h-1zM8 10h1v4h-1zM14 10h1v3h-1zM6 11h2v1h-2zM9 12h1v3h-1zM13 12h1v3h-1zM1 13h7v1h-7zM11 13h2v1h-2zM11 14h1v1h-1z',
+    ],
+  ],
 };
 export default faCameraSettings;

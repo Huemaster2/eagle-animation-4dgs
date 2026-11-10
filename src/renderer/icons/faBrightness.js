@@ -2,6 +2,15 @@
 const faBrightness = {
   prefix: 'fal',
   iconName: 'brightness',
-  icon: [16, 16, [], 'f000', ['M6 6h3v3h-3zM5 7h1v1h-1zM9 7h1v1h-1z', 'M7 2h1v2h-1zM3 3h1v1h-1zM11 3h1v1h-1zM4 4h1v1h-1zM10 4h1v1h-1zM6 5h3v1h-3zM5 6h1v1h-1zM9 6h1v1h-1zM0 7h2v1h-2zM4 7h1v1h-1zM10 7h1v1h-1zM13 7h2v1h-2zM5 8h1v1h-1zM9 8h1v1h-1zM6 9h3v1h-3zM4 10h1v1h-1zM10 10h1v1h-1zM3 11h1v1h-1zM7 11h1v2h-1zM11 11h1v1h-1z']],
+  icon: [
+    16,
+    16,
+    [],
+    'f000',
+    [
+      'M6 6h3v3h-3zM5 7h1v1h-1zM9 7h1v1h-1z',
+      'M7 2h1v2h-1zM3 3h1v1h-1zM11 3h1v1h-1zM4 4h1v1h-1zM10 4h1v1h-1zM6 5h3v1h-3zM5 6h1v1h-1zM9 6h1v1h-1zM0 7h2v1h-2zM4 7h1v1h-1zM10 7h1v1h-1zM13 7h2v1h-2zM5 8h1v1h-1zM9 8h1v1h-1zM6 9h3v1h-3zM4 10h1v1h-1zM10 10h1v1h-1zM3 11h1v1h-1zM7 11h1v2h-1zM11 11h1v1h-1z',
+    ],
+  ],
 };
 export default faBrightness;

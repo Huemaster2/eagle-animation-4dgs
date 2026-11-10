@@ -2,6 +2,15 @@
 const faKeyboard = {
   prefix: 'fal',
   iconName: 'keyboard',
-  icon: [16, 16, [], 'f000', 'M0 3h16v1h-16zM0 4h1v8h-1zM15 4h1v8h-1zM2 5h1v1h-1zM4 5h1v1h-1zM6 5h1v1h-1zM8 5h1v1h-1zM10 5h1v1h-1zM12 5h1v1h-1zM2 7h2v1h-2zM5 7h1v1h-1zM7 7h1v1h-1zM9 7h1v1h-1zM11 7h2v1h-2zM2 9h1v1h-1zM4 9h7v1h-7zM12 9h1v1h-1zM1 11h14v1h-14z'],
+  icon: [
+    16,
+    16,
+    [],
+    'f000',
+    [
+      'M1 4h14v1h-14zM1 5h1v6h-1zM3 5h1v2h-1zM5 5h1v2h-1zM7 5h1v2h-1zM9 5h1v2h-1zM11 5h1v2h-1zM13 5h2v6h-2zM2 6h1v1h-1zM4 6h1v3h-1zM6 6h1v3h-1zM8 6h1v3h-1zM10 6h1v3h-1zM12 6h1v1h-1zM2 8h2v1h-2zM5 8h1v1h-1zM7 8h1v1h-1zM9 8h1v1h-1zM11 8h2v1h-2zM3 9h1v2h-1zM11 9h1v2h-1zM2 10h1v1h-1zM4 10h7v1h-7zM12 10h1v1h-1z',
+      'M0 3h16v1h-16zM0 4h1v8h-1zM15 4h1v8h-1zM2 5h1v1h-1zM4 5h1v1h-1zM6 5h1v1h-1zM8 5h1v1h-1zM10 5h1v1h-1zM12 5h1v1h-1zM2 7h2v1h-2zM5 7h1v1h-1zM7 7h1v1h-1zM9 7h1v1h-1zM11 7h2v1h-2zM2 9h1v1h-1zM4 9h7v1h-7zM12 9h1v1h-1zM1 11h14v1h-14z',
+    ],
+  ],
 };
 export default faKeyboard;

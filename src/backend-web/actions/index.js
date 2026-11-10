@@ -1,4 +1,5 @@
 import { isIos } from '@braintree/browser-detection';
+import { mapSequenceLinks } from '@common/captureSequence';
 import { getEncodingProfile, getFFmpegArgs, parseFFmpegLogs } from '@common/ffmpeg';
 import { mapPerspectiveViews } from '@common/perspectiveViews';
 import { LS_CAMERA_SETTINGS, LS_SETTINGS } from '@config-web';
@@ -61,6 +62,7 @@ const computeProject = async (data) => {
             ...picture,
             link: `/api/pictures/${picture.filename}`,
             metaLink: `/api/pictures/${picture.filename}?infos=json`,
+            ...(picture?.sequence ? { sequence: mapSequenceLinks(picture.sequence, (filename) => `/api/pictures/${filename}`) } : {}),
             ...(picture?.masking
               ? {
                   masking: {

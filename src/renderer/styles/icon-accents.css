@@ -4,6 +4,10 @@ svg[data-icon='camera'] {
   --pf-accent: var(--pf-accent-yellow);
 }
 
+svg[data-icon='camera-settings'] {
+  --pf-accent: var(--pf-accent-paper);
+}
+
 svg[data-icon='play'] {
   --pf-accent: var(--pf-accent-green);
 }
@@ -12,8 +16,16 @@ svg[data-icon='rotate'] {
   --pf-accent: var(--pf-accent-orange);
 }
 
+svg[data-icon='gear'] {
+  --pf-accent: var(--pf-accent-paper);
+}
+
 svg[data-icon='folder'] {
   --pf-accent: var(--pf-accent-yellow);
+}
+
+svg[data-icon='folder-image'] {
+  --pf-accent: var(--pf-accent-paper);
 }
 
 svg[data-icon='image'] {
@@ -24,8 +36,64 @@ svg[data-icon='images'] {
   --pf-accent: var(--pf-accent-yellow);
 }
 
+svg[data-icon='image-eye'] {
+  --pf-accent: var(--pf-accent-paper);
+}
+
+svg[data-icon='image-eye-slash'] {
+  --pf-accent: var(--pf-accent-paper);
+}
+
+svg[data-icon='image-circle-plus'] {
+  --pf-accent: var(--pf-accent-paper);
+}
+
+svg[data-icon='image-circle-minus'] {
+  --pf-accent: var(--pf-accent-paper);
+}
+
+svg[data-icon='picture-options'] {
+  --pf-accent: var(--pf-accent-paper);
+}
+
+svg[data-icon='rectangle-history'] {
+  --pf-accent: var(--pf-accent-paper);
+}
+
+svg[data-icon='frame'] {
+  --pf-accent: var(--pf-accent-paper);
+}
+
+svg[data-icon='film'] {
+  --pf-accent: var(--pf-accent-paper);
+}
+
+svg[data-icon='film-gear'] {
+  --pf-accent: var(--pf-accent-paper);
+}
+
 svg[data-icon='file-video'] {
   --pf-accent: var(--pf-accent-green);
+}
+
+svg[data-icon='file-export'] {
+  --pf-accent: var(--pf-accent-paper);
+}
+
+svg[data-icon='trash'] {
+  --pf-accent: var(--pf-accent-paper);
+}
+
+svg[data-icon='eraser'] {
+  --pf-accent: var(--pf-accent-paper);
+}
+
+svg[data-icon='broom'] {
+  --pf-accent: var(--pf-accent-paper);
+}
+
+svg[data-icon='pen'] {
+  --pf-accent: var(--pf-accent-paper);
 }
 
 svg[data-icon='palette'] {
@@ -40,8 +108,60 @@ svg[data-icon='layer'] {
   --pf-accent: var(--pf-accent-purple);
 }
 
+svg[data-icon='layer-plus'] {
+  --pf-accent: var(--pf-accent-paper);
+}
+
+svg[data-icon='layer-minus'] {
+  --pf-accent: var(--pf-accent-paper);
+}
+
 svg[data-icon='circles-overlap-3'] {
   --pf-accent: var(--pf-accent-purple);
+}
+
+svg[data-icon='eye'] {
+  --pf-accent: var(--pf-accent-paper);
+}
+
+svg[data-icon='eye-slash'] {
+  --pf-accent: var(--pf-accent-paper);
+}
+
+svg[data-icon='magnifying-glass'] {
+  --pf-accent: var(--pf-accent-paper);
+}
+
+svg[data-icon='crosshairs'] {
+  --pf-accent: var(--pf-accent-paper);
+}
+
+svg[data-icon='face-viewfinder'] {
+  --pf-accent: var(--pf-accent-paper);
+}
+
+svg[data-icon='clock'] {
+  --pf-accent: var(--pf-accent-paper);
+}
+
+svg[data-icon='shutter-speed'] {
+  --pf-accent: var(--pf-accent-paper);
+}
+
+svg[data-icon='aperture'] {
+  --pf-accent: var(--pf-accent-paper);
+}
+
+svg[data-icon='exposure'] {
+  --pf-accent: var(--pf-accent-paper);
+}
+
+svg[data-icon='iso'] {
+  --pf-accent: var(--pf-accent-paper);
+}
+
+svg[data-icon='gamma'] {
+  --pf-accent: var(--pf-accent-paper);
 }
 
 svg[data-icon='brightness'] {
@@ -64,8 +184,20 @@ svg[data-icon='droplet'] {
   --pf-accent: var(--pf-accent-green);
 }
 
-svg[data-icon='circle-check'] {
+svg[data-icon='diamond-half-stroke'] {
+  --pf-accent: var(--pf-accent-paper);
+}
+
+svg[data-icon='circle-half-stroke'] {
+  --pf-accent: var(--pf-accent-paper);
+}
+
+svg[data-icon='check-circle'] {
   --pf-accent: var(--pf-accent-green);
+}
+
+svg[data-icon='triangle'] {
+  --pf-accent: var(--pf-accent-paper);
 }
 
 svg[data-icon='triangle-exclamation'] {
@@ -76,6 +208,34 @@ svg[data-icon='star'] {
   --pf-accent: var(--pf-accent-yellow);
 }
 
+svg[data-icon='star-regular'] {
+  --pf-accent: var(--pf-accent-paper);
+}
+
+svg[data-icon='key'] {
+  --pf-accent: var(--pf-accent-paper);
+}
+
+svg[data-icon='keyboard'] {
+  --pf-accent: var(--pf-accent-paper);
+}
+
+svg[data-icon='ruler-horizontal'] {
+  --pf-accent: var(--pf-accent-paper);
+}
+
+svg[data-icon='mobile-signal-out'] {
+  --pf-accent: var(--pf-accent-paper);
+}
+
+svg[data-icon='paper-plane'] {
+  --pf-accent: var(--pf-accent-paper);
+}
+
 svg[data-icon='waveform'] {
   --pf-accent: var(--pf-accent-green);
+}
+
+svg[data-icon='x-sheet'] {
+  --pf-accent: var(--pf-accent-yellow);
 }

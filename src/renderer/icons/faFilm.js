@@ -2,6 +2,15 @@
 const faFilm = {
   prefix: 'fal',
   iconName: 'film',
-  icon: [16, 16, [], 'f000', 'M0 2h16v1h-16zM0 3h1v10h-1zM2 3h1v10h-1zM13 3h1v10h-1zM15 3h1v10h-1zM1 4h1v1h-1zM14 4h1v1h-1zM1 6h1v1h-1zM14 6h1v1h-1zM3 7h10v1h-10zM1 8h1v1h-1zM14 8h1v1h-1zM1 10h1v1h-1zM14 10h1v1h-1zM1 12h1v1h-1zM3 12h10v1h-10zM14 12h1v1h-1z'],
+  icon: [
+    16,
+    16,
+    [],
+    'f000',
+    [
+      'M3 3h10v4h-10zM3 8h10v4h-10z',
+      'M0 2h16v1h-16zM0 3h1v10h-1zM2 3h1v10h-1zM13 3h1v10h-1zM15 3h1v10h-1zM1 4h1v1h-1zM14 4h1v1h-1zM1 6h1v1h-1zM14 6h1v1h-1zM3 7h10v1h-10zM1 8h1v1h-1zM14 8h1v1h-1zM1 10h1v1h-1zM14 10h1v1h-1zM1 12h1v1h-1zM3 12h10v1h-10zM14 12h1v1h-1z',
+    ],
+  ],
 };
 export default faFilm;

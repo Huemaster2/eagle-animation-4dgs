@@ -21,7 +21,7 @@ const clampRect = ({ x, y, w, h }, minW, minH) => {
 
 // Floating window that stays over the live view: drag by the title bar, resize from the corner,
 // collapse to its title bar (System 7 window shade). Layout is reported as { X, Y, W, H, COLLAPSED }.
-const FloatingPanel = ({ t, title = '', layout = {}, defaults = {}, minWidth = 200, minHeight = 120, onLayoutChange = () => {}, onClose = () => {}, children }) => {
+const FloatingPanel = ({ t, title = '', layout = {}, defaults = {}, minWidth = 200, minHeight = 120, keepFocus = false, onLayoutChange = () => {}, onClose = () => {}, children }) => {
   const [rect, setRect] = useState(() =>
     clampRect(
       {
@@ -79,7 +79,7 @@ const FloatingPanel = ({ t, title = '', layout = {}, defaults = {}, minWidth = 2
       style={{ left: rect.x, top: rect.y, width: rect.w, height: collapsed ? undefined : rect.h, zIndex: 990000 + layer }}
       role="dialog"
       aria-label={title}
-      onPointerUp={releaseFocus}
+      onPointerUp={keepFocus ? undefined : releaseFocus}
       onPointerDownCapture={() => layer !== topLayer && setLayer(++topLayer)}
     >
       <div

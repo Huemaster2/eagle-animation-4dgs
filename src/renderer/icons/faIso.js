@@ -2,6 +2,15 @@
 const faIso = {
   prefix: 'fal',
   iconName: 'iso',
-  icon: [16, 16, [], 'f000', 'M0 2h16v1h-16zM0 3h1v10h-1zM15 3h1v10h-1zM2 5h1v5h-1zM4 5h3v1h-3zM9 5h3v1h-3zM4 6h1v2h-1zM9 6h1v4h-1zM11 6h1v4h-1zM5 7h2v1h-2zM6 8h1v2h-1zM4 9h2v1h-2zM10 9h1v1h-1zM1 12h14v1h-14z'],
+  icon: [
+    16,
+    16,
+    [],
+    'f000',
+    [
+      'M1 3h14v2h-14zM1 5h1v7h-1zM3 5h1v7h-1zM7 5h2v7h-2zM12 5h3v7h-3zM5 6h2v1h-2zM10 6h1v3h-1zM4 8h2v1h-2zM2 10h1v2h-1zM4 10h3v2h-3zM9 10h3v2h-3z',
+      'M0 2h16v1h-16zM0 3h1v10h-1zM15 3h1v10h-1zM2 5h1v5h-1zM4 5h3v1h-3zM9 5h3v1h-3zM4 6h1v2h-1zM9 6h1v4h-1zM11 6h1v4h-1zM5 7h2v1h-2zM6 8h1v2h-1zM4 9h2v1h-2zM10 9h1v1h-1zM1 12h14v1h-14z',
+    ],
+  ],
 };
 export default faIso;

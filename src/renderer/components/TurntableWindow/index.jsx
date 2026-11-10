@@ -1,10 +1,11 @@
 import ActionCard from '@components/ActionCard';
 import Heading from '@components/Heading';
 import Select from '@components/Select';
+import Switch from '@components/Switch';
 import TurntableAngleSlider from '@components/TurntableAngleSlider';
 import { flashArduinoUno } from '@core/arduinoFlasher';
 import { findArduinoPort, turntable } from '@core/turntable';
-import { angleOf, degreesToSteps, interpolateShots, nearestEquivalent, PERSPECTIVES } from '@core/turntableMath';
+import { angleOf, degreesToSteps, nearestEquivalent, PERSPECTIVES } from '@core/turntableMath';
 import useTurntable from '@hooks/useTurntable';
 import { useEffect, useState } from 'react';
 import { withTranslation } from 'react-i18next';
@@ -72,11 +73,10 @@ const TurntableWindow = ({ t }) => {
   // Any move goes to the same angle on the nearest revolution, always finishing forward (firmware backlash rule)
   const goTo = (steps) => run(() => turntable.moveTo(nearestEquivalent(steps, state.position ?? steps, rev)));
 
-  const shots =
-    profile.captureStart !== null && profile.captureEnd !== null
-      ? interpolateShots({ start: profile.captureStart, end: profile.captureEnd, shots: profile.shotsPerPass, current: profile.captureStart, stepsPerRev: rev })
-      : [];
-  const interval = shots.length > 1 ? ((shots[1] - shots[0]) / rev) * 360 : 0;
+  // Stops of one full turn from the start view (or from where the table is)
+  const startSteps = PERSPECTIVES.includes(profile.rotationStart) && profile.perspectives[profile.rotationStart] !== null ? profile.perspectives[profile.rotationStart] : (state.position ?? 0);
+  const shots = Array.from({ length: profile.shotsPerPass }, (_, i) => startSteps + (i * rev) / profile.shotsPerPass);
+  const interval = 360 / profile.shotsPerPass;
 
   useEffect(() => {
     if (previewIndex >= shots.length) setPreviewIndex(0);
@@ -216,62 +216,72 @@ const TurntableWindow = ({ t }) => {
       </section>
 
       <section className={style.section}>
-        <Heading h={2}>{t('Capture arc')}</Heading>
-        {[
-          ['captureStart', t('START')],
-          ['captureEnd', t('END')],
-        ].map(([key, label]) => (
-          <div className={style.row} key={key}>
-            <span className={style.label}>{label}</span>
-            <span className={style.value}>{profile[key] === null ? t('not set') : fmt(angleOf(profile[key], rev))}</span>
-            <div className={style.inline}>
-              <button type="button" className={style.step} disabled={!ready} onClick={() => actions.updateProfile({ [key]: state.position })}>
-                {t('Set here')}
-              </button>
-              <button type="button" className={style.step} disabled={!ready || profile[key] === null} onClick={() => goTo(profile[key])}>
-                {t('Go')}
-              </button>
-            </div>
-          </div>
-        ))}
+        <Heading h={2}>{t('Rotation capture')}</Heading>
+        <label className={style.row}>
+          <span className={style.label}>{t('Shutter takes a full turn of photos')}</span>
+          <Switch checked={profile.rotationCapture} onChange={() => actions.updateProfile({ rotationCapture: !profile.rotationCapture })} />
+        </label>
         <div className={style.row}>
-          <span className={style.label}>{t('Photos per height')}</span>
+          <span className={style.label}>{t('Photos per turn')}</span>
           <input className={style.number} type="number" min={1} max={360} value={profile.shotsPerPass} onChange={(e) => actions.updateProfile({ shotsPerPass: e.target.value })} />
-          <span className={style.label}>{t('Heights')}</span>
+          <span className={style.label}>{t('Camera heights')}</span>
           <input className={style.number} type="number" min={1} max={10} value={profile.heights} onChange={(e) => actions.updateProfile({ heights: e.target.value })} />
           <span className={style.label}>{t('Settle (ms)')}</span>
           <input className={style.number} type="number" min={0} max={10000} step={100} value={profile.settleMs} onChange={(e) => actions.updateProfile({ settleMs: e.target.value })} />
         </div>
-        {shots.length > 0 && (
-          <>
-            <p className={style.hint}>
-              {t('{{n}} photos, {{gaps}} equal intervals of {{deg}}, START and END exact. {{total}} photos per frame over {{heights}} heights.', {
-                n: shots.length,
-                gaps: shots.length - 1,
-                deg: fmt(interval),
-                total: shots.length * profile.heights,
-                heights: profile.heights,
-              })}
-            </p>
-            <div className={style.chips}>
-              {shots.map((s, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  className={`${style.chip} ${i === previewIndex ? style.chipActive : ''}`}
-                  disabled={!ready}
-                  title={t('Turn to photo {{n}} (no photo is taken)', { n: i + 1 })}
-                  onClick={() => {
-                    setPreviewIndex(i);
-                    goTo(s);
-                  }}
-                >
-                  {i + 1}: {fmt(angleOf(s, rev))}
-                </button>
-              ))}
-            </div>
-          </>
-        )}
+        <div className={style.row}>
+          <span className={style.label}>{t('Start at')}</span>
+          <Select
+            options={[...PERSPECTIVES.map((v) => ({ value: v, label: profile.perspectives[v] === null ? `${t(v)} (${t('not set')})` : t(v) })), { value: 'CURRENT', label: t('Where the table is') }]}
+            value={profile.rotationStart}
+            onChange={(e) => actions.updateProfile({ rotationStart: e.target.value })}
+          />
+          <span className={style.label}>{t('Timeline photo from height')}</span>
+          <input
+            className={style.number}
+            type="number"
+            min={1}
+            max={profile.heights}
+            value={Math.min(profile.heroHeight, profile.heights)}
+            onChange={(e) => actions.updateProfile({ heroHeight: e.target.value })}
+          />
+        </div>
+        <label className={style.row}>
+          <span className={style.label}>{t('Alternate height order (1→{{n}}, then {{n}}→1) to save moving the camera', { n: profile.heights })}</span>
+          <Switch checked={profile.alternateHeights} onChange={() => actions.updateProfile({ alternateHeights: !profile.alternateHeights })} />
+        </label>
+        <p className={style.hint}>
+          {t(
+            '{{n}} photos every {{deg}} around a full circle, at {{heights}} heights you set by hand: {{total}} photos per frame. The photo at the start view and height {{hero}} is the frame shown in the timeline; the rest open from the frame.',
+            {
+              n: profile.shotsPerPass,
+              deg: fmt(interval),
+              heights: profile.heights,
+              total: profile.shotsPerPass * profile.heights,
+              hero: Math.min(profile.heroHeight, profile.heights),
+            }
+          )}
+          {PERSPECTIVES.includes(profile.rotationStart) &&
+            profile.perspectives[profile.rotationStart] === null &&
+            ` ${t('{{view}} is not set yet, so the turn starts where the table is.', { view: t(profile.rotationStart) })}`}
+        </p>
+        <div className={style.chips}>
+          {shots.map((s, i) => (
+            <button
+              key={i}
+              type="button"
+              className={`${style.chip} ${i === previewIndex ? style.chipActive : ''}`}
+              disabled={!ready}
+              title={t('Turn to photo {{n}} (no photo is taken)', { n: i + 1 })}
+              onClick={() => {
+                setPreviewIndex(i);
+                goTo(Math.round(s));
+              }}
+            >
+              {i + 1}: {fmt(angleOf(s, rev))}
+            </button>
+          ))}
+        </div>
       </section>
 
       <section className={style.section}>

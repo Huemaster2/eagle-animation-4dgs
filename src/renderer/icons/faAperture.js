@@ -2,6 +2,15 @@
 const faAperture = {
   prefix: 'fal',
   iconName: 'aperture',
-  icon: [16, 16, [], 'f000', 'M5 1h6v1h-6zM3 2h2v1h-2zM7 2h1v5h-1zM11 2h2v1h-2zM2 3h1v1h-1zM13 3h1v1h-1zM1 4h1v1h-1zM12 4h1v1h-1zM14 4h1v1h-1zM0 5h1v6h-1zM11 5h1v1h-1zM15 5h1v6h-1zM2 6h5v1h-5zM8 6h1v1h-1zM10 6h1v4h-1zM5 7h1v3h-1zM7 9h3v1h-3zM11 9h3v1h-3zM4 10h1v1h-1zM8 10h1v5h-1zM1 11h1v1h-1zM3 11h1v1h-1zM14 11h1v1h-1zM2 12h1v1h-1zM13 12h1v1h-1zM3 13h2v1h-2zM11 13h2v1h-2zM5 14h3v1h-3zM9 14h2v1h-2z'],
+  icon: [
+    16,
+    16,
+    [],
+    'f000',
+    [
+      'M5 2h2v4h-2zM8 2h3v4h-3zM3 3h2v3h-2zM11 3h2v1h-2zM2 4h1v2h-1zM11 4h1v1h-1zM13 4h1v5h-1zM1 5h1v6h-1zM12 5h1v4h-1zM14 5h1v6h-1zM9 6h1v3h-1zM11 6h1v3h-1zM2 7h3v3h-3zM6 7h3v2h-3zM6 9h1v5h-1zM2 10h2v1h-2zM5 10h1v4h-1zM7 10h1v4h-1zM9 10h5v2h-5zM2 11h1v1h-1zM4 11h1v2h-1zM3 12h1v1h-1zM9 12h4v1h-4zM9 13h2v1h-2z',
+      'M5 1h6v1h-6zM3 2h2v1h-2zM7 2h1v5h-1zM11 2h2v1h-2zM2 3h1v1h-1zM13 3h1v1h-1zM1 4h1v1h-1zM12 4h1v1h-1zM14 4h1v1h-1zM0 5h1v6h-1zM11 5h1v1h-1zM15 5h1v6h-1zM2 6h5v1h-5zM8 6h1v1h-1zM10 6h1v4h-1zM5 7h1v3h-1zM7 9h3v1h-3zM11 9h3v1h-3zM4 10h1v1h-1zM8 10h1v5h-1zM1 11h1v1h-1zM3 11h1v1h-1zM14 11h1v1h-1zM2 12h1v1h-1zM13 12h1v1h-1zM3 13h2v1h-2zM11 13h2v1h-2zM5 14h3v1h-3zM9 14h2v1h-2z',
+    ],
+  ],
 };
 export default faAperture;

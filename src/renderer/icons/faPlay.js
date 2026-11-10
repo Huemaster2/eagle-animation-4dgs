@@ -2,6 +2,15 @@
 const faPlay = {
   prefix: 'fal',
   iconName: 'play',
-  icon: [16, 16, [], 'f000', ['M3 3h1v10h-1zM4 4h2v8h-2zM6 5h2v6h-2zM8 6h2v4h-2zM10 7h2v2h-2z', 'M2 2h2v1h-2zM2 3h1v11h-1zM4 3h2v1h-2zM6 4h2v1h-2zM8 5h2v1h-2zM10 6h2v1h-2zM12 7h2v2h-2zM10 9h2v1h-2zM8 10h2v1h-2zM6 11h2v1h-2zM4 12h2v1h-2zM3 13h1v1h-1z']],
+  icon: [
+    16,
+    16,
+    [],
+    'f000',
+    [
+      'M3 3h1v10h-1zM4 4h2v8h-2zM6 5h2v6h-2zM8 6h2v4h-2zM10 7h2v2h-2z',
+      'M2 2h2v1h-2zM2 3h1v11h-1zM4 3h2v1h-2zM6 4h2v1h-2zM8 5h2v1h-2zM10 6h2v1h-2zM12 7h2v2h-2zM10 9h2v1h-2zM8 10h2v1h-2zM6 11h2v1h-2zM4 12h2v1h-2zM3 13h1v1h-1z',
+    ],
+  ],
 };
 export default faPlay;

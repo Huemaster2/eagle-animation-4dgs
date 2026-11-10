@@ -2,6 +2,15 @@
 const faLayerMinus = {
   prefix: 'fal',
   iconName: 'layer-minus',
-  icon: [16, 16, [], 'f000', 'M7 2h2v1h-2zM5 3h2v1h-2zM9 3h2v1h-2zM12 3h4v1h-4zM3 4h2v1h-2zM11 4h2v1h-2zM1 5h2v1h-2zM13 5h2v1h-2zM0 6h1v1h-1zM15 6h1v1h-1zM1 7h2v1h-2zM13 7h2v1h-2zM0 8h1v1h-1zM3 8h2v1h-2zM11 8h2v1h-2zM15 8h1v1h-1zM1 9h2v1h-2zM5 9h2v1h-2zM9 9h2v1h-2zM13 9h2v1h-2zM3 10h2v1h-2zM7 10h2v1h-2zM11 10h2v1h-2zM5 11h2v1h-2zM9 11h2v1h-2zM7 12h2v1h-2z'],
+  icon: [
+    16,
+    16,
+    [],
+    'f000',
+    [
+      'M7 3h2v7h-2zM5 4h2v5h-2zM9 4h2v5h-2zM3 5h2v3h-2zM11 5h2v3h-2zM1 6h2v1h-2zM13 6h2v1h-2z',
+      'M7 2h2v1h-2zM5 3h2v1h-2zM9 3h2v1h-2zM12 3h4v1h-4zM3 4h2v1h-2zM11 4h2v1h-2zM1 5h2v1h-2zM13 5h2v1h-2zM0 6h1v1h-1zM15 6h1v1h-1zM1 7h2v1h-2zM13 7h2v1h-2zM0 8h1v1h-1zM3 8h2v1h-2zM11 8h2v1h-2zM15 8h1v1h-1zM1 9h2v1h-2zM5 9h2v1h-2zM9 9h2v1h-2zM13 9h2v1h-2zM3 10h2v1h-2zM7 10h2v1h-2zM11 10h2v1h-2zM5 11h2v1h-2zM9 11h2v1h-2zM7 12h2v1h-2z',
+    ],
+  ],
 };
 export default faLayerMinus;

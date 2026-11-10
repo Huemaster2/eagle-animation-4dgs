@@ -2,6 +2,15 @@
 const faEye = {
   prefix: 'fal',
   iconName: 'eye',
-  icon: [16, 16, [], 'f000', 'M5 4h6v1h-6zM3 5h2v1h-2zM11 5h2v1h-2zM1 6h2v1h-2zM7 6h2v4h-2zM13 6h2v1h-2zM0 7h1v2h-1zM6 7h1v2h-1zM9 7h1v2h-1zM15 7h1v2h-1zM5 8h1v1h-1zM10 8h1v1h-1zM1 9h2v1h-2zM13 9h2v1h-2zM3 10h2v1h-2zM11 10h2v1h-2zM5 11h6v1h-6z'],
+  icon: [
+    16,
+    16,
+    [],
+    'f000',
+    [
+      'M5 5h6v1h-6zM3 6h4v1h-4zM9 6h4v1h-4zM1 7h5v1h-5zM10 7h5v1h-5zM1 8h4v1h-4zM11 8h4v1h-4zM3 9h4v1h-4zM9 9h4v1h-4zM5 10h6v1h-6z',
+      'M5 4h6v1h-6zM3 5h2v1h-2zM11 5h2v1h-2zM1 6h2v1h-2zM7 6h2v4h-2zM13 6h2v1h-2zM0 7h1v2h-1zM6 7h1v2h-1zM9 7h1v2h-1zM15 7h1v2h-1zM5 8h1v1h-1zM10 8h1v1h-1zM1 9h2v1h-2zM13 9h2v1h-2zM3 10h2v1h-2zM11 10h2v1h-2zM5 11h6v1h-6z',
+    ],
+  ],
 };
 export default faEye;

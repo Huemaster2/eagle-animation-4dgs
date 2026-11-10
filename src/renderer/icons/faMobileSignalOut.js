@@ -2,6 +2,12 @@
 const faMobileSignalOut = {
   prefix: 'fal',
   iconName: 'mobile-signal-out',
-  icon: [16, 16, [], 'f000', 'M5 2h7v1h-7zM5 3h1v10h-1zM11 3h1v10h-1zM14 3h1v1h-1zM13 4h1v1h-1zM13 6h3v1h-3zM13 8h1v1h-1zM14 9h1v1h-1zM8 11h1v2h-1zM6 12h2v1h-2zM9 12h2v1h-2z'],
+  icon: [
+    16,
+    16,
+    [],
+    'f000',
+    ['M6 3h5v8h-5zM6 11h2v1h-2zM9 11h2v1h-2z', 'M5 2h7v1h-7zM5 3h1v10h-1zM11 3h1v10h-1zM14 3h1v1h-1zM13 4h1v1h-1zM13 6h3v1h-3zM13 8h1v1h-1zM14 9h1v1h-1zM8 11h1v2h-1zM6 12h2v1h-2zM9 12h2v1h-2z'],
+  ],
 };
 export default faMobileSignalOut;

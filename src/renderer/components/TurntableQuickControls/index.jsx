@@ -1,3 +1,4 @@
+import Switch from '@components/Switch';
 import TurntableAngleSlider from '@components/TurntableAngleSlider';
 import { HoldButton } from '@components/TurntableWindow';
 import { turntable } from '@core/turntable';
@@ -93,6 +94,10 @@ const TurntableQuickControls = ({ t, activeView = null }) => {
         </button>
       </div>
 
+      <label className={`${style.readout} ${style.label}`}>
+        <span>{t('Shutter takes a full turn ({{n}} × {{h}} heights)', { n: profile.shotsPerPass, h: profile.heights })}</span>
+        <Switch checked={profile.rotationCapture} onChange={() => actions.updateProfile({ rotationCapture: !profile.rotationCapture })} />
+      </label>
       <p className={style.label}>{t('Views')}</p>
       {PERSPECTIVES.map((key) => {
         const value = profile.perspectives[key];

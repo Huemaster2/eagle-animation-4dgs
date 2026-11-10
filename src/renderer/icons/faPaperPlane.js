@@ -2,6 +2,15 @@
 const faPaperPlane = {
   prefix: 'fal',
   iconName: 'paper-plane',
-  icon: [16, 16, [], 'f000', 'M14 2h2v1h-2zM11 3h3v1h-3zM15 3h1v1h-1zM8 4h3v1h-3zM14 4h1v1h-1zM5 5h3v1h-3zM13 5h1v1h-1zM2 6h3v1h-3zM12 6h1v1h-1zM0 7h3v1h-3zM11 7h1v1h-1zM2 8h3v1h-3zM10 8h1v1h-1zM5 9h2v1h-2zM9 9h1v1h-1zM7 10h2v1h-2zM7 11h1v3h-1zM9 11h1v2h-1zM8 13h1v1h-1z'],
+  icon: [
+    16,
+    16,
+    [],
+    'f000',
+    [
+      'M11 4h3v1h-3zM8 5h5v1h-5zM5 6h7v1h-7zM3 7h8v1h-8zM5 8h5v1h-5zM7 9h2v1h-2z',
+      'M14 2h2v1h-2zM11 3h3v1h-3zM15 3h1v1h-1zM8 4h3v1h-3zM14 4h1v1h-1zM5 5h3v1h-3zM13 5h1v1h-1zM2 6h3v1h-3zM12 6h1v1h-1zM0 7h3v1h-3zM11 7h1v1h-1zM2 8h3v1h-3zM10 8h1v1h-1zM5 9h2v1h-2zM9 9h1v1h-1zM7 10h2v1h-2zM7 11h1v3h-1zM9 11h1v2h-1zM8 13h1v1h-1z',
+    ],
+  ],
 };
 export default faPaperPlane;

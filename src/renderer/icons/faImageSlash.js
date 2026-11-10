@@ -2,6 +2,12 @@
 const faImageSlash = {
   prefix: 'fal',
   iconName: 'image-slash',
-  icon: [16, 16, [], 'f000', 'M0 1h1v1h-1zM1 2h7v1h-7zM9 2h7v1h-7zM0 3h1v10h-1zM2 3h1v1h-1zM14 3h1v9h-1zM3 4h1v1h-1zM11 4h2v1h-2zM4 5h1v1h-1zM5 6h1v5h-1zM6 7h1v1h-1zM4 8h1v3h-1zM7 8h1v1h-1zM12 8h1v3h-1zM3 9h1v2h-1zM6 9h1v2h-1zM8 9h1v2h-1zM11 9h1v4h-1zM2 10h1v1h-1zM7 10h1v1h-1zM9 10h1v1h-1zM1 12h10v1h-10zM12 12h2v1h-2zM15 12h1v2h-1z'],
+  icon: [
+    16,
+    16,
+    [],
+    'f000',
+    'M0 1h1v1h-1zM1 2h7v1h-7zM9 2h7v1h-7zM0 3h1v10h-1zM2 3h1v1h-1zM14 3h1v9h-1zM3 4h1v1h-1zM11 4h2v1h-2zM4 5h1v1h-1zM5 6h1v5h-1zM6 7h1v1h-1zM4 8h1v3h-1zM7 8h1v1h-1zM12 8h1v3h-1zM3 9h1v2h-1zM6 9h1v2h-1zM8 9h1v2h-1zM11 9h1v4h-1zM2 10h1v1h-1zM7 10h1v1h-1zM9 10h1v1h-1zM1 12h10v1h-10zM12 12h2v1h-2zM15 12h1v2h-1z',
+  ],
 };
 export default faImageSlash;

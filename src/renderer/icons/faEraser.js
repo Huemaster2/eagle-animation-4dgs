@@ -2,6 +2,15 @@
 const faEraser = {
   prefix: 'fal',
   iconName: 'eraser',
-  icon: [16, 16, [], 'f000', 'M9 1h4v1h-4zM8 2h1v1h-1zM12 2h2v1h-2zM7 3h1v1h-1zM11 3h1v1h-1zM13 3h2v1h-2zM6 4h1v1h-1zM10 4h1v1h-1zM14 4h2v1h-2zM5 5h1v1h-1zM9 5h1v1h-1zM13 5h1v1h-1zM15 5h1v2h-1zM4 6h1v1h-1zM8 6h1v1h-1zM12 6h1v1h-1zM3 7h1v1h-1zM7 7h1v1h-1zM11 7h1v1h-1zM14 7h1v1h-1zM2 8h1v1h-1zM6 8h1v1h-1zM10 8h1v1h-1zM13 8h1v1h-1zM1 9h1v3h-1zM5 9h1v1h-1zM9 9h1v1h-1zM12 9h1v1h-1zM4 10h1v1h-1zM8 10h1v1h-1zM11 10h1v1h-1zM7 11h1v2h-1zM10 11h1v1h-1zM2 12h5v1h-5zM9 12h1v1h-1zM11 13h5v1h-5z'],
+  icon: [
+    16,
+    16,
+    [],
+    'f000',
+    [
+      'M9 2h3v1h-3zM8 3h3v1h-3zM12 3h1v3h-1zM7 4h3v1h-3zM11 4h1v3h-1zM13 4h1v1h-1zM6 5h3v1h-3zM10 5h1v3h-1zM5 6h3v1h-3zM9 6h1v3h-1zM4 7h3v1h-3zM8 7h1v3h-1zM3 8h3v1h-3zM7 8h1v3h-1zM2 9h3v1h-3zM6 9h1v3h-1zM2 10h2v2h-2zM5 10h1v2h-1zM4 11h1v1h-1z',
+      'M9 1h4v1h-4zM8 2h1v1h-1zM12 2h2v1h-2zM7 3h1v1h-1zM11 3h1v1h-1zM13 3h2v1h-2zM6 4h1v1h-1zM10 4h1v1h-1zM14 4h2v1h-2zM5 5h1v1h-1zM9 5h1v1h-1zM13 5h1v1h-1zM15 5h1v2h-1zM4 6h1v1h-1zM8 6h1v1h-1zM12 6h1v1h-1zM3 7h1v1h-1zM7 7h1v1h-1zM11 7h1v1h-1zM14 7h1v1h-1zM2 8h1v1h-1zM6 8h1v1h-1zM10 8h1v1h-1zM13 8h1v1h-1zM1 9h1v3h-1zM5 9h1v1h-1zM9 9h1v1h-1zM12 9h1v1h-1zM4 10h1v1h-1zM8 10h1v1h-1zM11 10h1v1h-1zM7 11h1v2h-1zM10 11h1v1h-1zM2 12h5v1h-5zM9 12h1v1h-1zM11 13h5v1h-5z',
+    ],
+  ],
 };
 export default faEraser;

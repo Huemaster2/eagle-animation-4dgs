@@ -5,6 +5,7 @@ import { shell } from 'electron';
 import { mkdirp } from 'mkdirp';
 import { join } from 'path-browserify';
 
+import { mapSequenceLinks } from '../common/captureSequence';
 import { getEncodingProfile } from '../common/ffmpeg';
 import { mapPerspectiveViews } from '../common/perspectiveViews';
 import { CONTRIBUTE_REPOSITORY } from '../config';
@@ -49,6 +50,7 @@ const computeProject = (data) => {
       ...picture,
       link: getPictureLink(copiedData._id, i, picture.filename),
       metaLink: getMetaPictureLink(copiedData._id, i, picture.filename),
+      ...(picture?.sequence ? { sequence: mapSequenceLinks(picture.sequence, (filename) => getPictureLink(copiedData._id, i, filename)) } : {}),
       ...(picture?.masking
         ? {
             masking: {

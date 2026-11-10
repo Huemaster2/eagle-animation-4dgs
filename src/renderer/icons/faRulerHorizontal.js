@@ -2,6 +2,15 @@
 const faRulerHorizontal = {
   prefix: 'fal',
   iconName: 'ruler-horizontal',
-  icon: [16, 16, [], 'f000', 'M0 4h16v1h-16zM0 5h1v6h-1zM2 5h1v3h-1zM4 5h1v1h-1zM6 5h1v3h-1zM8 5h1v1h-1zM10 5h1v3h-1zM12 5h1v1h-1zM14 5h2v6h-2zM1 10h13v1h-13z'],
+  icon: [
+    16,
+    16,
+    [],
+    'f000',
+    [
+      'M1 5h1v5h-1zM3 5h1v5h-1zM5 5h1v5h-1zM7 5h1v5h-1zM9 5h1v5h-1zM11 5h1v5h-1zM13 5h1v5h-1zM4 6h1v4h-1zM8 6h1v4h-1zM12 6h1v4h-1zM2 8h1v2h-1zM6 8h1v2h-1zM10 8h1v2h-1z',
+      'M0 4h16v1h-16zM0 5h1v6h-1zM2 5h1v3h-1zM4 5h1v1h-1zM6 5h1v3h-1zM8 5h1v1h-1zM10 5h1v3h-1zM12 5h1v1h-1zM14 5h2v6h-2zM1 10h13v1h-13z',
+    ],
+  ],
 };
 export default faRulerHorizontal;

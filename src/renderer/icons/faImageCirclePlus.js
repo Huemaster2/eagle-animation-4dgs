@@ -2,6 +2,15 @@
 const faImageCirclePlus = {
   prefix: 'fal',
   iconName: 'image-circle-plus',
-  icon: [16, 16, [], 'f000', 'M0 2h16v1h-16zM0 3h1v8h-1zM15 3h1v4h-1zM11 4h2v1h-2zM5 6h1v5h-1zM11 6h3v1h-3zM4 7h1v4h-1zM6 7h1v4h-1zM10 7h1v1h-1zM14 7h1v1h-1zM3 8h1v3h-1zM7 8h1v3h-1zM9 8h1v2h-1zM12 8h1v2h-1zM15 8h1v2h-1zM2 9h1v2h-1zM11 9h1v2h-1zM13 9h1v1h-1zM1 10h1v1h-1zM8 10h1v1h-1zM14 10h1v2h-1zM10 11h1v1h-1zM11 12h3v1h-3z'],
+  icon: [
+    16,
+    16,
+    [],
+    'f000',
+    [
+      'M1 3h14v1h-14zM1 4h10v2h-10zM13 4h2v2h-2zM11 5h2v1h-2zM1 6h4v1h-4zM6 6h5v1h-5zM14 6h1v1h-1zM1 7h3v1h-3zM7 7h3v1h-3zM1 8h2v1h-2zM8 8h1v2h-1zM1 9h1v1h-1zM12 10h2v2h-2zM11 11h1v1h-1z',
+      'M0 2h16v1h-16zM0 3h1v8h-1zM15 3h1v4h-1zM11 4h2v1h-2zM5 6h1v5h-1zM11 6h3v1h-3zM4 7h1v4h-1zM6 7h1v4h-1zM10 7h1v1h-1zM14 7h1v1h-1zM3 8h1v3h-1zM7 8h1v3h-1zM9 8h1v2h-1zM12 8h1v2h-1zM15 8h1v2h-1zM2 9h1v2h-1zM11 9h1v2h-1zM13 9h1v1h-1zM1 10h1v1h-1zM8 10h1v1h-1zM14 10h1v2h-1zM10 11h1v1h-1zM11 12h3v1h-3z',
+    ],
+  ],
 };
 export default faImageCirclePlus;

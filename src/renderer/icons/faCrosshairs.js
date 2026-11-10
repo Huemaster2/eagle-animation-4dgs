@@ -2,6 +2,15 @@
 const faCrosshairs = {
   prefix: 'fal',
   iconName: 'crosshairs',
-  icon: [16, 16, [], 'f000', 'M7 1h1v4h-1zM5 3h2v1h-2zM8 3h2v1h-2zM4 4h1v1h-1zM10 4h1v1h-1zM3 5h1v1h-1zM11 5h1v1h-1zM2 6h1v3h-1zM7 6h1v3h-1zM12 6h1v3h-1zM0 7h2v1h-2zM3 7h2v1h-2zM6 7h1v1h-1zM8 7h1v1h-1zM10 7h2v1h-2zM13 7h2v1h-2zM3 9h1v1h-1zM11 9h1v1h-1zM4 10h1v1h-1zM7 10h1v4h-1zM10 10h1v1h-1zM5 11h2v1h-2zM8 11h2v1h-2z'],
+  icon: [
+    16,
+    16,
+    [],
+    'f000',
+    [
+      'M5 4h2v3h-2zM8 4h2v3h-2zM4 5h1v2h-1zM7 5h1v1h-1zM10 5h1v2h-1zM3 6h1v1h-1zM11 6h1v1h-1zM5 7h1v4h-1zM9 7h1v4h-1zM3 8h2v1h-2zM6 8h1v3h-1zM8 8h1v3h-1zM10 8h2v1h-2zM4 9h1v1h-1zM7 9h1v1h-1zM10 9h1v1h-1z',
+      'M7 1h1v4h-1zM5 3h2v1h-2zM8 3h2v1h-2zM4 4h1v1h-1zM10 4h1v1h-1zM3 5h1v1h-1zM11 5h1v1h-1zM2 6h1v3h-1zM7 6h1v3h-1zM12 6h1v3h-1zM0 7h2v1h-2zM3 7h2v1h-2zM6 7h1v1h-1zM8 7h1v1h-1zM10 7h2v1h-2zM13 7h2v1h-2zM3 9h1v1h-1zM11 9h1v1h-1zM4 10h1v1h-1zM7 10h1v4h-1zM10 10h1v1h-1zM5 11h2v1h-2zM8 11h2v1h-2z',
+    ],
+  ],
 };
 export default faCrosshairs;

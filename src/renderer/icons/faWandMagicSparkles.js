@@ -2,6 +2,15 @@
 const faWandMagicSparkles = {
   prefix: 'fal',
   iconName: 'wand-magic-sparkles',
-  icon: [16, 16, [], 'f000', ['M2 1h1v3h-1zM12 1h1v3h-1zM1 2h1v1h-1zM3 2h1v1h-1zM11 2h1v1h-1zM13 2h1v1h-1zM14 9h1v3h-1zM13 10h1v1h-1zM15 10h1v1h-1z', 'M11 4h2v1h-2zM10 5h2v1h-2zM9 6h2v1h-2zM8 7h2v1h-2zM7 8h2v1h-2zM6 9h2v1h-2zM5 10h2v1h-2zM4 11h2v1h-2zM3 12h2v1h-2zM2 13h2v1h-2z']],
+  icon: [
+    16,
+    16,
+    [],
+    'f000',
+    [
+      'M2 1h1v3h-1zM12 1h1v3h-1zM1 2h1v1h-1zM3 2h1v1h-1zM11 2h1v1h-1zM13 2h1v1h-1zM14 9h1v3h-1zM13 10h1v1h-1zM15 10h1v1h-1z',
+      'M11 4h2v1h-2zM10 5h2v1h-2zM9 6h2v1h-2zM8 7h2v1h-2zM7 8h2v1h-2zM6 9h2v1h-2zM5 10h2v1h-2zM4 11h2v1h-2zM3 12h2v1h-2zM2 13h2v1h-2z',
+    ],
+  ],
 };
 export default faWandMagicSparkles;

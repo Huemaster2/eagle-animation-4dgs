@@ -2,6 +2,15 @@
 const faTriangle = {
   prefix: 'fal',
   iconName: 'triangle',
-  icon: [16, 16, [], 'f000', 'M7 4h2v2h-2zM6 5h1v2h-1zM9 5h1v2h-1zM5 6h1v2h-1zM10 6h1v2h-1zM4 7h1v2h-1zM11 7h1v2h-1zM3 8h1v2h-1zM12 8h1v2h-1zM2 9h1v3h-1zM13 9h1v3h-1zM1 10h1v2h-1zM14 10h1v2h-1zM0 11h1v1h-1zM3 11h10v1h-10zM15 11h1v1h-1z'],
+  icon: [
+    16,
+    16,
+    [],
+    'f000',
+    [
+      'M7 6h2v5h-2zM6 7h1v4h-1zM9 7h1v4h-1zM5 8h1v3h-1zM10 8h1v3h-1zM4 9h1v2h-1zM11 9h1v2h-1zM3 10h1v1h-1zM12 10h1v1h-1z',
+      'M7 4h2v2h-2zM6 5h1v2h-1zM9 5h1v2h-1zM5 6h1v2h-1zM10 6h1v2h-1zM4 7h1v2h-1zM11 7h1v2h-1zM3 8h1v2h-1zM12 8h1v2h-1zM2 9h1v3h-1zM13 9h1v3h-1zM1 10h1v2h-1zM14 10h1v2h-1zM0 11h1v1h-1zM3 11h10v1h-10zM15 11h1v1h-1z',
+    ],
+  ],
 };
 export default faTriangle;

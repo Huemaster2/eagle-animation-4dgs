@@ -2,6 +2,15 @@
 const faKey = {
   prefix: 'fal',
   iconName: 'key',
-  icon: [17, 17, [], 'f000', 'M4 5h4v1h-4zM3 6h1v1h-1zM8 6h1v1h-1zM2 7h1v3h-1zM5 7h2v2h-2zM9 7h1v3h-1zM10 8h7v1h-7zM13 9h1v2h-1zM15 9h1v2h-1zM3 10h1v1h-1zM8 10h1v1h-1zM4 11h4v1h-4z'],
+  icon: [
+    17,
+    17,
+    [],
+    'f000',
+    [
+      'M4 6h4v1h-4zM3 7h2v3h-2zM7 7h2v3h-2zM5 9h2v2h-2zM4 10h1v1h-1zM7 10h1v1h-1z',
+      'M4 5h4v1h-4zM3 6h1v1h-1zM8 6h1v1h-1zM2 7h1v3h-1zM5 7h2v2h-2zM9 7h1v3h-1zM10 8h7v1h-7zM13 9h1v2h-1zM15 9h1v2h-1zM3 10h1v1h-1zM8 10h1v1h-1zM4 11h4v1h-4z',
+    ],
+  ],
 };
 export default faKey;

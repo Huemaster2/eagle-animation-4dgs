@@ -2,6 +2,12 @@
 const faGamma = {
   prefix: 'fac',
   iconName: 'gamma',
-  icon: [16, 16, [], 'f000', 'M1 3h2v1h-2zM13 3h2v1h-2zM3 4h1v1h-1zM12 4h1v1h-1zM4 5h1v1h-1zM11 5h1v1h-1zM5 6h1v1h-1zM10 6h1v1h-1zM6 7h1v1h-1zM9 7h1v1h-1zM7 8h2v1h-2zM6 9h1v3h-1zM9 9h1v3h-1zM7 12h2v1h-2z'],
+  icon: [
+    16,
+    16,
+    [],
+    'f000',
+    ['M7 9h2v3h-2z', 'M1 3h2v1h-2zM13 3h2v1h-2zM3 4h1v1h-1zM12 4h1v1h-1zM4 5h1v1h-1zM11 5h1v1h-1zM5 6h1v1h-1zM10 6h1v1h-1zM6 7h1v1h-1zM9 7h1v1h-1zM7 8h2v1h-2zM6 9h1v3h-1zM9 9h1v3h-1zM7 12h2v1h-2z'],
+  ],
 };
 export default faGamma;

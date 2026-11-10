@@ -2,6 +2,15 @@
 const faFaceViewfinder = {
   prefix: 'fal',
   iconName: 'face-viewfinder',
-  icon: [16, 16, [], 'f000', 'M0 1h4v1h-4zM12 1h4v1h-4zM0 2h1v2h-1zM15 2h1v2h-1zM6 4h4v1h-4zM5 5h1v1h-1zM10 5h1v1h-1zM4 6h1v3h-1zM6 6h1v1h-1zM9 6h1v1h-1zM11 6h1v3h-1zM6 8h1v1h-1zM9 8h1v1h-1zM5 9h1v1h-1zM7 9h2v2h-2zM10 9h1v1h-1zM6 10h1v1h-1zM9 10h1v1h-1zM0 11h1v3h-1zM15 11h1v3h-1zM1 13h3v1h-3zM12 13h3v1h-3z'],
+  icon: [
+    16,
+    16,
+    [],
+    'f000',
+    [
+      'M6 5h4v1h-4zM5 6h1v3h-1zM7 6h2v3h-2zM10 6h1v3h-1zM6 7h1v1h-1zM9 7h1v1h-1z',
+      'M0 1h4v1h-4zM12 1h4v1h-4zM0 2h1v2h-1zM15 2h1v2h-1zM6 4h4v1h-4zM5 5h1v1h-1zM10 5h1v1h-1zM4 6h1v3h-1zM6 6h1v1h-1zM9 6h1v1h-1zM11 6h1v3h-1zM6 8h1v1h-1zM9 8h1v1h-1zM5 9h1v1h-1zM7 9h2v2h-2zM10 9h1v1h-1zM6 10h1v1h-1zM9 10h1v1h-1zM0 11h1v3h-1zM15 11h1v3h-1zM1 13h3v1h-3zM12 13h3v1h-3z',
+    ],
+  ],
 };
 export default faFaceViewfinder;

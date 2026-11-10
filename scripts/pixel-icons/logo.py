@@ -67,6 +67,13 @@ def main():
         parts.append(rects(glyph, x, 4))
         x += len(glyph[0]) + 1
     (OUT / 'logo.svg').write_text(svg(x, len(FLY), ''.join(parts), 'Philip Frame'))
+    # Wordmark alone, shown beside the photo fly (Logo/assets/fly.png) in the header
+    words, wx = [], 0
+    for ch in 'PHILIP FRAME':
+        glyph = FONT[ch]
+        words.append(rects(glyph, wx, 0))
+        wx += len(glyph[0]) + 1
+    (OUT / 'wordmark.svg').write_text(svg(wx - 1, len(FONT['P']), ''.join(words), 'Philip Frame'))
     print('logo written', x, 'x', len(FLY))
 
 

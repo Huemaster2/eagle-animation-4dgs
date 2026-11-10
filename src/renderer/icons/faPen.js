@@ -2,6 +2,15 @@
 const faPen = {
   prefix: 'fal',
   iconName: 'pen',
-  icon: [16, 16, [], 'f000', 'M11 2h2v1h-2zM10 3h1v1h-1zM13 3h1v1h-1zM9 4h1v1h-1zM14 4h1v1h-1zM8 5h1v1h-1zM13 5h1v1h-1zM7 6h1v1h-1zM12 6h1v1h-1zM6 7h1v1h-1zM11 7h1v1h-1zM5 8h1v1h-1zM10 8h1v1h-1zM4 9h1v1h-1zM9 9h1v1h-1zM3 10h1v2h-1zM8 10h1v1h-1zM2 11h1v3h-1zM7 11h1v1h-1zM4 12h3v1h-3zM1 13h1v1h-1zM3 13h1v1h-1z'],
+  icon: [
+    16,
+    16,
+    [],
+    'f000',
+    [
+      'M11 3h2v3h-2zM10 4h1v4h-1zM13 4h1v1h-1zM9 5h1v4h-1zM8 6h1v4h-1zM11 6h1v1h-1zM7 7h1v4h-1zM6 8h1v4h-1zM5 9h1v3h-1zM4 10h1v2h-1z',
+      'M11 2h2v1h-2zM10 3h1v1h-1zM13 3h1v1h-1zM9 4h1v1h-1zM14 4h1v1h-1zM8 5h1v1h-1zM13 5h1v1h-1zM7 6h1v1h-1zM12 6h1v1h-1zM6 7h1v1h-1zM11 7h1v1h-1zM5 8h1v1h-1zM10 8h1v1h-1zM4 9h1v1h-1zM9 9h1v1h-1zM3 10h1v2h-1zM8 10h1v1h-1zM2 11h1v3h-1zM7 11h1v1h-1zM4 12h3v1h-3zM1 13h1v1h-1zM3 13h1v1h-1z',
+    ],
+  ],
 };
 export default faPen;

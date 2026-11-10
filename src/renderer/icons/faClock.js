@@ -2,6 +2,15 @@
 const faClock = {
   prefix: 'fal',
   iconName: 'clock',
-  icon: [16, 16, [], 'f000', 'M5 1h6v1h-6zM3 2h2v1h-2zM11 2h2v1h-2zM2 3h1v1h-1zM8 3h1v5h-1zM13 3h1v1h-1zM1 4h1v1h-1zM14 4h1v1h-1zM0 5h1v5h-1zM15 5h1v5h-1zM9 7h3v1h-3zM1 10h1v1h-1zM14 10h1v1h-1zM2 11h1v1h-1zM13 11h1v1h-1zM3 12h2v1h-2zM11 12h2v1h-2zM5 13h6v1h-6z'],
+  icon: [
+    16,
+    16,
+    [],
+    'f000',
+    [
+      'M5 2h6v1h-6zM3 3h5v9h-5zM9 3h4v4h-4zM2 4h1v7h-1zM13 4h1v7h-1zM1 5h1v5h-1zM14 5h1v5h-1zM12 7h1v5h-1zM8 8h4v4h-4zM5 12h6v1h-6z',
+      'M5 1h6v1h-6zM3 2h2v1h-2zM11 2h2v1h-2zM2 3h1v1h-1zM8 3h1v5h-1zM13 3h1v1h-1zM1 4h1v1h-1zM14 4h1v1h-1zM0 5h1v5h-1zM15 5h1v5h-1zM9 7h3v1h-3zM1 10h1v1h-1zM14 10h1v1h-1zM2 11h1v1h-1zM13 11h1v1h-1zM3 12h2v1h-2zM11 12h2v1h-2zM5 13h6v1h-6z',
+    ],
+  ],
 };
 export default faClock;

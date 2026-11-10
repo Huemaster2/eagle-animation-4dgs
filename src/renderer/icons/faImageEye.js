@@ -2,6 +2,15 @@
 const faImageEye = {
   prefix: 'fal',
   iconName: 'image-eye',
-  icon: [16, 16, [], 'f000', 'M0 2h16v1h-16zM0 3h1v9h-1zM15 3h1v4h-1zM11 4h2v1h-2zM5 6h1v4h-1zM4 7h1v3h-1zM6 7h1v3h-1zM9 7h6v1h-6zM3 8h1v2h-1zM8 8h1v5h-1zM15 8h1v4h-1zM2 9h1v1h-1zM11 9h2v2h-2zM1 11h7v1h-7zM9 12h6v1h-6z'],
+  icon: [
+    16,
+    16,
+    [],
+    'f000',
+    [
+      'M1 3h14v1h-14zM1 4h10v2h-10zM13 4h2v3h-2zM11 5h2v2h-2zM1 6h4v1h-4zM6 6h5v1h-5zM1 7h3v1h-3zM7 7h2v1h-2zM1 8h2v1h-2zM7 8h1v3h-1zM9 8h6v1h-6zM1 9h1v2h-1zM9 9h2v3h-2zM13 9h2v3h-2zM2 10h5v1h-5zM11 11h2v1h-2z',
+      'M0 2h16v1h-16zM0 3h1v9h-1zM15 3h1v4h-1zM11 4h2v1h-2zM5 6h1v4h-1zM4 7h1v3h-1zM6 7h1v3h-1zM9 7h6v1h-6zM3 8h1v2h-1zM8 8h1v5h-1zM15 8h1v4h-1zM2 9h1v1h-1zM11 9h2v2h-2zM1 11h7v1h-7zM9 12h6v1h-6z',
+    ],
+  ],
 };
 export default faImageEye;

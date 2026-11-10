@@ -2,6 +2,15 @@
 const faTrash = {
   prefix: 'fal',
   iconName: 'trash',
-  icon: [16, 16, [], 'f000', 'M5 1h6v1h-6zM4 2h1v2h-1zM11 2h1v2h-1zM0 3h4v1h-4zM5 3h6v1h-6zM12 3h4v1h-4zM0 4h1v2h-1zM15 4h1v2h-1zM1 5h14v1h-14zM1 6h1v7h-1zM14 6h1v7h-1zM4 7h1v5h-1zM7 7h1v5h-1zM10 7h1v5h-1zM2 13h12v1h-12z'],
+  icon: [
+    16,
+    16,
+    [],
+    'f000',
+    [
+      'M5 2h6v1h-6zM1 4h14v1h-14zM2 6h12v1h-12zM2 7h2v6h-2zM5 7h2v6h-2zM8 7h2v6h-2zM11 7h3v6h-3zM4 12h1v1h-1zM7 12h1v1h-1zM10 12h1v1h-1z',
+      'M5 1h6v1h-6zM4 2h1v2h-1zM11 2h1v2h-1zM0 3h4v1h-4zM5 3h6v1h-6zM12 3h4v1h-4zM0 4h1v2h-1zM15 4h1v2h-1zM1 5h14v1h-14zM1 6h1v7h-1zM14 6h1v7h-1zM4 7h1v5h-1zM7 7h1v5h-1zM10 7h1v5h-1zM2 13h12v1h-12z',
+    ],
+  ],
 };
 export default faTrash;

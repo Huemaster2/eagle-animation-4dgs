@@ -2,6 +2,15 @@
 const faBroom = {
   prefix: 'fal',
   iconName: 'broom',
-  icon: [16, 16, [], 'f000', 'M13 2h2v1h-2zM12 3h2v1h-2zM11 4h2v1h-2zM10 5h2v1h-2zM9 6h2v1h-2zM5 7h5v1h-5zM4 8h1v1h-1zM9 8h1v2h-1zM3 9h1v1h-1zM5 9h1v1h-1zM7 9h1v1h-1zM2 10h1v1h-1zM4 10h1v1h-1zM6 10h1v1h-1zM8 10h1v1h-1zM1 11h1v1h-1zM3 11h1v1h-1zM5 11h1v1h-1zM7 11h1v1h-1zM2 12h1v1h-1zM4 12h1v2h-1zM6 12h1v1h-1zM3 13h1v1h-1z'],
+  icon: [
+    16,
+    16,
+    [],
+    'f000',
+    [
+      'M5 8h4v1h-4zM6 9h1v1h-1zM8 9h1v1h-1z',
+      'M13 2h2v1h-2zM12 3h2v1h-2zM11 4h2v1h-2zM10 5h2v1h-2zM9 6h2v1h-2zM5 7h5v1h-5zM4 8h1v1h-1zM9 8h1v2h-1zM3 9h1v1h-1zM5 9h1v1h-1zM7 9h1v1h-1zM2 10h1v1h-1zM4 10h1v1h-1zM6 10h1v1h-1zM8 10h1v1h-1zM1 11h1v1h-1zM3 11h1v1h-1zM5 11h1v1h-1zM7 11h1v1h-1zM2 12h1v1h-1zM4 12h1v2h-1zM6 12h1v1h-1zM3 13h1v1h-1z',
+    ],
+  ],
 };
 export default faBroom;

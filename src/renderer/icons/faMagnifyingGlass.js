@@ -2,6 +2,15 @@
 const faMagnifyingGlass = {
   prefix: 'fal',
   iconName: 'magnifying-glass',
-  icon: [16, 16, [], 'f000', 'M3 1h6v1h-6zM2 2h1v1h-1zM9 2h1v1h-1zM1 3h1v1h-1zM10 3h1v1h-1zM0 4h1v4h-1zM11 4h1v4h-1zM1 8h1v1h-1zM10 8h1v2h-1zM2 9h1v1h-1zM9 9h1v1h-1zM11 9h1v2h-1zM3 10h6v1h-6zM12 10h1v2h-1zM13 11h1v2h-1zM14 12h1v2h-1zM15 13h1v1h-1z'],
+  icon: [
+    16,
+    16,
+    [],
+    'f000',
+    [
+      'M3 2h6v8h-6zM2 3h1v6h-1zM9 3h1v6h-1zM1 4h1v4h-1zM10 4h1v4h-1z',
+      'M3 1h6v1h-6zM2 2h1v1h-1zM9 2h1v1h-1zM1 3h1v1h-1zM10 3h1v1h-1zM0 4h1v4h-1zM11 4h1v4h-1zM1 8h1v1h-1zM10 8h1v2h-1zM2 9h1v1h-1zM9 9h1v1h-1zM11 9h1v2h-1zM3 10h6v1h-6zM12 10h1v2h-1zM13 11h1v2h-1zM14 12h1v2h-1zM15 13h1v1h-1z',
+    ],
+  ],
 };
 export default faMagnifyingGlass;

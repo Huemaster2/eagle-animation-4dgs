@@ -33,6 +33,7 @@ class Turntable {
     this.jogTimer = null;
     this.listeners = new Set();
     this.arrivalListeners = new Set();
+    this.lockKey = null;
     this.state = {
       supported: typeof navigator !== 'undefined' && !!navigator.serial,
       connected: false,
@@ -46,6 +47,7 @@ class Turntable {
       enabled: false,
       backlash: null,
       error: null,
+      locked: false,
       log: [],
     };
     if (this.state.supported) {
@@ -280,8 +282,27 @@ class Turntable {
   }
 
   // Absolute move; resolves with the final position once the table has stopped
-  async moveTo(target) {
+  // While a rotation capture runs only its own moves (carrying its key) are accepted; STOP always works
+  lock() {
+    if (this.lockKey) throw new Error('The turntable is busy with a rotation capture');
+    this.lockKey = Symbol('rotation-capture');
+    this.set({ locked: true });
+    return this.lockKey;
+  }
+
+  unlock(key) {
+    if (this.lockKey !== key) return;
+    this.lockKey = null;
+    this.set({ locked: false });
+  }
+
+  checkLock(key) {
+    if (this.lockKey && key !== this.lockKey) throw new Error('The turntable is busy with a rotation capture');
+  }
+
+  async moveTo(target, { key } = {}) {
     if (!this.state.connected) throw new Error('Turntable not connected');
+    this.checkLock(key);
     if (this.state.moving) throw new Error('Turntable is still moving');
     const steps = Math.round(target);
     const distance = Math.abs(steps - (this.state.position ?? steps)) + (this.state.backlash || 0) * 2;
@@ -305,6 +326,7 @@ class Turntable {
   // Hold-to-rotate: keeps JOG alive while held; release decelerates to a stop
   async jogStart(dir) {
     if (!this.state.connected || this.state.moving) return;
+    this.checkLock();
     const d = dir > 0 ? 1 : -1;
     this.set({ moving: true, jogging: d, target: null });
     try {
@@ -336,6 +358,7 @@ class Turntable {
 
   // Declares the current physical position as `steps` without moving
   async setPosition(steps) {
+    this.checkLock();
     if (this.state.moving) throw new Error('Turntable is still moving');
     await this.command(`SETPOS ${Math.round(steps)}`);
     this.set({ position: Math.round(steps), target: Math.round(steps) });
@@ -357,3 +380,6 @@ class Turntable {
 }
 
 export const turntable = new Turntable();
+
+// Development builds only: lets a browser test drive a simulated table
+if (import.meta.env?.DEV && typeof window !== 'undefined') window.__turntable = turntable;

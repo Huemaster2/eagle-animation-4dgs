@@ -21,6 +21,26 @@
   </head>
 
   <body>
+    <!-- System 7 control-strip shading for icon colour fills: a light line on top/left edges, a dark line on bottom/right -->
+    <svg width="0" height="0" style="position: absolute" aria-hidden="true" focusable="false">
+      <defs>
+        <filter id="pf-bevel" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+          <feOffset in="SourceAlpha" dx="1" dy="1" result="down" />
+          <feComposite in="SourceAlpha" in2="down" operator="out" result="topLeft" />
+          <feFlood flood-color="#ffffff" flood-opacity="0.8" />
+          <feComposite in2="topLeft" operator="in" result="highlight" />
+          <feOffset in="SourceAlpha" dx="-1" dy="-1" result="up" />
+          <feComposite in="SourceAlpha" in2="up" operator="out" result="bottomRight" />
+          <feFlood flood-color="#000000" flood-opacity="0.4" />
+          <feComposite in2="bottomRight" operator="in" result="shadow" />
+          <feMerge>
+            <feMergeNode in="SourceGraphic" />
+            <feMergeNode in="shadow" />
+            <feMergeNode in="highlight" />
+          </feMerge>
+        </filter>
+      </defs>
+    </svg>
     <div id="root"></div>
     <script async defer type="module" src="./index.jsx"></script>
     <noscript>You need to enable JavaScript to run this app.</noscript>

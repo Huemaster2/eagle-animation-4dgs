@@ -1,0 +1,94 @@
+.panel {
+  background: var(--color-theme-dark);
+  border: var(--pf-frame);
+  box-shadow: var(--pf-shadow);
+  left: 50%;
+  position: fixed;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(420px, 90vw);
+  z-index: 999998;
+}
+
+.titleBar {
+  align-items: center;
+  border-bottom: 1px solid var(--pf-line);
+  display: flex;
+  gap: 8px;
+  height: 22px;
+  padding: 0 8px;
+}
+
+/* Same stripes as the dialog windows, defined per theme */
+.stripes {
+  background: var(--pf-stripes);
+  flex: 1;
+  height: 11px;
+}
+
+.title {
+  color: var(--color-white);
+  font-size: var(--font-size-6);
+  font-weight: 600;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px 16px;
+}
+
+.big {
+  color: var(--color-white);
+  font-size: var(--font-size-4);
+  font-weight: 700;
+  margin: 0;
+}
+
+.hint {
+  color: var(--color-theme-extra-light);
+  font-size: var(--font-size-6);
+  margin: 0;
+}
+
+.bar {
+  border: 1px solid var(--pf-line);
+  height: 12px;
+  position: relative;
+}
+
+.fill {
+  background: var(--pf-line);
+  inset: 0 auto 0 0;
+  position: absolute;
+}
+
+.buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+
+.button {
+  background: var(--pf-button-face);
+  border: 1px solid var(--pf-line);
+  box-shadow: var(--pf-bevel);
+  color: var(--color-white);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: var(--font-size-6);
+  padding: 6px 12px;
+}
+
+.button:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.primary {
+  font-weight: 700;
+  outline: 2px solid var(--pf-line);
+  outline-offset: 1px;
+}

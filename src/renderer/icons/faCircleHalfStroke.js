@@ -2,6 +2,15 @@
 const faCircleHalfStroke = {
   prefix: 'fal',
   iconName: 'circle-half-stroke',
-  icon: [16, 16, [], 'f000', 'M5 2h6v1h-6zM3 3h2v1h-2zM7 3h5v10h-5zM2 4h1v1h-1zM12 4h1v8h-1zM1 5h1v1h-1zM13 5h1v6h-1zM0 6h1v4h-1zM14 6h1v4h-1zM1 10h1v1h-1zM2 11h1v1h-1zM3 12h2v1h-2zM5 13h6v1h-6z'],
+  icon: [
+    16,
+    16,
+    [],
+    'f000',
+    [
+      'M5 3h2v10h-2zM3 4h2v8h-2zM2 5h1v6h-1zM1 6h1v4h-1z',
+      'M5 2h6v1h-6zM3 3h2v1h-2zM7 3h5v10h-5zM2 4h1v1h-1zM12 4h1v8h-1zM1 5h1v1h-1zM13 5h1v6h-1zM0 6h1v4h-1zM14 6h1v4h-1zM1 10h1v1h-1zM2 11h1v1h-1zM3 12h2v1h-2zM5 13h6v1h-6z',
+    ],
+  ],
 };
 export default faCircleHalfStroke;

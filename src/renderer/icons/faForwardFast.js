@@ -2,6 +2,12 @@
 const faForwardFast = {
   prefix: 'fal',
   iconName: 'forward-fast',
-  icon: [16, 16, [], 'f000', 'M0 1h1v13h-1zM8 1h1v13h-1zM1 2h1v11h-1zM9 2h1v11h-1zM2 3h1v9h-1zM10 3h1v9h-1zM3 4h1v7h-1zM11 4h1v7h-1zM4 5h1v5h-1zM12 5h1v5h-1zM5 6h1v3h-1zM13 6h1v3h-1zM6 7h1v1h-1zM14 7h1v1h-1z'],
+  icon: [
+    16,
+    16,
+    [],
+    'f000',
+    'M0 1h1v13h-1zM8 1h1v13h-1zM1 2h1v11h-1zM9 2h1v11h-1zM2 3h1v9h-1zM10 3h1v9h-1zM3 4h1v7h-1zM11 4h1v7h-1zM4 5h1v5h-1zM12 5h1v5h-1zM5 6h1v3h-1zM13 6h1v3h-1zM6 7h1v1h-1zM14 7h1v1h-1z',
+  ],
 };
 export default faForwardFast;

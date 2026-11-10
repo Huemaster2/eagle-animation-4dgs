@@ -2,6 +2,6 @@
 const faRectangleHistory = {
   prefix: 'fal',
   iconName: 'rectangle-history',
-  icon: [16, 16, [], 'f000', 'M4 2h8v1h-8zM2 4h12v1h-12zM0 6h16v1h-16zM0 7h1v6h-1zM15 7h1v6h-1zM1 12h14v1h-14z'],
+  icon: [16, 16, [], 'f000', ['M1 7h14v5h-14z', 'M4 2h8v1h-8zM2 4h12v1h-12zM0 6h16v1h-16zM0 7h1v6h-1zM15 7h1v6h-1zM1 12h14v1h-14z']],
 };
 export default faRectangleHistory;

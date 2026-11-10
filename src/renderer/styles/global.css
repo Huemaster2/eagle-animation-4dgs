@@ -4,9 +4,23 @@
 @import '@fontsource/open-sans/600.css';
 @import '@fontsource/open-sans/700.css';
 @import '@fontsource/open-sans/800.css';
-@import '@fontsource/pixelify-sans/400.css';
-@import '@fontsource/pixelify-sans/600.css';
-@import '@fontsource/vt323/400.css';
+
+/* Screenstar Small (eBoy / FontShop), the interface font of both themes; Bold covers weights 600+ */
+@font-face {
+  font-display: block;
+  font-family: 'Screenstar Small';
+  font-style: normal;
+  font-weight: 100 500;
+  src: url('../fonts/screenstar/ScreenstarSmall-Regular.woff2') format('woff2');
+}
+
+@font-face {
+  font-display: block;
+  font-family: 'Screenstar Small';
+  font-style: normal;
+  font-weight: 600 900;
+  src: url('../fonts/screenstar/ScreenstarSmall-Bold.woff2') format('woff2');
+}
 
 html,
 body {

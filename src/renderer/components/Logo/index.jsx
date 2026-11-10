@@ -1,15 +1,17 @@
-import IconSVG from './assets/icon.svg?jsx';
-import LogoSVG from './assets/logo.svg?jsx';
+import flyImage from './assets/fly.png';
+import WordmarkSVG from './assets/wordmark.svg?jsx';
 
 import * as style from './style.module.css';
 
+// The pixel photo fly (transparent background) with the PHILIP FRAME wordmark; ICON is the fly alone
 const Logo = ({ type = 'logo', className = '', onClick = null }) => {
   const classNames = `${style.logo} ${className}`.trim();
 
   if (type === 'LOGO') {
     return (
-      <div className={classNames} onClick={onClick}>
-        <LogoSVG />
+      <div className={`${classNames} ${style.full}`} onClick={onClick}>
+        <img className={style.fly} src={flyImage} alt="" draggable={false} />
+        <WordmarkSVG className={style.wordmark} />
       </div>
     );
   }
@@ -17,7 +19,7 @@ const Logo = ({ type = 'logo', className = '', onClick = null }) => {
   if (type === 'ICON') {
     return (
       <div className={classNames} onClick={onClick}>
-        <IconSVG />
+        <img className={style.fly} src={flyImage} alt="Philip Frame" draggable={false} />
       </div>
     );
   }

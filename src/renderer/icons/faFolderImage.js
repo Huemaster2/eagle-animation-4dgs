@@ -2,6 +2,15 @@
 const faFolderImage = {
   prefix: 'fal',
   iconName: 'folder-image',
-  icon: [16, 16, [], 'f000', 'M2 2h5v1h-5zM1 3h1v2h-1zM7 3h1v2h-1zM0 4h1v9h-1zM2 4h5v1h-5zM8 4h7v1h-7zM15 5h1v8h-1zM10 6h2v2h-2zM5 9h1v4h-1zM4 10h1v3h-1zM6 10h1v3h-1zM10 10h1v3h-1zM3 11h1v2h-1zM7 11h1v2h-1zM9 11h1v2h-1zM11 11h1v2h-1zM1 12h2v1h-2zM8 12h1v1h-1zM12 12h3v1h-3z'],
+  icon: [
+    16,
+    16,
+    [],
+    'f000',
+    [
+      'M2 3h5v1h-5zM1 5h14v1h-14zM1 6h9v3h-9zM12 6h3v6h-3zM10 8h2v2h-2zM1 9h4v1h-4zM6 9h4v1h-4zM1 10h3v1h-3zM7 10h3v1h-3zM11 10h1v1h-1zM1 11h2v1h-2zM8 11h1v1h-1z',
+      'M2 2h5v1h-5zM1 3h1v2h-1zM7 3h1v2h-1zM0 4h1v9h-1zM2 4h5v1h-5zM8 4h7v1h-7zM15 5h1v8h-1zM10 6h2v2h-2zM5 9h1v4h-1zM4 10h1v3h-1zM6 10h1v3h-1zM10 10h1v3h-1zM3 11h1v2h-1zM7 11h1v2h-1zM9 11h1v2h-1zM11 11h1v2h-1zM1 12h2v1h-2zM8 12h1v1h-1zM12 12h3v1h-3z',
+    ],
+  ],
 };
 export default faFolderImage;

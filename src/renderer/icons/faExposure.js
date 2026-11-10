@@ -2,6 +2,15 @@
 const faExposure = {
   prefix: 'fal',
   iconName: 'exposure',
-  icon: [16, 16, [], 'f000', 'M0 2h16v1h-16zM0 3h1v11h-1zM7 3h1v5h-1zM15 3h1v11h-1zM3 4h2v3h-2zM2 5h1v1h-1zM5 5h1v1h-1zM6 8h1v1h-1zM5 9h1v1h-1zM10 9h4v1h-4zM4 10h1v1h-1zM3 11h1v1h-1zM2 12h1v2h-1zM1 13h1v1h-1zM3 13h12v1h-12z'],
+  icon: [
+    16,
+    16,
+    [],
+    'f000',
+    [
+      'M1 3h6v1h-6zM8 3h7v6h-7zM1 4h2v1h-2zM5 4h2v1h-2zM1 5h1v8h-1zM6 5h1v3h-1zM2 6h1v6h-1zM5 6h1v3h-1zM3 7h2v3h-2zM7 8h1v5h-1zM6 9h1v4h-1zM8 9h2v4h-2zM14 9h1v4h-1zM3 10h1v1h-1zM5 10h1v3h-1zM10 10h4v3h-4zM4 11h1v2h-1zM3 12h1v1h-1z',
+      'M0 2h16v1h-16zM0 3h1v11h-1zM7 3h1v5h-1zM15 3h1v11h-1zM3 4h2v3h-2zM2 5h1v1h-1zM5 5h1v1h-1zM6 8h1v1h-1zM5 9h1v1h-1zM10 9h4v1h-4zM4 10h1v1h-1zM3 11h1v1h-1zM2 12h1v2h-1zM1 13h1v1h-1zM3 13h12v1h-12z',
+    ],
+  ],
 };
 export default faExposure;

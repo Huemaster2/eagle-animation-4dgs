@@ -28,10 +28,10 @@
 
 .logoDesktop {
   cursor: default !important;
-  height: 32px !important;
+  height: 46px !important;
   left: 50%;
   position: absolute;
-  top: calc(15px + var(--safe-area-top));
+  top: calc(8px + var(--safe-area-top));
   transform: translateX(-50%);
   user-select: none;
   width: auto !important;

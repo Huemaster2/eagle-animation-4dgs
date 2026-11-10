@@ -2,6 +2,12 @@
 const faArrowsRepeat = {
   prefix: 'fal',
   iconName: 'arrows-repeat',
-  icon: [16, 16, [], 'f000', 'M4 1h8v1h-8zM3 2h1v1h-1zM12 2h1v1h-1zM14 2h1v3h-1zM2 3h1v1h-1zM13 3h1v2h-1zM1 4h1v4h-1zM12 4h1v1h-1zM15 7h1v2h-1zM14 9h1v2h-1zM1 10h3v1h-3zM1 11h2v1h-2zM13 11h1v1h-1zM1 12h1v1h-1zM3 12h1v1h-1zM12 12h1v1h-1zM4 13h8v1h-8z'],
+  icon: [
+    16,
+    16,
+    [],
+    'f000',
+    'M4 1h8v1h-8zM3 2h1v1h-1zM12 2h1v1h-1zM14 2h1v3h-1zM2 3h1v1h-1zM13 3h1v2h-1zM1 4h1v4h-1zM12 4h1v1h-1zM15 7h1v2h-1zM14 9h1v2h-1zM1 10h3v1h-3zM1 11h2v1h-2zM13 11h1v1h-1zM1 12h1v1h-1zM3 12h1v1h-1zM12 12h1v1h-1zM4 13h8v1h-8z',
+  ],
 };
 export default faArrowsRepeat;

@@ -19,6 +19,16 @@ export const setStopMoCaptureOptions = ({ saveTarget, storageFolder } = {}) => {
 
 export const getStopMoCaptureOptions = () => captureOptions;
 
+// Sub-folder and file name for the next capture (rotation sequences); null = the camera's own name
+let captureNaming = null;
+export const setStopMoCaptureNaming = (naming) => {
+  captureNaming = naming || null;
+};
+export const getStopMoCaptureNaming = () => captureNaming;
+
+let lastCaptureFiles = [];
+export const getLastStopMoCaptureFiles = () => lastCaptureFiles;
+
 export const getStopMoCameraConfig = async () => {
   if (!STOPMO_CAMERA_AVAILABLE) {
     return null;
@@ -104,6 +114,7 @@ export const stopmoCapture = async ({ rawDir = null, baseName = null, saveTarget
   const t0 = performance.now();
   const res = await stopmoFetch(`/cameras/canon-eos-ptp/capture?${params.toString()}`, { method: 'POST' });
   const seconds = Number(res.headers.get('x-stopmo-seconds')) || (performance.now() - t0) / 1000;
+  lastCaptureFiles = parseFiles(res);
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     return { ok: false, error: body?.error || `HTTP ${res.status}`, files: parseFiles(res), seconds };

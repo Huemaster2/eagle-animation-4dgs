@@ -2,6 +2,15 @@
 const faDiamondHalfStroke = {
   prefix: 'fal',
   iconName: 'diamond-half-stroke',
-  icon: [16, 16, [], 'f000', 'M7 1h1v13h-1zM6 2h1v1h-1zM8 2h1v11h-1zM5 3h1v1h-1zM9 3h1v9h-1zM4 4h1v1h-1zM10 4h1v7h-1zM3 5h1v1h-1zM11 5h1v5h-1zM2 6h1v1h-1zM12 6h1v3h-1zM1 7h1v1h-1zM13 7h1v1h-1zM2 8h1v1h-1zM3 9h1v1h-1zM4 10h1v1h-1zM5 11h1v1h-1zM6 12h1v1h-1z'],
+  icon: [
+    16,
+    16,
+    [],
+    'f000',
+    [
+      'M6 3h1v9h-1zM5 4h1v7h-1zM4 5h1v5h-1zM3 6h1v3h-1zM2 7h1v1h-1z',
+      'M7 1h1v13h-1zM6 2h1v1h-1zM8 2h1v11h-1zM5 3h1v1h-1zM9 3h1v9h-1zM4 4h1v1h-1zM10 4h1v7h-1zM3 5h1v1h-1zM11 5h1v5h-1zM2 6h1v1h-1zM12 6h1v3h-1zM1 7h1v1h-1zM13 7h1v1h-1zM2 8h1v1h-1zM3 9h1v1h-1zM4 10h1v1h-1zM5 11h1v1h-1zM6 12h1v1h-1z',
+    ],
+  ],
 };
 export default faDiamondHalfStroke;
