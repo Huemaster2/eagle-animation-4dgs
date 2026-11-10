@@ -5,7 +5,8 @@ import { withTranslation } from 'react-i18next';
 
 import * as style from './style.module.css';
 
-const fmt = (deg) => `${Math.round(deg * 10) / 10}°`;
+// A whole turn is 0°, not 360°: the last step of a turn lands a hundredth of a degree short
+const fmt = (deg) => `${(Math.round(deg * 10) / 10) % 360}°`;
 
 // One timeline per calibrated view: each row holds every frame's photo taken at that angle.
 // Rows scroll together; clicking a photo shows that frame from that view.
@@ -35,14 +36,19 @@ const ViewTimelines = ({ t, rows = [], active = null, current = false, onPick = 
                 <button
                   key={frame.id}
                   type="button"
-                  className={`${style.thumb} ${frame.id === current ? style.thumbCurrent : ''} ${frame.own ? style.thumbOwn : ''}`}
+                  className={`${style.thumb} ${frame.id === current ? style.thumbCurrent : ''} ${frame.own || frame.off ? style.thumbOwn : ''}`}
                   title={
-                    frame.own ? t('Frame {{n}} has no photo at this view — showing the frame as captured', { n: index + 1 }) : t('Frame {{n}} at {{angle}}', { n: index + 1, angle: fmt(frame.angle) })
+                    frame.own
+                      ? t('Frame {{n}} has no full turn — showing the frame as captured', { n: index + 1 })
+                      : frame.off
+                        ? t('Frame {{n}} has no photo at this view: nearest is {{angle}}', { n: index + 1, angle: fmt(frame.angle) })
+                        : t('Frame {{n}} at {{angle}}', { n: index + 1, angle: fmt(frame.angle) })
                   }
                   onClick={() => onPick(frame.id, row.view)}
                 >
                   {frame.link ? <img alt="" className={style.img} src={getPictureLink(frame.link, { w: 72, h: 72, m: 'cover', f: 'jpg' })} loading="lazy" /> : <span className={style.empty} />}
                   <span className={style.number}>{index + 1}</span>
+                  {frame.off && <span className={style.offMark}>{fmt(frame.angle)}</span>}
                 </button>
               ))}
             </div>

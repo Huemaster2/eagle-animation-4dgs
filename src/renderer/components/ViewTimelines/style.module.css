@@ -146,6 +146,18 @@
   position: absolute;
 }
 
+/* The nearest photo when the turn never reached this view */
+.offMark {
+  background: var(--color-theme-dark);
+  bottom: 0;
+  color: var(--color-white);
+  font-size: var(--font-size-7, 10px);
+  line-height: 1;
+  padding: 1px 3px;
+  position: absolute;
+  right: 0;
+}
+
 .thumbCurrent .number {
   background: var(--pf-line);
   color: var(--color-theme-dark);

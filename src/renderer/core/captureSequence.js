@@ -40,7 +40,7 @@ export const planSequence = ({ start, stepsPerRev, shotsPerPass, heights, curren
 export const nextSequenceNumber = (pictures = []) => pictures.reduce((max, p) => Math.max(max, Number(p?.sequence?.number) || 0), 0) + 1;
 
 // Circular distance between two angles in degrees
-const angleGap = (a, b) => {
+export const angleGap = (a, b) => {
   const d = Math.abs((((a - b) % 360) + 360) % 360);
   return Math.min(d, 360 - d);
 };

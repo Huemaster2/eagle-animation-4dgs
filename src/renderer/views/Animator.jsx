@@ -32,7 +32,7 @@ import ViewTimelines from '@components/ViewTimelines';
 import Window from '@components/Window';
 import XSheet from '@components/XSheet';
 import { DEFAULT_FPS, MAX_FRAME_DUPLICATION } from '@config-web';
-import { downscaleFrame, frameFolderName, nearestShot, nextSequenceNumber, planSequence, runSequence, shotAngle, shotBaseName } from '@core/captureSequence';
+import { angleGap, downscaleFrame, frameFolderName, nearestShot, nextSequenceNumber, planSequence, runSequence, shotAngle, shotBaseName } from '@core/captureSequence';
 import { selectionClick } from '@core/frameSelection';
 import { normalizeOnionSkin } from '@core/onionSkin';
 import { parseRatio } from '@core/ratio';
@@ -398,7 +398,10 @@ const Animator = ({ t }) => {
         angle,
         frames: pictures.map((p) => {
           const shot = p.sequence ? nearestShot(p.sequence, angle) : null;
-          return { id: p.id, link: shot?.link || p.link, angle: shot ? shot.angle : null, own: !shot?.link };
+          // A turn that stopped early has no photo near some views: the nearest one is shown, marked as off-angle
+          const spacing = 360 / (2 * Math.max(1, p.sequence?.shotsPerPass || 1));
+          const gap = shot ? angleGap(shot.angle, angle) : null;
+          return { id: p.id, link: shot?.link || p.link, angle: shot ? shot.angle : null, own: !shot?.link, off: gap !== null && gap > spacing + 0.5 };
         }),
       };
     });
