@@ -8,6 +8,7 @@ import Foundation
 
 enum PTPOp {
     static let getDeviceInfo: UInt16          = 0x1001
+    static let getObjectHandles: UInt16       = 0x1007
     static let getObjectInfo: UInt16          = 0x1008
     static let getObject: UInt16              = 0x1009
     static let getThumb: UInt16               = 0x100A
@@ -34,6 +35,7 @@ enum PTPResp {
 
 enum EOSEvent {
     static let objectAddedEx: UInt32          = 0xC181
+    static let storageInfoChanged: UInt32     = 0xC185
     static let requestObjectTransfer: UInt32  = 0xC186
     static let propValueChanged: UInt32       = 0xC189
     static let availListChanged: UInt32       = 0xC18A

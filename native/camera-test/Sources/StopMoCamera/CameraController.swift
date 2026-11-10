@@ -346,6 +346,24 @@ public final class CameraController: NSObject {
     }
 
     @discardableResult
+    /// Every object handle on the card, or nil if the camera will not list them right now.
+    func cardHandlesSync() -> Set<UInt32>? {
+        guard let r = try? ptp(PTPOp.getObjectHandles, [0xFFFF_FFFF, 0, 0], timeout: 15), r.ok, let count = le32(r.data, 0) else { return nil }
+        var out = Set<UInt32>()
+        var i = 0
+        while i < Int(count), let h = le32(r.data, 4 + i * 4) {
+            out.insert(h)
+            i += 1
+        }
+        return out
+    }
+
+    /// Exposure time in seconds from the Canon shutter-speed code (0x38 = 1 s, 8 codes per stop); 0 when unknown or bulb.
+    var exposureSeconds: Double {
+        guard let code = propValues[EOSProp.shutterSpeed], code >= 0x10, code <= 0xA0 else { return 0 }
+        return pow(2.0, (56.0 - Double(code)) / 8.0)
+    }
+
     func pollEventsSync() throws -> [CanonEvent] {
         let r = try ptp(PTPOp.eosGetEvent, timeout: 10)
         guard r.ok else { return [] }
@@ -530,6 +548,11 @@ public final class CameraController: NSObject {
         cardAdditions.value = []
         watchCardAdditions.value = saveTarget != .macOnly
         defer { watchCardAdditions.value = false }
+        // The 5D Mark II sometimes saves a photo to the card without announcing it (seen about one shot in four).
+        // Listing the card before and after finds that photo instead of losing it.
+        let handlesBefore: Set<UInt32>? = saveTarget == .macOnly ? nil : cardHandlesSync()
+        let exposure = exposureSeconds
+        let waitLimit = 25 + 2 * exposure      // long exposures plus the camera's noise-reduction frame
         let frameNumber = nextFrameNumber()
         let t0 = Date()
 
@@ -554,9 +577,12 @@ public final class CameraController: NSObject {
         var eventNames: [UInt32: String] = [:]
         var lastNew = Date()
         var seenEvents: [UInt32: Int] = [:]
-        while Date().timeIntervalSince(t0) < 25 {
+        var storageChangedAt: Date?
+        var lastListing = Date.distantPast
+        while Date().timeIntervalSince(t0) < waitLimit {
             let batch = try pollEventsSync()
             for e in batch { seenEvents[e.type, default: 0] += 1 }
+            if storageChangedAt == nil, batch.contains(where: { $0.type == EOSEvent.storageInfoChanged }) { storageChangedAt = Date() }
             for e in batch where e.type == EOSEvent.objectAddedEx || e.type == EOSEvent.requestObjectTransfer {
                 if let h = le32(e.payload, 0), !handles.contains(where: { $0.0 == h }) {
                     handles.append((h, e.type == EOSEvent.requestObjectTransfer))
@@ -578,12 +604,28 @@ public final class CameraController: NSObject {
                 lastNew = Date()
                 log("Card reported new file \(n) (\(hex(h, width: 8)))")
             }
+            // No announcement: once the card reports a change (or well after the exposure), list it and take what is new
+            if handles.isEmpty, let before = handlesBefore {
+                let afterStorageChange = storageChangedAt.map { Date().timeIntervalSince($0) > 1.0 } ?? false
+                let overdue = Date().timeIntervalSince(t0) > exposure + 6
+                let listingDue = Date().timeIntervalSince(lastListing) > (afterStorageChange ? 1.5 : 4.0)
+                if (afterStorageChange || overdue) && listingDue {
+                    lastListing = Date()
+                    if let now = cardHandlesSync() {
+                        for h in now.subtracting(before).sorted() {
+                            handles.append((h, false))
+                            lastNew = Date()
+                            log("Found unannounced photo on the card: object \(hex(h, width: 8))")
+                        }
+                    }
+                }
+            }
             if !handles.isEmpty && Date().timeIntervalSince(lastNew) > 0.8 { break }
             Thread.sleep(forTimeInterval: 0.1)
         }
         guard !handles.isEmpty else {
             let summary = seenEvents.sorted { $0.key < $1.key }.map { "\(hex($0.key, width: 4))×\($0.value)" }.joined(separator: " ")
-            log("No new photo within 25 s. Camera events seen: \(summary.isEmpty ? "none" : summary). Destination \(propValues[EOSProp.captureDestination].map { hex($0) } ?? "?"), focus mode \(propValues[EOSProp.focusMode].map { hex($0) } ?? "?")")
+            log("No new photo within \(Int(waitLimit)) s (card listing \(handlesBefore == nil ? "unavailable" : "checked")). Camera events seen: \(summary.isEmpty ? "none" : summary). Destination \(propValues[EOSProp.captureDestination].map { hex($0) } ?? "?"), focus mode \(propValues[EOSProp.focusMode].map { hex($0) } ?? "?")")
             if let fm = propValues[EOSProp.focusMode], fm != 3 { throw CamError.autofocusNoRelease }
             throw CamError.noImageArrived
         }

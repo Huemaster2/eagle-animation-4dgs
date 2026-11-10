@@ -3,9 +3,9 @@ import { withTranslation } from 'react-i18next';
 import * as style from './style.module.css';
 
 // Progress of a rotation capture; between heights it waits for the camera to be moved by hand
-const RotationCaptureProgress = ({ t, run = null, onContinue = () => {}, onStop = () => {} }) => {
+const RotationCaptureProgress = ({ t, run = null, onContinue = () => {}, onRetry = () => {}, onStop = () => {} }) => {
   if (!run) return null;
-  const { phase, done = 0, total = 0, height, index, heights, shotsPerPass, folder, stopping, isFirst } = run;
+  const { phase, done = 0, total = 0, height, index, heights, shotsPerPass, folder, stopping, isFirst, error } = run;
   const waiting = phase === 'height';
   const status = {
     starting: t('Turning to the start view…'),
@@ -23,7 +23,21 @@ const RotationCaptureProgress = ({ t, run = null, onContinue = () => {}, onStop 
         <span className={style.stripes} />
       </div>
       <div className={style.body}>
-        {waiting ? (
+        {phase === 'failed' ? (
+          <>
+            <p className={style.big}>{t('Photo {{n}} of {{of}} at height {{h}} did not arrive', { n: (index ?? 0) + 1, of: shotsPerPass, h: height })}</p>
+            <p className={style.hint}>{error}</p>
+            <p className={style.hint}>{t('The table has not moved. {{done}} of {{total}} photos taken so far.', { done, total })}</p>
+            <div className={style.buttons}>
+              <button type="button" className={`${style.button} ${style.primary}`} onClick={onRetry} autoFocus>
+                {t('Take this photo again')}
+              </button>
+              <button type="button" className={style.button} onClick={onStop}>
+                {t('Stop and keep photos')}
+              </button>
+            </div>
+          </>
+        ) : waiting ? (
           <>
             <p className={style.big}>
               {isFirst ? t('Check the camera is at height {{h}} of {{of}}', { h: height, of: heights }) : t('Move the camera to height {{h}} of {{of}}', { h: height, of: heights })}

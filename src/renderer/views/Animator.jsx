@@ -434,7 +434,7 @@ const Animator = ({ t }) => {
     let heroFrame = null;
     let firstFrame = null;
     let failure = null;
-    rotationControl.current = { stop: false, continueHeight: null };
+    rotationControl.current = { stop: false, continueHeight: null, retryShot: null };
     const show = (patch) => setRotationRun((r) => ({ ...(r || {}), heights, shotsPerPass: profile.shotsPerPass, folder: saveTarget === 'card' ? null : folder, ...patch }));
     show({ phase: 'starting', done: 0, total: plan.total });
 
@@ -462,12 +462,25 @@ const Animator = ({ t }) => {
             show({ phase: 'height', height, isFirst });
           }),
         capture: async (shot) => {
-          setStopMoCaptureNaming({ subDir: folder, baseName: shotBaseName(shot.height, shot.index) });
           let frame;
-          try {
-            frame = await cameraActions.takePicture(1, settings.REVERSE_X, settings.REVERSE_Y);
-          } finally {
-            setStopMoCaptureNaming(null);
+          // A failed photo pauses the turn: retry it in place, or stop and keep what was taken
+          for (;;) {
+            setStopMoCaptureNaming({ subDir: folder, baseName: shotBaseName(shot.height, shot.index) });
+            try {
+              frame = await cameraActions.takePicture(1, settings.REVERSE_X, settings.REVERSE_Y);
+              break;
+            } catch (err) {
+              if (settings.SOUNDS) playSound(soundError);
+              const retry = await new Promise((resolve) => {
+                rotationControl.current.retryShot = resolve;
+                show({ phase: 'failed', height: shot.height, index: shot.index, error: err?.message || `${err}` });
+              });
+              rotationControl.current.retryShot = null;
+              if (!retry) throw err;
+              show({ phase: 'shooting', height: shot.height, index: shot.index, error: null });
+            } finally {
+              setStopMoCaptureNaming(null);
+            }
           }
           if (settings.SOUNDS) playSound(soundShutter);
           const files = STOPMO_CAMERA_AVAILABLE ? getLastStopMoCaptureFiles().map((f) => ({ path: f.path, kind: f.kind, onCard: !!f.onCard })) : [];
@@ -522,9 +535,11 @@ const Animator = ({ t }) => {
   };
 
   const continueRotation = () => rotationControl.current.continueHeight?.(true);
+  const retryRotationShot = () => rotationControl.current.retryShot?.(true);
   const stopRotation = () => {
     rotationControl.current.stop = true;
     if (rotationControl.current.continueHeight) rotationControl.current.continueHeight(false);
+    if (rotationControl.current.retryShot) rotationControl.current.retryShot(false);
     setRotationRun((r) => (r ? { ...r, stopping: true } : r));
   };
 
@@ -1276,7 +1291,7 @@ const Animator = ({ t }) => {
           onClose={() => settingsActions.setSettings({ HISTOGRAM: { ...settings.HISTOGRAM, ENABLED: false } })}
         />
       )}
-      <RotationCaptureProgress run={rotationRun} onContinue={continueRotation} onStop={stopRotation} />
+      <RotationCaptureProgress run={rotationRun} onContinue={continueRotation} onRetry={retryRotationShot} onStop={stopRotation} />
       {xsheetLayout.OPEN && (
         <XSheet
           layout={xsheetLayout}
