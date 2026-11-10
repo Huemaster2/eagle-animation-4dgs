@@ -40,7 +40,8 @@ export const interpolateShots = ({ start, end, shots, current = start, stepsPerR
 
 // Firmware replies: "OK …", "ERR …", "DONE <pos>", "POS <pos>", "READY …", "INFO k=v …", "STATUS k=v …"
 export const parseLine = (raw = '') => {
-  const line = `${raw}`.trim();
+  // Bytes from a board reset can land in front of a line; only printable text counts
+  const line = `${raw}`.replace(/[^\x20-\x7e]/g, '').trim();
   if (!line) return null;
   const [word, ...rest] = line.split(/\s+/);
   const kv = {};

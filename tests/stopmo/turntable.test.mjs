@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 
 // Fake StopMo firmware behind a fake Web Serial port (timing compressed)
-const makeBoard = () => {
+const makeBoard = ({ doubleReset = false } = {}) => {
+  let resetting = false;
   let ctrl; let pos = 0; let target = 0; let moving = false; let jogDir = 0; let lastJog = 0; let timer = null; const sent = [];
   const out = (s) => ctrl.enqueue(new TextEncoder().encode(s + '\r\n'));
   const tick = () => {
@@ -14,7 +15,8 @@ const makeBoard = () => {
   const start = () => { moving = true; timer = timer || setInterval(tick, 10); };
   let line = '';
   const handle = (cmd) => {
-    sent.push(cmd); const [name, a, b, c] = cmd.split(' ');
+    sent.push(cmd);
+    if (resetting) return; const [name, a, b, c] = cmd.split(' ');
     if (name === 'PING') out('OK PONG StopMoTurntable 2');
     else if (name === 'INFO') out(`INFO fw=2 microsteps=1 steps_per_rev_x1000=3046154 pos=${pos} backlash=20 run_us=950 start_us=1500 ramp=12 enabled=0`);
     else if (name === 'ENABLE') out(`OK ENABLE ${a}`);
@@ -27,7 +29,9 @@ const makeBoard = () => {
   const port = {
     sent, get pos() { return pos; }, getInfo: () => ({ usbVendorId: 0x2341, usbProductId: 0x0043 }),
     async open() {
-      this.readable = new ReadableStream({ start(c) { ctrl = c; setTimeout(() => out('READY StopMoTurntable 2'), 30); } });
+      this.readable = new ReadableStream({ start(c) { ctrl = c; setTimeout(() => { out('READY StopMoTurntable 2'); if (doubleReset) resetting = true; }, 30);
+        // CH340-on-macOS behaviour: a second reset shortly after opening; anything sent meanwhile is lost
+        if (doubleReset) { setTimeout(() => { resetting = false; out('READY StopMoTurntable 2'); }, 400); } } });
       this.writable = new WritableStream({ write(chunk) { line += new TextDecoder().decode(chunk); let i; while ((i = line.indexOf('\n')) >= 0) { handle(line.slice(0, i).trim()); line = line.slice(i + 1); } } });
     },
     async close() { try { ctrl.close(); } catch {} },
@@ -87,5 +91,12 @@ assert.equal(turntable.state.locked, false);
 assert.equal(await turntable.moveTo(0), 0);
 await turntable.disconnect();
 assert.equal(turntable.state.connected, false);
+// A board that resets twice after the port opens still connects (PING retried after the second READY)
+const twice = makeBoard({ doubleReset: true });
+navigator.serial.getPorts = async () => [twice];
+await turntable.connect();
+assert.equal(turntable.state.connected, true);
+assert.ok(twice.sent.filter((c) => c === 'PING').length >= 1);
+await turntable.disconnect();
 console.log('turntable client OK; commands sent:', board.sent.length);
 process.exit(0);

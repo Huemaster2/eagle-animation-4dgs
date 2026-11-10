@@ -93,7 +93,12 @@ class Turntable {
 
       // Opening the port resets the Uno; wait for its banner, then make sure it is our firmware
       await this.waitFor((m) => m.type === 'READY', 4000).catch(() => null);
-      const pong = await this.command('PING').catch(() => null);
+      // CH340 boards on macOS reset a second time ~2 s after opening; a PING sent in between is lost, so wait it out and retry
+      await this.waitFor((m) => m.type === 'READY', 2500).catch(() => null);
+      let pong = null;
+      for (let attempt = 0; attempt < 3 && !pong; attempt++) {
+        pong = await this.command('PING').catch(() => null);
+      }
       if (!pong || !/StopMoTurntable/.test(pong.line)) {
         throw new Error('No StopMo turntable firmware answered on this port. Install the firmware from this panel first.');
       }
@@ -202,6 +207,11 @@ class Turntable {
     if (msg.type === 'OK' && msg.args[0] === 'JOG' && this.pending?.name !== 'JOG') return;
 
     if (msg.type === 'ERR') this.log(msg.line);
+    // Only real replies answer a command; line noise (e.g. bytes from a board reset) is logged and ignored
+    if (!['OK', 'ERR', 'INFO', 'STATUS'].includes(msg.type)) {
+      this.log(`? ${msg.line.slice(0, 60)}`);
+      return;
+    }
     if (this.pending) {
       const p = this.pending;
       this.pending = null;
@@ -254,9 +264,11 @@ class Turntable {
         const name = text.split(' ')[0];
         const timer = setTimeout(() => {
           if (this.pending?.timer === timer) this.pending = null;
+          this.log(`No answer to ${name}`);
           reject(new Error(`Turntable did not answer ${name}`));
         }, REPLY_TIMEOUT);
         this.pending = { name, resolve, reject, timer };
+        if (name !== 'JOG') this.log(`> ${text}`);
         this.write(text).catch((err) => {
           clearTimeout(timer);
           this.pending = null;
