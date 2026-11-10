@@ -161,6 +161,8 @@ const Timeline = ({
   onExpand = () => {},
   selectedIds = [],
   viewLabel = null,
+  referenceCells = null,
+  onReferenceSeek = () => {},
 }) => {
   const ref = useRef(null);
   const shadowLeftRef = useRef(null);
@@ -321,7 +323,7 @@ const Timeline = ({
   return (
     <div className={style.wrapper} data-tour="timeline">
       <aside
-        className={`${style.container} ${playing ? style.playing : ''}`}
+        className={`${style.container} ${playing ? style.playing : ''} ${referenceCells ? style.withReference : ''}`}
         ref={ref}
         onScroll={updateShadows}
         onMouseDownCapture={(e) => {
@@ -331,24 +333,61 @@ const Timeline = ({
           modifiersRef.current = { shift: false, toggle: false };
         }}
       >
-        {viewLabel && (
-          <span className={style.viewTag} title={viewLabel.hint || ''}>
-            <span className={style.viewTagName}>{viewLabel.name}</span>
-            <span className={style.viewTagAngle}>{viewLabel.detail}</span>
-          </span>
+        <div className={style.row}>
+          {viewLabel ? (
+            <span className={style.viewTag} title={viewLabel.hint || ''}>
+              <span className={style.viewTagName}>{viewLabel.name}</span>
+              <span className={style.viewTagAngle}>{viewLabel.detail}</span>
+            </span>
+          ) : (
+            referenceCells && <span className={style.viewTag} />
+          )}
+          <SortableList
+            sortableItemIds={sortableItemIds}
+            visiblePictures={visiblePictures}
+            maskingLabel={maskingLabel}
+            shortPlayFrameId={shortPlayFrameId}
+            onSelect={stableOnSelect}
+            onDragEnd={stableOnDragEnd}
+            sensors={sensors}
+            expandedId={expandedId}
+            onExpand={stableOnExpand}
+          />
+          <LiveItem select={select} onSelect={stableOnSelect} frameCaptureMode={frameCaptureMode} />
+        </div>
+        {referenceCells && (
+          <div className={style.row}>
+            <span className={`${style.viewTag} ${style.refTag}`}>
+              <span className={style.viewTagName}>{t('Reference')}</span>
+            </span>
+            {referenceCells.cells.map((cell) => (
+              <button
+                key={cell.id}
+                type="button"
+                className={`${style.refCell} ${cell.current ? style.refCellCurrent : ''}`}
+                title={t('Frame {{n}} of the reference', { n: cell.position + 1 })}
+                onClick={() => stableOnSelect(cell.id)}
+              >
+                {cell.link ? (
+                  <img alt="" className={style.refCellImg} src={getPictureLink(cell.link, { w: 80, h: 26, m: 'cover', f: 'jpg' })} loading="lazy" />
+                ) : (
+                  <span className={style.refCellEmpty} />
+                )}
+              </button>
+            ))}
+            {referenceCells.extra.map((cell) => (
+              <button
+                key={`ref-${cell.position}`}
+                type="button"
+                className={`${style.refCell} ${style.refCellAhead} ${cell.current ? style.refCellCurrent : ''}`}
+                title={t('Frame {{n}} of the reference, past what is shot', { n: cell.position + 1 })}
+                onClick={() => onReferenceSeek(cell.position)}
+              >
+                <img alt="" className={style.refCellImg} src={getPictureLink(cell.link, { w: 80, h: 26, m: 'cover', f: 'jpg' })} loading="lazy" />
+              </button>
+            ))}
+          </div>
         )}
-        <SortableList
-          sortableItemIds={sortableItemIds}
-          visiblePictures={visiblePictures}
-          maskingLabel={maskingLabel}
-          shortPlayFrameId={shortPlayFrameId}
-          onSelect={stableOnSelect}
-          onDragEnd={stableOnDragEnd}
-          sensors={sensors}
-          expandedId={expandedId}
-          onExpand={stableOnExpand}
-        />
-        <LiveItem select={select} onSelect={stableOnSelect} frameCaptureMode={frameCaptureMode} />
       </aside>
       <div ref={shadowLeftRef} className={`${style.shadow} ${style.shadowLeft}`} />
       <div ref={shadowRightRef} className={`${style.shadow} ${style.shadowRight}`} />

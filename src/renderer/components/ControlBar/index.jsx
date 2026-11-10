@@ -60,10 +60,10 @@ const ControlBar = ({
   canUseMaskingEditor = false,
   isCurrentFrameHidden = false,
   showCameraSettings = false,
-  hasReferenceClip = false,
+  hasReference = false,
+  referencesHidden = false,
   hasViewRows = false,
   viewRowsOpen = false,
-  referenceClipPlaying = false,
   onAction = null,
   totalAnimationFrames = 0,
   t,
@@ -197,16 +197,15 @@ const ControlBar = ({
             merge={true}
           />
         )}
-        {hasReferenceClip && (
+        {hasReference && (
           <ButtonsGroup
             groupClassName={style.liveViewActions}
             actions={[
               {
-                title: referenceClipPlaying ? t('Stop the reference clip') : t('Play the reference clip over the live view'),
-                selected: referenceClipPlaying,
-                onClick: handleAction('REFERENCE_CLIP'),
+                title: referencesHidden ? t('Show the reference') : t('Hide the reference'),
+                selected: !referencesHidden,
+                onClick: handleAction('REFERENCE_VISIBLE'),
                 icon: faFilm,
-                disabled: isPlaying,
               },
             ]}
             tooltipPosition="TOP"

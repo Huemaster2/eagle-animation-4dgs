@@ -35,8 +35,9 @@ import { DEFAULT_FPS, MAX_FRAME_DUPLICATION } from '@config-web';
 import { angleGap, downscaleFrame, frameFolderName, nearestShot, nextSequenceNumber, planSequence, runSequence, shotAngle, shotBaseName } from '@core/captureSequence';
 import { selectionClick } from '@core/frameSelection';
 import { normalizeOnionSkin } from '@core/onionSkin';
+import { referenceMatchesPerspective } from '@core/perspectives';
 import { parseRatio } from '@core/ratio';
-import { getAnimationPosition, normalizeReference } from '@core/referenceSequence';
+import { getAnimationPosition, getReferenceFrame, normalizeReference } from '@core/referenceSequence';
 import {
   getLastStopMoCaptureFiles,
   getStopMoCameraStatus,
@@ -334,30 +335,15 @@ const Animator = ({ t }) => {
 
   const handleImportPicture = useCallback((blob) => projectActions.addFrame(track, blob), [projectActions, track]);
 
-  const handleSelectFrame = useCallback((selectedFrameId) => {
-    playerRef.current.showFrame(selectedFrameId === false ? false : selectedFrameId);
-  }, []);
-
   const [alignReferenceId, setAlignReferenceId] = useState(null);
   const [alignDraft, setAlignDraft] = useState(null);
-  const [referencePlay, setReferencePlay] = useState({ position: null, playing: false });
-  const referenceTick = useRef({ fps: 12, length: 0 });
+  // A position in the reference track that is past the shot frames; cleared as soon as a frame is picked
+  const [referenceSeek, setReferenceSeek] = useState(null);
 
-  // Runs the reference clip over the live view at the scene's own rate, whatever is in the timeline
-  useEffect(() => {
-    if (!referencePlay.playing) return undefined;
-    const id = setInterval(
-      () =>
-        setReferencePlay((p) => {
-          if (!p.playing) return p;
-          const { length } = referenceTick.current;
-          const next = (p.position ?? 0) + 1;
-          return next >= length ? { position: Math.max(0, length - 1), playing: false } : { ...p, position: next };
-        }),
-      Math.max(20, 1000 / Math.max(1, referenceTick.current.fps))
-    );
-    return () => clearInterval(id);
-  }, [referencePlay.playing]);
+  const handleSelectFrame = useCallback((selectedFrameId) => {
+    setReferenceSeek(null);
+    playerRef.current.showFrame(selectedFrameId === false ? false : selectedFrameId);
+  }, []);
   const playerSetStream = useRef(null);
 
   // Shortcut if informations are not ready
@@ -381,7 +367,7 @@ const Animator = ({ t }) => {
   const playerReferences = alignDraft && alignReferenceId ? sceneReferences.map((r) => (r.id === alignReferenceId ? { ...r, ...alignDraft } : r)) : sceneReferences;
   const alignReference = alignReferenceId ? normalizeReference(playerReferences.find((r) => r.id === alignReferenceId) || {}) : null;
   const referenceLength = Math.max(0, ...sceneReferences.filter((r) => r.enabled !== false).map((r) => (r.frames || []).length));
-  referenceTick.current = { fps, length: referenceLength };
+  const referencesHidden = !!settings.REFERENCES_HIDDEN;
   // Frames with a rotation play from the active view: each shows its photo nearest that view's angle
   const viewSteps = activePerspective ? turntableProfile.perspectives[activePerspective] : null;
   const viewAngle = viewSteps === null || viewSteps === undefined ? null : angleOf(viewSteps, turntableState.stepsPerRev);
@@ -400,6 +386,26 @@ const Animator = ({ t }) => {
         return shot?.link ? { ...p, link: shot.link } : p;
       })
     : viewPictures;
+  // The reference runs as a second row of the timeline: frame 1 beside frame 1, carrying on past the last shot
+  const trackReference = referencesHidden ? null : sceneReferences.map(normalizeReference).find((r) => r.enabled && r.frames.length && referenceMatchesPerspective(r, activePerspective));
+  const referenceCells = (() => {
+    if (!trackReference) return null;
+    const shown = viewPictures.filter((p) => !p.deleted);
+    const current = Number.isFinite(referenceSeek) ? referenceSeek : null;
+    const cells = [];
+    let position = 0;
+    for (const p of shown) {
+      const found = getReferenceFrame(trackReference, position);
+      cells.push({ id: p.id, position, link: found?.frame?.link || null, current: current === position });
+      if (!p.hidden) position += p.length || 1;
+    }
+    const extra = [];
+    for (let i = position; i < trackReference.frames.length - (trackReference.offset || 0); i++) {
+      const found = getReferenceFrame(trackReference, i);
+      if (found?.frame?.link) extra.push({ position: i, link: found.frame.link, current: current === i });
+    }
+    return cells.length || extra.length ? { cells, extra } : null;
+  })();
   const expandedFrame = expandedFrameId ? pictures.find((p) => p.id === expandedFrameId) || null : null;
   const expandedFrames = pictures.reduce((acc, e) => [...acc, ...new Array(e.length || 1).fill(e)], []);
   const animationPosition = getAnimationPosition(
@@ -872,14 +878,7 @@ const Animator = ({ t }) => {
       setActiveWindow((v) => (v === 'onion' ? null : 'onion'));
     },
     // Plays the reference sequence over the live view; from the top again once it has run out
-    REFERENCE_CLIP: () => {
-      if (currentFrameId !== false) handleSelectFrame(false);
-      setReferencePlay((p) => {
-        if (p.playing) return { ...p, playing: false };
-        const atEnd = (p.position ?? 0) >= referenceTick.current.length - 1;
-        return { playing: true, position: atEnd ? 0 : (p.position ?? 0) };
-      });
-    },
+    REFERENCE_VISIBLE: () => settingsActions.setSettings({ REFERENCES_HIDDEN: !settings.REFERENCES_HIDDEN }),
     VIEW_ROWS: () => settingsActions.setSettings({ VIEW_ROWS: { OPEN: !settings.VIEW_ROWS?.OPEN } }),
     ONION_TOGGLE: () => {
       settingsActions.setSettings({ ONION_SKIN: { ...onionConfig, ENABLED: !onionConfig.ENABLED } });
@@ -1266,9 +1265,9 @@ const Animator = ({ t }) => {
           onionValue={onionValue}
           onionSkin={onionConfig}
           referenceFrameId={referenceFramePosition ? referenceFrameId : null}
-          references={playerReferences}
+          references={referencesHidden ? [] : playerReferences}
           alignReference={alignReference}
-          referencePosition={referencePlay.position}
+          referencePosition={referenceSeek}
           onAlignReference={(patch) => setAlignDraft((d) => ({ ...(d || { x: alignReference?.x ?? 0, y: alignReference?.y ?? 0, scale: alignReference?.scale ?? 1 }), ...patch }))}
           onAlignReferenceCommit={() => {
             if (alignDraft && alignReferenceId) projectActions.updateReference(track, alignReferenceId, alignDraft);
@@ -1341,10 +1340,10 @@ const Animator = ({ t }) => {
             onionValue={onionValue}
             onionEnabled={onionEnabled}
             showOnionSettings={activeWindow === 'onion'}
-            hasReferenceClip={referenceLength > 1}
+            hasReference={referenceLength > 0}
+            referencesHidden={referencesHidden}
             hasViewRows={viewRows.length > 0}
             viewRowsOpen={viewRowsOpen}
-            referenceClipPlaying={referencePlay.playing}
             isPlaying={isPlaying}
             isCameraReady={!!currentCamera}
             isTakingPicture={isTakingPicture}
@@ -1403,6 +1402,11 @@ const Animator = ({ t }) => {
             />
           )}
           <Timeline
+            referenceCells={referenceCells}
+            onReferenceSeek={(position) => {
+              if (currentFrameId !== false) handleSelectFrame(false);
+              setReferenceSeek(position);
+            }}
             viewLabel={
               viewRows.length || showPerspectives
                 ? {
@@ -1536,13 +1540,6 @@ const Animator = ({ t }) => {
           onUpdateReference={(referenceId, patch) => projectActions.updateReference(track, referenceId, patch)}
           aligning={alignReferenceId}
           onAlign={setAlignReferenceId}
-          playback={referencePlay}
-          playbackLength={referenceLength}
-          onPlayback={(next) => {
-            // Watching the clip means watching it over the camera, so step off the selected frame
-            if (next.playing && currentFrameId !== false) handleSelectFrame(false);
-            setReferencePlay((p) => ({ ...p, ...next }));
-          }}
           onLayoutChange={setLivePanel}
           onClose={() => setLivePanel({ OPEN: false })}
           focusPeaking={settings.FOCUS_PEAKING}

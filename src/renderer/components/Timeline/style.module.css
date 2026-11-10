@@ -348,3 +348,56 @@
   font-size: var(--tag-size);
   font-variant-numeric: tabular-nums;
 }
+
+/* The frames and the reference track scroll together as two rows of the same strip */
+.row {
+  display: block;
+  white-space: nowrap;
+}
+
+/* The strip keeps its height: the frames give up what the track needs */
+.withReference {
+  --size: 54px;
+}
+
+.refTag {
+  height: 26px;
+}
+
+.refCell {
+  background: var(--color-black);
+  border: 0;
+  cursor: pointer;
+  display: inline-block;
+  height: 26px;
+  min-width: var(--size) !important;
+  overflow: hidden;
+  padding: 2px;
+  position: relative;
+  vertical-align: bottom;
+  width: calc(var(--size) + 4px);
+}
+
+.refCellImg {
+  display: block;
+  height: 100%;
+  object-fit: cover;
+  width: 100%;
+}
+
+.refCellEmpty {
+  background: var(--pf-stripes, transparent);
+  display: block;
+  height: 100%;
+  opacity: 0.4;
+  width: 100%;
+}
+
+.refCellAhead .refCellImg {
+  opacity: 0.75;
+}
+
+.refCellCurrent {
+  outline: 2px solid var(--pf-line);
+  outline-offset: -2px;
+}

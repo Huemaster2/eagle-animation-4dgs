@@ -32,9 +32,6 @@ const ViewsPanel = ({
   onUpdateReference = () => {},
   aligning = null,
   onAlign = () => {},
-  playback = { position: null, playing: false },
-  playbackLength = 0,
-  onPlayback = () => {},
   onLayoutChange = () => {},
   onClose = () => {},
   focusPeaking,
@@ -198,29 +195,6 @@ const ViewsPanel = ({
 
           <input ref={input} type="file" className={style.hidden} onChange={handleFiles} {...{ webkitdirectory: '', directory: '' }} />
           {importProgress && <p className={style.status}>{t('Importing {{done}} / {{total}} frames…', importProgress)}</p>}
-
-          {playbackLength > 1 && (
-            <div className={style.refTools}>
-              <button type="button" className={style.small} onClick={() => onPlayback({ playing: !playback.playing, position: playback.position ?? 0 })}>
-                {playback.playing ? t('Pause clip') : t('Play clip')}
-              </button>
-              <input
-                type="range"
-                className={style.refRange}
-                min="0"
-                max={playbackLength - 1}
-                step="1"
-                value={playback.position ?? 0}
-                aria-label={t('Reference clip position')}
-                onChange={(event) => onPlayback({ playing: false, position: Number(event.target.value) })}
-              />
-              <span className={style.refToolValue}>{playback.position === null ? t('live') : `${(playback.position ?? 0) + 1}/${playbackLength}`}</span>
-              <button type="button" className={style.small} disabled={playback.position === null} onClick={() => onPlayback({ playing: false, position: null })}>
-                {t('Follow')}
-              </button>
-            </div>
-          )}
-          {playbackLength > 1 && <p className={style.status}>{t('Plays the whole reference over the live view, however few frames are shot. Follow puts it back on the timeline.')}</p>}
 
           {groups.map(({ view, refs }) => (
             <section key={view} className={`${style.group} ${active === view || (view === ALL && active === null) ? style.groupActive : ''}`}>
