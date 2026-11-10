@@ -176,24 +176,45 @@
 .exposureRow {
   align-items: center;
   display: flex;
-  gap: 8px;
-  justify-content: space-between;
+  gap: 6px;
   padding: 3px 0;
 }
 
 .exposureLabel {
   color: var(--color-white);
+  flex: 1;
   font-size: var(--font-size-6);
   font-weight: 700;
 }
 
-.exposureSelect {
+.step {
+  align-items: center;
   background: var(--pf-button-face);
   border: 1px solid var(--pf-line);
   box-shadow: var(--pf-bevel);
   color: var(--color-white);
-  font-family: inherit;
+  cursor: pointer;
+  display: flex;
+  font-size: 10px;
+  height: 22px;
+  justify-content: center;
+  padding: 0;
+  width: 24px;
+}
+
+.step:disabled {
+  cursor: default;
+  opacity: 0.4;
+}
+
+.flip {
+  transform: scaleX(-1);
+}
+
+.exposureValue {
+  color: var(--color-white);
   font-size: var(--font-size-6);
-  min-width: 120px;
-  padding: 3px 4px;
+  font-variant-numeric: tabular-nums;
+  min-width: 68px;
+  text-align: center;
 }

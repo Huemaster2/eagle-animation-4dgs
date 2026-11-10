@@ -4,6 +4,8 @@ import Switch from '@components/Switch';
 import TurntableQuickControls from '@components/TurntableQuickControls';
 import { normalizeReference, sequenceNameFromFiles, sortSequenceFiles } from '@core/referenceSequence';
 import { PERSPECTIVES } from '@core/turntableMath';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import faChevronLeft from '@icons/faChevronLeft';
 import { useEffect, useRef, useState } from 'react';
 import { withTranslation } from 'react-i18next';
 
@@ -107,18 +109,26 @@ const ViewsPanel = ({
 
       {tab === 'exposure' && (
         <div className={style.body}>
-          {exposure.map((cap) => (
-            <div key={cap.id} className={style.exposureRow}>
-              <span className={style.exposureLabel}>{EXPOSURE_LABELS[cap.id] ? t(EXPOSURE_LABELS[cap.id]) : cap.id}</span>
-              <select className={style.exposureSelect} value={cap.value ?? ''} disabled={exposureBusy || cap.disabled} onChange={(e) => onExposureChange(cap.id, e.target.value)}>
-                {(cap.values || []).map((v) => (
-                  <option key={v.value} value={v.value}>
-                    {v.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-          ))}
+          {exposure.map((cap) => {
+            const values = cap.values || [];
+            const at = values.findIndex((v) => `${v.value}` === `${cap.value}`);
+            const step = (delta) => {
+              const next = values[at + delta];
+              if (next) onExposureChange(cap.id, next.value);
+            };
+            return (
+              <div key={cap.id} className={style.exposureRow}>
+                <span className={style.exposureLabel}>{EXPOSURE_LABELS[cap.id] ? t(EXPOSURE_LABELS[cap.id]) : cap.id}</span>
+                <button type="button" className={style.step} title={t('One step down the camera list')} disabled={exposureBusy || at <= 0} onClick={() => step(-1)}>
+                  <FontAwesomeIcon icon={faChevronLeft} />
+                </button>
+                <span className={style.exposureValue}>{at >= 0 ? values[at].label : '–'}</span>
+                <button type="button" className={style.step} title={t('One step up the camera list')} disabled={exposureBusy || at < 0 || at >= values.length - 1} onClick={() => step(1)}>
+                  <FontAwesomeIcon icon={faChevronLeft} className={style.flip} />
+                </button>
+              </div>
+            );
+          })}
           {!exposure.length && <p className={style.status}>{t('No dials reported yet — the camera has to be connected and awake.')}</p>}
           <p className={style.status}>{t('Set on the camera over USB. Its own dials stay locked while the app holds it, so change exposure here.')}</p>
           <p className={style.status}>{t('Shutter and aperture need the mode dial on M.')}</p>

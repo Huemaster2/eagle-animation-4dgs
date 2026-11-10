@@ -79,10 +79,14 @@ const FloatingPanel = ({
     onLayoutChange({ COLLAPSED: !collapsed });
   };
 
-  // Clicked controls give focus back, so Space/Enter keep meaning "take picture" and never press a panel button
+  // Clicked controls give focus back, so Space/Enter keep meaning "take picture" and never press a panel button.
+  // Fields keep theirs: blurring a select closes its menu before anything can be picked.
   const releaseFocus = () =>
     setTimeout(() => {
-      if (root.current?.contains(document.activeElement)) document.activeElement.blur();
+      const el = document.activeElement;
+      if (!el || !root.current?.contains(el)) return;
+      if (el.matches('select, input, textarea, [contenteditable="true"]')) return;
+      el.blur();
     }, 0);
 
   return createPortal(
