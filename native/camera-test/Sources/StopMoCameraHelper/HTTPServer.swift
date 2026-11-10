@@ -145,7 +145,14 @@ final class HTTPServer {
         let target = String(first[1])
         let comps = URLComponents(string: "http://x" + target)
         var query: [String: String] = [:]
-        for item in comps?.queryItems ?? [] { query[item.name] = item.value ?? "" }
+        // Form encoding (URLSearchParams) sends spaces as '+', which URLComponents leaves alone;
+        // without this "Application Support" arrived as "Application+Support"
+        for pair in (comps?.percentEncodedQuery ?? "").split(separator: "&") {
+            let kv = pair.split(separator: "=", maxSplits: 1, omittingEmptySubsequences: false)
+            let decode = { (s: Substring) in String(s).replacingOccurrences(of: "+", with: " ").removingPercentEncoding ?? String(s) }
+            guard let name = kv.first.map(decode), !name.isEmpty else { continue }
+            query[name] = kv.count > 1 ? decode(kv[1]) : ""
+        }
         return HTTPRequest(method: String(first[0]), path: comps?.path ?? target, query: query, headers: headers, body: body)
     }
 }
