@@ -66,6 +66,12 @@ export const stopmoFetch = async (pathAndQuery, options = {}) => {
   }
 };
 
+// Hands the camera's own dials back to the body: a Canon locks them and shows "busy" while a computer holds it
+export const stopmoReleaseToBody = async () => {
+  const res = await stopmoFetch('/cameras/canon-eos-ptp/release', { method: 'POST' }).catch(() => null);
+  return !!res?.ok;
+};
+
 export const getStopMoCameraStatus = async () => {
   const cfg = await getStopMoCameraConfig();
   if (!cfg?.port) {

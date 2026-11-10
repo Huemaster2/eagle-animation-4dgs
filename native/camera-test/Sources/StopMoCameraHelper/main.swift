@@ -94,6 +94,12 @@ server.handler = { req, res in
         guard cam.isLiveViewOn, let jpeg = cam.latestLiveJPEG.value else { res.error(409, "live view is not running"); return }
         res.send(status: 200, contentType: "image/jpeg", body: jpeg, extraHeaders: ["x-frame-counter": String(cam.liveFrameCounter.value)])
 
+    case ("PUT", base + "/release"), ("POST", base + "/release"):
+        guard cam.isReady else { res.error(409, "camera not connected"); return }
+        cam.releaseToBodyAsync { err in
+            if let err { res.error(500, err.localizedDescription) } else { res.json(200, ["ok": true]) }
+        }
+
     case ("PUT", base + "/disconnect"), ("POST", base + "/disconnect"):
         cam.stopLiveView()
         res.json(200, ["ok": true])
@@ -121,19 +127,34 @@ server.handler = { req, res in
 
     case ("GET", base + "/parameters"):
         let options = RawQuality.allCases.map { ["label": $0.title, "value": String($0.rawValue)] }
-        res.json(200, [[
+        let quality: [String: Any] = [
             "type": "image_quality",
             "kind": "select",
             "current": cam.currentQuality.map { String($0.rawValue) as Any } ?? NSNull(),
             "options": options,
-        ]])
+        ]
+        guard cam.isReady else { res.json(200, [quality]); return }
+        cam.exposureParametersAsync { exposure in
+            res.json(200, [quality] + exposure)
+        }
 
     case ("PUT", base + "/parameters"):
         guard let obj = try? JSONSerialization.jsonObject(with: req.body) as? [String: Any],
-              obj["type"] as? String == "image_quality",
-              let raw = (obj["value"] as? String).flatMap(Int.init) ?? (obj["value"] as? Int),
-              let q = RawQuality(rawValue: raw) else { res.error(400, "unsupported parameter"); return }
-        cam.setQualityAsync(q) { err in
+              let type = obj["type"] as? String,
+              let raw = (obj["value"] as? String).flatMap(Int.init) ?? (obj["value"] as? Int) else { res.error(400, "unsupported parameter"); return }
+        if type == "image_quality" {
+            guard let q = RawQuality(rawValue: raw) else { res.error(400, "unsupported image quality"); return }
+            cam.setQualityAsync(q) { err in
+                if let err { res.error(500, err.localizedDescription) } else { res.json(200, ["ok": true]) }
+            }
+            return
+        }
+        guard let spec = CameraController.exposureProps.first(where: { $0.type == type }), raw >= 0, raw <= 0xFFFF else {
+            res.error(400, "unsupported parameter")
+            return
+        }
+        guard cam.isReady else { res.error(409, "camera not connected"); return }
+        cam.setExposureAsync(prop: spec.prop, code: UInt32(raw)) { err in
             if let err { res.error(500, err.localizedDescription) } else { res.json(200, ["ok": true]) }
         }
 

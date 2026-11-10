@@ -9,9 +9,11 @@ const DEVICES_POLL_INTERVAL = 3000;
 
 const applyCameraSettings = async (camera, settings = {}) => {
   const capabilities = await camera.getCapabilities();
+  // Settings the body owns (its exposure dials) are read from the camera, never pushed back at it on connect
+  const liveOnly = camera.liveOnlyCapabilities || [];
   for (const [id, value] of Object.entries(settings)) {
     const capability = capabilities.find((c) => c.id === id);
-    if (!capability || capability.value === value) {
+    if (!capability || capability.value === value || liveOnly.includes(id)) {
       continue;
     }
     try {

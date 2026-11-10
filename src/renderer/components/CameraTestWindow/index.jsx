@@ -1,7 +1,7 @@
 import ActionCard from '@components/ActionCard';
 import Heading from '@components/Heading';
 import Select from '@components/Select';
-import { getStopMoCameraStatus, stopmoCapture, stopmoFetch } from '@core/stopmoCamera';
+import { getStopMoCameraStatus, stopmoCapture, stopmoFetch, stopmoReleaseToBody } from '@core/stopmoCamera';
 import { useEffect, useRef, useState } from 'react';
 import { withTranslation } from 'react-i18next';
 
@@ -27,7 +27,7 @@ const yes = (v) => (v === true ? '✓' : v === false ? '✗' : '–');
 const fileIsGood = (f) =>
   f.onCard ? f.signatureOK && f.structureOK !== false && (f.kind !== 'CR2' || (f.width || 0) >= 5000) : f.sizeMatches && f.signatureOK && f.structureOK !== false && (f.width || 0) >= 5000;
 
-const CameraTestWindow = ({ t, isOpened = false, settings = null, onSettingsChange = () => {} }) => {
+const CameraTestWindow = ({ t, isOpened = false, settings = null, onSettingsChange = () => {}, onTakeControl = null }) => {
   const [status, setStatus] = useState(null);
   const [busy, setBusy] = useState(false);
   const [results, setResults] = useState([]);
@@ -97,6 +97,23 @@ const CameraTestWindow = ({ t, isOpened = false, settings = null, onSettingsChan
     setBusy(false);
   };
 
+  const handOver = async () => {
+    setBusy(true);
+    setMessage(t('Handing the camera back…'));
+    const ok = await stopmoReleaseToBody();
+    setMessage(ok ? t('The camera has its dials back. Live view is off until you take control again.') : t('The camera did not let go.'));
+    setBusy(false);
+  };
+
+  const takeBack = async () => {
+    if (!onTakeControl) return;
+    setBusy(true);
+    setMessage(t('Taking control again…'));
+    await onTakeControl().catch(() => null);
+    setMessage(t('Live view is back.'));
+    setBusy(false);
+  };
+
   const setQuality = async (value) => {
     setBusy(true);
     await stopmoFetch('/cameras/canon-eos-ptp/parameters', {
@@ -124,7 +141,9 @@ const CameraTestWindow = ({ t, isOpened = false, settings = null, onSettingsChan
       </div>
       {connected && (
         <p className={style.hint}>
-          {t('Recording')}: <b>{status.quality || '?'}</b> · {t('Live view')}: {status.liveView ? `${status.fps || 0} fps` : t('off')}
+          {t('Recording')}: <b>{status.quality || '?'}</b>
+          {status.exposure ? ' · ' : ''}
+          {status.exposure ? <b>{status.exposure}</b> : null} · {t('Live view')}: {status.liveView ? `${status.fps || 0} fps` : t('off')}
           {status.settingsRaw && Object.keys(status.settingsRaw).length > 0 && (
             <>
               {' · '}
@@ -138,6 +157,27 @@ const CameraTestWindow = ({ t, isOpened = false, settings = null, onSettingsChan
       )}
       {connected && status.focus === 'AF' && <p className={style.warning}>{t('Lens is on AF. The 5D Mark II will not fire if autofocus cannot lock — switch the lens to MF for stop motion.')}</p>}
       {status?.lastError && <p className={style.error}>{status.lastError}</p>}
+
+      {connected && (
+        <>
+          <div className={style.row}>
+            <span className={style.label}>{t('Camera dials')}</span>
+            <span className={style.path}>{status.bodyLocked ? t('Held by the app — the body shows "busy"') : t('Free — set what you like on the camera')}</span>
+            {status.bodyLocked ? (
+              <ActionCard sizeAuto secondary disabled={busy} title={t('Hand back to the camera')} onClick={handOver} />
+            ) : (
+              <ActionCard sizeAuto secondary disabled={busy || !onTakeControl} title={t('Take control again')} onClick={takeBack} />
+            )}
+          </div>
+          <p className={style.hint}>
+            {status.bodyLocked
+              ? t(
+                  'A Canon locks its own dials while a computer holds it, as it does for EOS Utility. Set shutter, aperture and ISO from the camera settings window, or hand the camera back for a moment.'
+                )
+              : t('Live view is off while the camera is free. Take control again when you are ready to shoot.')}
+          </p>
+        </>
+      )}
 
       <div className={style.row}>
         <span className={style.label}>{t('Image quality (set on the camera over USB)')}</span>

@@ -976,8 +976,15 @@ const Animator = ({ t }) => {
     },
   };
 
+  const playerSetStream = useRef(null);
   const handlePlayerInit = (setStream) => {
+    playerSetStream.current = setStream;
     cameraActions.setStream(setStream);
+  };
+
+  // After the camera has been handed back to its own dials, this reconnects it and restarts live view
+  const retakeCameraControl = async () => {
+    if (playerSetStream.current) await cameraActions.setStream(playerSetStream.current);
   };
 
   const handleCapabilityChange = async (id, value) => {
@@ -1506,7 +1513,7 @@ const Animator = ({ t }) => {
             <TurntableWindow />
           </Window>
           <Window isOpened={activeWindow === 'camera-test'} onClose={() => setActiveWindow(null)} title={t('Canon camera')} tone="mint">
-            <CameraTestWindow isOpened={activeWindow === 'camera-test'} settings={settings} onSettingsChange={settingsActions.setSettings} />
+            <CameraTestWindow isOpened={activeWindow === 'camera-test'} settings={settings} onSettingsChange={settingsActions.setSettings} onTakeControl={retakeCameraControl} />
           </Window>
           <Window isOpened={activeWindow === 'onion'} onClose={() => setActiveWindow(null)} title={t('Onion skin & references')} tone="lavender">
             <OnionSkinWindow

@@ -20,6 +20,11 @@ class StopMoCanon {
     return false;
   }
 
+  // The body owns these: they are shown and set live, but never re-applied when the camera reconnects
+  get liveOnlyCapabilities() {
+    return ['shutter_speed', 'aperture', 'iso'];
+  }
+
   async getCapabilities() {
     const list = await stopmoFetch(`/cameras/${CAMERA_ID}/parameters`)
       .then((r) => r.json())

@@ -312,3 +312,51 @@ enum CanonEOS {
         return Data(bytes[s..<end])
     }
 }
+
+/// Canon exposure codes as the camera's own display writes them. The code is an exact power of two
+/// in stops; the label is the nearest value on the maker's ladder (1/128 s is written 1/125).
+enum EOSExposure {
+    private static func snap(_ v: Double, _ ladder: [Double]) -> Double {
+        ladder.min(by: { abs(log($0) - log(v)) < abs(log($1) - log(v)) }) ?? v
+    }
+
+    private static func seconds(_ v: Double) -> String {
+        v == v.rounded() ? "\(Int(v))\"" : String(format: "%.1f\"", v)
+    }
+
+    private static let slowLadder: [Double] = [0.3, 0.4, 0.5, 0.6, 0.8, 1, 1.3, 1.5, 1.6, 2, 2.5, 3, 3.2, 4, 5, 6, 6.3, 8, 10, 13, 15, 20, 25, 30]
+    private static let fastLadder: [Double] = [
+        1.3, 1.6, 2, 2.5, 3, 4, 5, 6, 8, 10, 13, 15, 20, 25, 30, 40, 45, 50, 60, 80, 90, 100, 125, 160, 180, 200, 250, 320, 350, 400, 500, 640, 750, 800,
+        1000, 1250, 1500, 1600, 2000, 2500, 3000, 3200, 4000, 5000, 6400, 8000,
+    ]
+
+    /// 0x38 is 1 s and every 8 codes is a stop.
+    static func shutterLabel(_ code: UInt32) -> String? {
+        if code == 0x0C { return "Bulb" }
+        guard code >= 0x10, code <= 0xA8 else { return nil }
+        let t = pow(2.0, (56.0 - Double(code)) / 8.0)
+        if t >= 0.3 { return seconds(snap(t, slowLadder)) }
+        let n = snap(1.0 / t, fastLadder)
+        return n == n.rounded() ? "1/\(Int(n))" : String(format: "1/%.1f", n)
+    }
+
+    private static let apertureLadder: [Double] = [
+        1, 1.1, 1.2, 1.4, 1.6, 1.8, 2, 2.2, 2.5, 2.8, 3.2, 3.5, 4, 4.5, 5, 5.6, 6.3, 7.1, 8, 9, 10, 11, 13, 14, 16, 18, 20, 22, 25, 29, 32, 36, 40, 45, 51, 57, 64,
+    ]
+
+    /// 0x08 is f/1.0 and every 16 codes is a stop.
+    static func apertureLabel(_ code: UInt32) -> String? {
+        guard code >= 0x08, code <= 0x68 else { return nil }
+        let f = snap(pow(2.0, (Double(code) - 8.0) / 16.0), apertureLadder)
+        return f == f.rounded() ? "f/\(Int(f))" : String(format: "f/%.1f", f)
+    }
+
+    private static let isoLadder: [Double] = [50, 64, 80, 100, 125, 160, 200, 250, 320, 400, 500, 640, 800, 1000, 1250, 1600, 2000, 2500, 3200, 4000, 5000, 6400, 8000, 10000, 12800, 16000, 20000, 25600]
+
+    /// 0x40 is ISO 50 and every 8 codes is a stop; 0 is the camera's own Auto ISO.
+    static func isoLabel(_ code: UInt32) -> String? {
+        if code == 0x00 { return "Auto" }
+        guard code >= 0x40, code <= 0x98 else { return nil }
+        return "ISO \(Int(snap(50.0 * pow(2.0, (Double(code) - 64.0) / 8.0), isoLadder)))"
+    }
+}

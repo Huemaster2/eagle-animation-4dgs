@@ -130,6 +130,8 @@ public final class CameraController: NSObject {
     private var originalCaptureDest: UInt32?
     private(set) var propValues: [UInt32: UInt32] = [:]
     private(set) var imageFormatValues: [UInt32] = []
+    /// Values the body says it will accept for a property, as it reports them in its own event stream
+    private(set) var propLists: [UInt32: [UInt32]] = [:]
     private(set) var lastObjectSizes: [String: UInt64] = [:]
 
     // Helper-facing state
@@ -377,6 +379,18 @@ public final class CameraController: NSObject {
                 imageFormatValues = vals
             }
         }
+        // The camera lists what each dial will accept: property, data type, count, then the values
+        for e in events where e.type == EOSEvent.availListChanged {
+            guard let p = le32(e.payload, 0), let count = le32(e.payload, 8), count > 0, count <= 512 else { continue }
+            var vals: [UInt32] = []
+            var off = 12
+            for _ in 0..<count {
+                guard let v = le32(e.payload, off) else { break }
+                vals.append(v)
+                off += 4
+            }
+            if !vals.isEmpty { propLists[p] = vals }
+        }
         return events
     }
 
@@ -404,6 +418,73 @@ public final class CameraController: NSObject {
         let confirmed = Array(imageFormatValues.prefix(q.values.count)) == q.values
         log("Camera now records: \(describeImageFormat(imageFormatValues))\(confirmed ? "" : " (camera did not confirm the change)")")
         return confirmed
+    }
+
+    /// Exposure dials the body exposes over USB, each with the values it says it will accept.
+    public static let exposureProps: [(type: String, prop: UInt32, label: (UInt32) -> String?)] = [
+        ("shutter_speed", EOSProp.shutterSpeed, EOSExposure.shutterLabel),
+        ("aperture", EOSProp.aperture, EOSExposure.apertureLabel),
+        ("iso", EOSProp.iso, EOSExposure.isoLabel),
+    ]
+
+    public func exposureParametersAsync(completion: @escaping ([[String: Any]]) -> Void) {
+        ptpQueue.async {
+            _ = try? self.pollEventsSync()
+            var out: [[String: Any]] = []
+            for spec in CameraController.exposureProps {
+                guard let current = self.propValues[spec.prop], let currentLabel = spec.label(current) else { continue }
+                var options: [[String: String]] = (self.propLists[spec.prop] ?? []).compactMap { code in
+                    guard let l = spec.label(code) else { return nil }
+                    return ["label": l, "value": String(code)]
+                }
+                if !options.contains(where: { $0["value"] == String(current) }) {
+                    options.insert(["label": currentLabel, "value": String(current)], at: 0)
+                }
+                out.append(["type": spec.type, "kind": "select", "current": String(current), "options": options])
+            }
+            DispatchQueue.main.async { completion(out) }
+        }
+    }
+
+    /// Hands the body back its own controls: in PC mode a Canon locks its dials and shows "busy".
+    /// The session stays open, so the next command takes remote control again.
+    public func releaseToBodyAsync(completion: @escaping (Error?) -> Void) {
+        let wasLive = liveViewOn.value
+        liveViewOn.value = false
+        ptpQueue.async {
+            if self.canonModeOn {
+                if wasLive { _ = try? self.setEOSPropSync(EOSProp.evfOutputDevice, 1) }
+                if let orig = self.originalCaptureDest { _ = try? self.setEOSPropSync(EOSProp.captureDestination, orig) }
+                _ = try? self.ptp(PTPOp.eosSetEventMode, [0], timeout: 2)
+                _ = try? self.ptp(PTPOp.eosSetRemoteMode, [0], timeout: 2)
+                self.canonModeOn = false
+                self.log("Released the camera: its own dials work again until the next command from here")
+            }
+            DispatchQueue.main.async { completion(nil) }
+        }
+    }
+
+    /// Turns a dial over USB and confirms it from the camera's own event report.
+    public func setExposureAsync(prop: UInt32, code: UInt32, completion: @escaping (Error?) -> Void) {
+        ptpQueue.async {
+            do {
+                try self.enableCanonModeSync()
+                let r = try self.setEOSPropSync(prop, code)
+                guard r.ok else { throw CamError.refused("\(EOSProp.name(prop)) change", r.code) }
+                for _ in 0..<20 {
+                    _ = try? self.pollEventsSync()
+                    if self.propValues[prop] == code { break }
+                    Thread.sleep(forTimeInterval: 0.1)
+                }
+                let confirmed = self.propValues[prop] == code
+                self.log("\(EOSProp.name(prop)) is now \(hex(self.propValues[prop] ?? 0))\(confirmed ? "" : " (the camera did not take the change: check the mode dial is on M)")")
+                DispatchQueue.main.async {
+                    completion(confirmed ? nil : CamError.refused("\(EOSProp.name(prop)) change (the camera did not take it: check the mode dial)", 0))
+                }
+            } catch {
+                DispatchQueue.main.async { completion(error) }
+            }
+        }
     }
 
     public func setQuality(_ q: RawQuality) {
@@ -1034,6 +1115,14 @@ extension CameraController {
             if let v = propValues[k] { settings[EOSProp.name(k)] = hex(v) }
         }
         d["settingsRaw"] = settings
+        // The exposure as the camera's own display writes it
+        let exposure = [
+            propValues[EOSProp.shutterSpeed].flatMap(EOSExposure.shutterLabel),
+            propValues[EOSProp.aperture].flatMap(EOSExposure.apertureLabel),
+            propValues[EOSProp.iso].flatMap(EOSExposure.isoLabel),
+        ].compactMap { $0 }
+        if !exposure.isEmpty { d["exposure"] = exposure.joined(separator: " · ") }
+        d["bodyLocked"] = canonModeOn
         if let e = lastError.value { d["lastError"] = e }
         return d
     }
