@@ -36,7 +36,7 @@ import { angleGap, downscaleFrame, frameFolderName, nearestShot, nextSequenceNum
 import { selectionClick } from '@core/frameSelection';
 import { normalizeOnionSkin } from '@core/onionSkin';
 import { parseRatio } from '@core/ratio';
-import { getAnimationPosition } from '@core/referenceSequence';
+import { getAnimationPosition, normalizeReference } from '@core/referenceSequence';
 import {
   getLastStopMoCaptureFiles,
   getStopMoCameraStatus,
@@ -338,6 +338,26 @@ const Animator = ({ t }) => {
     playerRef.current.showFrame(selectedFrameId === false ? false : selectedFrameId);
   }, []);
 
+  const [alignReferenceId, setAlignReferenceId] = useState(null);
+  const [alignDraft, setAlignDraft] = useState(null);
+  const [referencePlay, setReferencePlay] = useState({ position: null, playing: false });
+  const referenceTick = useRef({ fps: 12, length: 0 });
+
+  // Runs the reference clip over the live view at the scene's own rate, whatever is in the timeline
+  useEffect(() => {
+    if (!referencePlay.playing) return undefined;
+    const id = setInterval(
+      () =>
+        setReferencePlay((p) => {
+          if (!p.playing) return p;
+          const { length } = referenceTick.current;
+          const next = (p.position ?? 0) + 1;
+          return next >= length ? { position: Math.max(0, length - 1), playing: false } : { ...p, position: next };
+        }),
+      Math.max(20, 1000 / Math.max(1, referenceTick.current.fps))
+    );
+    return () => clearInterval(id);
+  }, [referencePlay.playing]);
   const playerSetStream = useRef(null);
 
   // Shortcut if informations are not ready
@@ -357,6 +377,11 @@ const Animator = ({ t }) => {
   const referenceFramePosition = referenceFrameId === null ? null : pictures.findIndex((p) => p.id === referenceFrameId) + 1 || null;
   const currentFrame = currentFrameId === false ? false : pictures.find((p) => p.id === currentFrameId) || false;
   const sceneReferences = project.scenes[track]?.references || [];
+  // While a reference is being dragged its new place is kept here, and written once the drag ends
+  const playerReferences = alignDraft && alignReferenceId ? sceneReferences.map((r) => (r.id === alignReferenceId ? { ...r, ...alignDraft } : r)) : sceneReferences;
+  const alignReference = alignReferenceId ? normalizeReference(playerReferences.find((r) => r.id === alignReferenceId) || {}) : null;
+  const referenceLength = Math.max(0, ...sceneReferences.filter((r) => r.enabled !== false).map((r) => (r.frames || []).length));
+  referenceTick.current = { fps, length: referenceLength };
   // Frames with a rotation play from the active view: each shows its photo nearest that view's angle
   const viewSteps = activePerspective ? turntableProfile.perspectives[activePerspective] : null;
   const viewAngle = viewSteps === null || viewSteps === undefined ? null : angleOf(viewSteps, turntableState.stepsPerRev);
@@ -1231,7 +1256,19 @@ const Animator = ({ t }) => {
           onionValue={onionValue}
           onionSkin={onionConfig}
           referenceFrameId={referenceFramePosition ? referenceFrameId : null}
-          references={sceneReferences}
+          references={playerReferences}
+          alignReference={alignReference}
+          referencePosition={referencePlay.position}
+          onAlignReference={(patch) => setAlignDraft((d) => ({ ...(d || { x: alignReference?.x ?? 0, y: alignReference?.y ?? 0, scale: alignReference?.scale ?? 1 }), ...patch }))}
+          onAlignReferenceCommit={() => {
+            if (alignDraft && alignReferenceId) projectActions.updateReference(track, alignReferenceId, alignDraft);
+            setAlignDraft(null);
+          }}
+          onAlignReferenceDone={() => {
+            if (alignDraft && alignReferenceId) projectActions.updateReference(track, alignReferenceId, alignDraft);
+            setAlignDraft(null);
+            setAlignReferenceId(null);
+          }}
           perspective={activePerspective}
           perspectiveViews={project.scenes[track]?.perspectiveViews}
           showGrid={gridStatus}
@@ -1483,6 +1520,11 @@ const Animator = ({ t }) => {
           onTurn={!reviewingFrames && activePerspective && !tableAtActiveView ? () => turnToPerspective(activePerspective) : null}
           onImport={importReferences}
           onUpdateReference={(referenceId, patch) => projectActions.updateReference(track, referenceId, patch)}
+          aligning={alignReferenceId}
+          onAlign={setAlignReferenceId}
+          playback={referencePlay}
+          playbackLength={referenceLength}
+          onPlayback={(next) => setReferencePlay((p) => ({ ...p, ...next }))}
           onLayoutChange={setLivePanel}
           onClose={() => setLivePanel({ OPEN: false })}
           focusPeaking={settings.FOCUS_PEAKING}

@@ -218,3 +218,34 @@
   min-width: 68px;
   text-align: center;
 }
+
+.refTools {
+  align-items: center;
+  display: flex;
+  gap: 5px;
+  padding: 0 0 6px 2px;
+}
+
+.refToolLabel {
+  color: var(--color-theme-extra-light);
+  font-size: var(--font-size-7, 10px);
+}
+
+.refRange {
+  accent-color: var(--pf-line);
+  flex: 1;
+  min-width: 50px;
+}
+
+.refToolValue {
+  color: var(--color-theme-extra-light);
+  font-size: var(--font-size-7, 10px);
+  font-variant-numeric: tabular-nums;
+  min-width: 30px;
+  text-align: right;
+}
+
+.smallActive {
+  background: var(--pf-line);
+  color: var(--pf-paper);
+}

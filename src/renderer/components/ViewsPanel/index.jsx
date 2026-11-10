@@ -30,6 +30,11 @@ const ViewsPanel = ({
   onTurn = null,
   onImport = () => {},
   onUpdateReference = () => {},
+  aligning = null,
+  onAlign = () => {},
+  playback = { position: null, playing: false },
+  playbackLength = 0,
+  onPlayback = () => {},
   onLayoutChange = () => {},
   onClose = () => {},
   focusPeaking,
@@ -194,6 +199,29 @@ const ViewsPanel = ({
           <input ref={input} type="file" className={style.hidden} onChange={handleFiles} {...{ webkitdirectory: '', directory: '' }} />
           {importProgress && <p className={style.status}>{t('Importing {{done}} / {{total}} frames…', importProgress)}</p>}
 
+          {playbackLength > 1 && (
+            <div className={style.refTools}>
+              <button type="button" className={style.small} onClick={() => onPlayback({ playing: !playback.playing, position: playback.position ?? 0 })}>
+                {playback.playing ? t('Pause clip') : t('Play clip')}
+              </button>
+              <input
+                type="range"
+                className={style.refRange}
+                min="0"
+                max={playbackLength - 1}
+                step="1"
+                value={playback.position ?? 0}
+                aria-label={t('Reference clip position')}
+                onChange={(event) => onPlayback({ playing: false, position: Number(event.target.value) })}
+              />
+              <span className={style.refToolValue}>{playback.position === null ? t('live') : `${(playback.position ?? 0) + 1}/${playbackLength}`}</span>
+              <button type="button" className={style.small} disabled={playback.position === null} onClick={() => onPlayback({ playing: false, position: null })}>
+                {t('Follow')}
+              </button>
+            </div>
+          )}
+          {playbackLength > 1 && <p className={style.status}>{t('Plays the whole reference over the live view, however few frames are shot. Follow puts it back on the timeline.')}</p>}
+
           {groups.map(({ view, refs }) => (
             <section key={view} className={`${style.group} ${active === view || (view === ALL && active === null) ? style.groupActive : ''}`}>
               <div className={style.groupHead}>
@@ -204,13 +232,37 @@ const ViewsPanel = ({
               </div>
               {refs.length === 0 && <p className={style.empty}>{t('No reference sequence')}</p>}
               {refs.map((ref) => (
-                <label key={ref.id} className={style.ref}>
-                  <span className={style.refName} title={ref.name}>
-                    {ref.name}
-                  </span>
-                  <span className={style.refCount}>{ref.frames.length}</span>
-                  <Switch checked={ref.enabled} onChange={() => onUpdateReference(ref.id, { enabled: !ref.enabled })} />
-                </label>
+                <div key={ref.id}>
+                  <label className={style.ref}>
+                    <span className={style.refName} title={ref.name}>
+                      {ref.name}
+                    </span>
+                    <span className={style.refCount}>{ref.frames.length}</span>
+                    <Switch checked={ref.enabled} onChange={() => onUpdateReference(ref.id, { enabled: !ref.enabled })} />
+                  </label>
+                  {ref.enabled && (
+                    <div className={style.refTools}>
+                      <span className={style.refToolLabel}>{t('Fade')}</span>
+                      <input
+                        type="range"
+                        className={style.refRange}
+                        min="0"
+                        max="1"
+                        step="0.01"
+                        value={ref.opacity}
+                        aria-label={t('Reference opacity')}
+                        onChange={(event) => onUpdateReference(ref.id, { opacity: Number(event.target.value) })}
+                      />
+                      <span className={style.refToolValue}>{Math.round(ref.opacity * 100)}%</span>
+                      <button type="button" className={`${style.small} ${aligning === ref.id ? style.smallActive : ''}`} onClick={() => onAlign(aligning === ref.id ? null : ref.id)}>
+                        {aligning === ref.id ? t('Done') : t('Align')}
+                      </button>
+                      <button type="button" className={style.small} onClick={() => onUpdateReference(ref.id, { x: 0, y: 0, scale: 1 })}>
+                        {t('Reset')}
+                      </button>
+                    </div>
+                  )}
+                </div>
               ))}
             </section>
           ))}

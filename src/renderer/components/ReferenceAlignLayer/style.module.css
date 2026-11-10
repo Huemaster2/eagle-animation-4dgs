@@ -1,0 +1,35 @@
+.layer {
+  cursor: move;
+  inset: 0;
+  outline: 2px dashed var(--pf-line);
+  outline-offset: -2px;
+  position: absolute;
+  touch-action: none;
+  z-index: 40;
+}
+
+.hint {
+  align-items: center;
+  background: var(--color-theme-dark);
+  color: var(--color-white);
+  display: flex;
+  font-size: var(--font-size-6);
+  gap: 8px;
+  left: 50%;
+  padding: 4px 8px;
+  position: absolute;
+  top: 8px;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.done {
+  background: var(--pf-button-face);
+  border: 1px solid var(--pf-line);
+  box-shadow: var(--pf-bevel);
+  color: var(--color-white);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: var(--font-size-6);
+  padding: 2px 8px;
+}

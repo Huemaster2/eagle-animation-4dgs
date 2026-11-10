@@ -4,6 +4,7 @@ import MagnifierMarker from '@components/MagnifierMarker';
 import OnionSkinLayers, { ReferenceLayer } from '@components/OnionSkinLayers';
 import PreviewStream from '@components/PreviewStream';
 import RatioBorders from '@components/RatioBorders';
+import ReferenceAlignLayer from '@components/ReferenceAlignLayer';
 import { drawFitted } from '@core/drawFitted';
 import { getOnionLayers, normalizeOnionSkin } from '@core/onionSkin';
 import { referenceMatchesPerspective, resolvePerspectiveLink } from '@core/perspectives';
@@ -278,7 +279,8 @@ class Player extends Component {
   }
 
   render() {
-    const { showGrid, onionValue, blendMode, isCameraReady, t, ratioLayerOpacity, reverseX, reverseY, isPlaying, onionSkin, referenceFrameId, perspective, perspectiveViews } = this.props;
+    const { showGrid, onionValue, blendMode, isCameraReady, t, ratioLayerOpacity, reverseX, reverseY, isPlaying, onionSkin, referenceFrameId, perspective, perspectiveViews, alignReference } =
+      this.props;
     const { width, height, ready, frameIndex } = this.state;
 
     const reverseClassNames = `${reverseX ? style.reverseX : ''} ${reverseY ? style.reverseY : ''}`;
@@ -300,7 +302,9 @@ class Player extends Component {
       : [];
     // Reference sequences follow the animation position (holds counted, hidden frames skipped), during playback too
     const showReferences = frameIndex !== false || isCameraReady;
-    const animationPosition = getAnimationPosition(this.frames, frameIndex);
+    // On the live view the reference can be scrubbed or played past the end of what has been shot
+    const timelinePosition = getAnimationPosition(this.frames, frameIndex);
+    const animationPosition = frameIndex === false && Number.isFinite(this.props.referencePosition) ? this.props.referencePosition : timelinePosition;
     const references = (this.props.references || []).map(normalizeReference).filter((r) => r.enabled && r.frames.length && referenceMatchesPerspective(r, perspective));
     const legacyGhostOpacity = onion.ENABLED && !blendMode ? 0 : hasOnionFrame ? 1 - onionValue : 0;
 
@@ -364,6 +368,16 @@ class Player extends Component {
               onCommit={this.props.onMagnifierCommit}
             />
           )}
+          {alignReference && (
+            <ReferenceAlignLayer
+              reference={alignReference}
+              width={this.getSize().width}
+              height={this.getSize().height}
+              onChange={this.props.onAlignReference}
+              onCommit={this.props.onAlignReferenceCommit}
+              onDone={this.props.onAlignReferenceDone}
+            />
+          )}
           <RatioBorders width={this.getSize().width} height={this.getSize().height} ratio={this.getVideoRatio()} opacity={ratioLayerOpacity} />
           {isCameraReady && showGrid && frameIndex === false && (
             <GridOverlay
@@ -395,6 +409,11 @@ Player.propTypes = {
   onionSkin: PropTypes.object,
   referenceFrameId: PropTypes.any,
   references: PropTypes.array,
+  alignReference: PropTypes.object,
+  referencePosition: PropTypes.number,
+  onAlignReference: PropTypes.func,
+  onAlignReferenceCommit: PropTypes.func,
+  onAlignReferenceDone: PropTypes.func,
   perspective: PropTypes.string,
   perspectiveViews: PropTypes.object,
   focusPeaking: PropTypes.object,
