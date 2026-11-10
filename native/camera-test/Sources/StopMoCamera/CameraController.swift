@@ -137,6 +137,10 @@ public final class CameraController: NSObject {
     public let liveFrameCounter = Locked<UInt64>(0)
     private var activeDestination: (dir: URL, baseName: String?)?
     private var captureRecords: [CaptureFile] = []
+    // Files ImageCaptureCore reports as new on the card (handle, name, size). With the card as destination
+    // the 5D Mark II writes the photo but sends no ObjectAdded PTP event, so this is how the new file is found.
+    private let cardAdditions = Locked<[(UInt32, String, UInt32)]>([])
+    private let watchCardAdditions = Locked(false)
     private var capturePreview: Data?
     private let lastError = Locked<String?>(nil)
     private var lastActivity = Date()
@@ -523,6 +527,9 @@ public final class CameraController: NSObject {
         }
 
         _ = try? pollEventsSync()                 // flush anything stale
+        cardAdditions.value = []
+        watchCardAdditions.value = saveTarget != .macOnly
+        defer { watchCardAdditions.value = false }
         let frameNumber = nextFrameNumber()
         let t0 = Date()
 
@@ -562,6 +569,14 @@ public final class CameraController: NSObject {
                     lastNew = Date()
                     log("Camera announced object \(hex(h, width: 8)) via event \(hex(e.type, width: 4))")
                 }
+            }
+            // Card captures: fall back to the files ImageCaptureCore saw appear on the card
+            for (h, n, size) in cardAdditions.value where !handles.contains(where: { $0.0 == h }) {
+                handles.append((h, false))
+                if size > 0 { eventSizes[h] = size }
+                eventNames[h] = n
+                lastNew = Date()
+                log("Card reported new file \(n) (\(hex(h, width: 8)))")
             }
             if !handles.isEmpty && Date().timeIntervalSince(lastNew) > 0.8 { break }
             Thread.sleep(forTimeInterval: 0.1)
@@ -1192,6 +1207,13 @@ extension CameraController: ICCameraDeviceDelegate {
     }
 
     public func cameraDevice(_ camera: ICCameraDevice, didAdd items: [ICCameraItem]) {
+        if watchCardAdditions.value {
+            var added = cardAdditions.value
+            for case let f as ICCameraFile in items where f.ptpObjectHandle != 0 {
+                added.append((f.ptpObjectHandle, f.name ?? "IMG", UInt32(clamping: f.fileSize)))
+            }
+            cardAdditions.value = added
+        }
         guard nativePending else { return }
         for case let f as ICCameraFile in items {
             nativePending = false
