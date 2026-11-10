@@ -1257,7 +1257,7 @@ const Animator = ({ t }) => {
           ) : (
             <NoticeBanner message={notice?.message} tone={notice?.tone} onDismiss={() => setNotice(null)} />
           )}
-          {showPerspectives && !livePanel.OPEN && (
+          {showPerspectives && (!livePanel.OPEN || livePanel.COLLAPSED) && (
             <PerspectiveBar
               active={activePerspective}
               status={perspectiveHint()}
