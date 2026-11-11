@@ -123,6 +123,7 @@ public final class CameraController: NSObject {
     private let sessionOpen = Locked(false)
     private let ready = Locked(false)
     private let liveViewOn = Locked(false)
+    private let capturing = Locked(false)
     private var tidCounter = Locked<UInt32>(1)
 
     private(set) var deviceInfo: PTPDeviceInfo?
@@ -157,6 +158,7 @@ public final class CameraController: NSObject {
     private var lvFPS: Double = 0
     private var lvTicks = 0
     private var lvFailures = 0
+    private var lvChainActive = false
     private(set) var lastLiveViewSize: CGSize = .zero
 
     // Native (ImageCaptureCore) capture
@@ -169,6 +171,8 @@ public final class CameraController: NSObject {
     var camera: ICCameraDevice? { cameraRef.value }
     public var isReady: Bool { ready.value && sessionOpen.value }
     public var isLiveViewOn: Bool { liveViewOn.value }
+    /// True while the shutter and the file transfer have the camera: live view pauses on its own then.
+    public var isCapturing: Bool { capturing.value }
 
     public init(captureDir: URL? = nil, logName: String = "stage1_log.txt") {
         let pics = FileManager.default.urls(for: .picturesDirectory, in: .userDomainMask).first
@@ -536,20 +540,26 @@ public final class CameraController: NSObject {
         log("Live view requested; waiting for first frame (camera needs ~1 s to raise the mirror)")
     }
 
-    fileprivate func scheduleLiveViewTickInternal() { scheduleLiveViewTick() }
+    fileprivate func scheduleLiveViewTickInternal() {
+        // Only one fetch chain at a time, or every frame would be asked for twice
+        if lvChainActive { return }
+        scheduleLiveViewTick()
+    }
 
     private func scheduleLiveViewTick(after delay: TimeInterval = 0) {
+        lvChainActive = true
         ptpQueue.asyncAfter(deadline: .now() + delay) { [weak self] in self?.liveViewTick() }
     }
 
     private func liveViewTick() {
-        guard liveViewOn.value, cameraRef.value != nil else { return }
+        guard liveViewOn.value, cameraRef.value != nil else { lvChainActive = false; return }
         _ = fetchLiveViewFrameSync()
         lvTicks += 1
         if lvTicks % 20 == 0 { _ = try? pollEventsSync() }   // keeps the camera's event queue drained
         if lvFailures > 40 {
             log("Live view: 40 failures in a row — stopping. See log above.")
             liveViewOn.value = false
+            lvChainActive = false
             return
         }
         scheduleLiveViewTick(after: 0.01)
@@ -1127,6 +1137,26 @@ extension CameraController {
         return d
     }
 
+    /// Brings live view back when frames have stopped arriving: the body drops it around a capture or a
+    /// mode change, and an <img> on the stream then sits on its last frame for good.
+    public func restartLiveView(completion: ((Error?) -> Void)? = nil) {
+        ptpQueue.async {
+            do {
+                try self.enableCanonModeSync()
+                _ = try? self.setEOSPropSync(EOSProp.evfOutputDevice, 1)
+                Thread.sleep(forTimeInterval: 0.2)
+                try self.startLiveViewSync()
+                self.scheduleLiveViewTickPublic()
+                self.log("Live view restarted: no frames were arriving")
+                DispatchQueue.main.async { completion?(nil) }
+            } catch {
+                self.lastError.value = error.localizedDescription
+                self.log("Live view could not be restarted: \(error.localizedDescription)")
+                DispatchQueue.main.async { completion?(error) }
+            }
+        }
+    }
+
     /// Opens remote mode and live view (idempotent).
     public func prepareForShooting(completion: @escaping (Error?) -> Void) {
         ptpQueue.async {
@@ -1134,8 +1164,8 @@ extension CameraController {
                 try self.enableCanonModeSync()
                 if !self.isLiveViewOn {
                     try self.startLiveViewSync()
-                    self.scheduleLiveViewTickPublic()
                 }
+                self.scheduleLiveViewTickPublic()
                 DispatchQueue.main.async { completion(nil) }
             } catch {
                 self.lastError.value = error.localizedDescription
@@ -1162,7 +1192,8 @@ extension CameraController {
             let t0 = Date()
             if let target { self.saveTarget = target }
             self.activeDestination = (dir, baseName)
-            defer { self.activeDestination = nil; self.lastActivity = Date() }
+            self.capturing.value = true
+            defer { self.activeDestination = nil; self.capturing.value = false; self.lastActivity = Date() }
             do {
                 _ = try self.captureCanonSync()
                 let result = CaptureResult(files: self.captureRecords, preview: self.capturePreview, seconds: Date().timeIntervalSince(t0))

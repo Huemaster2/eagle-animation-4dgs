@@ -171,6 +171,18 @@ function useProject(options) {
     });
   }, []);
 
+  // Action replace a frame's rotation record, keeping its picture (used when one camera height is re-shot)
+  const actionSetFrameSequence = useCallback(async (trackId, frameId, sequence = null) => {
+    const sceneId = Number(trackId);
+    setProjectData((oldData) => {
+      let d = structuredClone(oldData);
+      if (d.project.scenes[sceneId]) {
+        d.project.scenes[sceneId].pictures = d.project.scenes[sceneId].pictures.map((p) => (`${p.id}` === `${frameId}` ? { ...p, sequence } : p));
+      }
+      return d;
+    });
+  }, []);
+
   // Action rename
   const actionRename = useCallback(async (title) => {
     setProjectData((oldData) => {
@@ -533,6 +545,7 @@ function useProject(options) {
       deleteFrame: actionDeleteFrame,
       deleteFrames: actionDeleteFrames,
       setFrameNote: actionSetFrameNote,
+      setFrameSequence: actionSetFrameSequence,
       replaceFrame: actionReplaceFrame,
       rename: actionRename,
       moveFrame: actionMoveFrame,

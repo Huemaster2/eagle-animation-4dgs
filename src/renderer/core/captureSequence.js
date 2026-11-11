@@ -34,7 +34,7 @@ export const planSequence = ({ start, stepsPerRev, shotsPerPass, heights, curren
       end: Math.round(base + stepsPerRev),
     };
   });
-  return { passes, total: passes.length * n, endHeight: order[order.length - 1] };
+  return { passes, stepsPerRev, total: passes.length * n, endHeight: order[order.length - 1] };
 };
 
 export const nextSequenceNumber = (pictures = []) => pictures.reduce((max, p) => Math.max(max, Number(p?.sequence?.number) || 0), 0) + 1;
@@ -59,6 +59,9 @@ export const shotAngle = (steps, stepsPerRev) => {
   return Math.round((deg < 0 ? deg + 360 : deg) * 100) / 100;
 };
 
+// Thrown by a capture or a move the user chose to abandon so the whole height can be re-shot
+export const redoHeightError = () => Object.assign(new Error('Re-shooting this height'), { redo: true });
+
 // Runs a plan with injected hardware and prompts; records go into the caller's `shots`, so a stop or error keeps them
 export const runSequence = async ({
   plan,
@@ -68,6 +71,8 @@ export const runSequence = async ({
   capture,
   askHeight,
   gate = async () => {},
+  redoRequested = () => false,
+  redoDone = () => {},
   onProgress = () => {},
   isStopped = () => false,
   needsFirstHeight = false,
@@ -75,33 +80,68 @@ export const runSequence = async ({
 }) => {
   let done = 0;
   let lastHeight = null;
+  // Extra full turns made by re-shot heights; added to every target so the table only ever turns forwards
+  let turns = 0;
+  const at = (steps) => Math.round(steps + turns * plan.stepsPerRev);
   const report = (extra) => onProgress({ done, total: plan.total, ...extra });
 
-  for (let p = 0; p < plan.passes.length; p++) {
+  for (let p = 0; p < plan.passes.length;) {
     const pass = plan.passes[p];
-    if (p > 0 || needsFirstHeight) {
+    const kept = shots.length;
+    const fromDone = done;
+    if (p > 0 || turns > 0 || needsFirstHeight) {
       report({ phase: 'height', height: pass.height });
-      const go = await askHeight(pass.height, p === 0);
+      const go = await askHeight(pass.height, p === 0 && turns === 0);
       if (!go || isStopped()) return { shots, complete: false, endHeight: lastHeight };
     }
     lastHeight = pass.height;
+    let redo = false;
     for (const shot of pass.shots) {
       if (isStopped()) return { shots, complete: false, endHeight: lastHeight };
       // Holds here while the run is paused, so the table never moves under a hand
       await gate(shot);
       if (isStopped()) return { shots, complete: false, endHeight: lastHeight };
-      report({ phase: 'moving', height: pass.height, index: shot.index });
-      const arrived = await moveTo(shot.steps);
-      if (arrived !== shot.steps) throw new Error(`Turntable stopped at ${arrived} instead of ${shot.steps}`);
-      if (settleMs) await settle(settleMs);
-      if (isStopped()) return { shots, complete: false, endHeight: lastHeight };
-      report({ phase: 'shooting', height: pass.height, index: shot.index });
-      shots.push(await capture(shot));
-      done += 1;
+      if (redoRequested()) {
+        redo = true;
+        break;
+      }
+      try {
+        report({ phase: 'moving', height: pass.height, index: shot.index });
+        const arrived = await moveTo(at(shot.steps));
+        if (arrived !== at(shot.steps)) throw new Error(`Turntable stopped at ${arrived} instead of ${at(shot.steps)}`);
+        if (settleMs) await settle(settleMs);
+        if (isStopped()) return { shots, complete: false, endHeight: lastHeight };
+        report({ phase: 'shooting', height: pass.height, index: shot.index });
+        shots.push(await capture(shot));
+        done += 1;
+      } catch (err) {
+        // A move or a photo the user gave up on: the rest of this height is dropped and shot again
+        if (!err?.redo) throw err;
+        redo = true;
+        break;
+      }
     }
-    report({ phase: 'returning', height: pass.height });
-    const back = await moveTo(pass.end);
-    if (back !== pass.end) throw new Error(`Turntable stopped at ${back} instead of ${pass.end}`);
+    if (!redo) {
+      report({ phase: 'returning', height: pass.height });
+      const back = await moveTo(at(pass.end));
+      if (back !== at(pass.end)) throw new Error(`Turntable stopped at ${back} instead of ${at(pass.end)}`);
+    }
+    if (redo || redoRequested()) {
+      // This height starts over: its photos so far are dropped and the table carries on to the same
+      // angles one turn further round, so nothing ever has to run backwards
+      shots.splice(kept);
+      done = fromDone;
+      turns += 1;
+      redoDone();
+      report({ phase: 'returning', height: pass.height });
+      try {
+        await moveTo(at(pass.shots[0].steps));
+      } catch (err) {
+        if (!err?.redo) throw err;
+      }
+      continue;
+    }
+    p += 1;
   }
   report({ phase: 'done' });
   return { shots, complete: true, endHeight: lastHeight };

@@ -18,6 +18,8 @@ export const findArduinoPort = async () => {
   }
 };
 const REPLY_TIMEOUT = 2500;
+const MOVE_REPLY_TIMEOUT = 4000;
+const KEEPALIVE_MS = 4000; // an idle USB-serial link on macOS can go quiet: a slow PING keeps it awake
 const JOG_KEEPALIVE_MS = 120; // firmware stops on its own if JOG is not repeated within 250 ms
 const LOG_LINES = 200;
 
@@ -31,6 +33,8 @@ class Turntable {
     this.queue = Promise.resolve();
     this.moveWaiters = [];
     this.jogTimer = null;
+    this.keepAliveTimer = null;
+    this.resetting = false;
     this.listeners = new Set();
     this.arrivalListeners = new Set();
     this.lockKey = null;
@@ -115,6 +119,7 @@ class Turntable {
       }
       await this.command('ENABLE 1');
       this.set({ enabled: true });
+      this.startKeepAlive();
     } catch (err) {
       this.set({ error: err.message });
       await this.disconnect().catch(() => null);
@@ -126,6 +131,7 @@ class Turntable {
 
   async disconnect() {
     this.stopJogTimer();
+    this.stopKeepAlive();
     const port = this.port;
     this.port = null;
     try {
@@ -200,6 +206,8 @@ class Turntable {
     }
     if (msg.type === 'READY') {
       this.log(msg.line);
+      // Outside the opening handshake, a banner means the board rebooted on its own
+      if (this.state.connected) this.recoverFromReset();
       this.waiterCheck(msg);
       return;
     }
@@ -258,17 +266,17 @@ class Turntable {
   }
 
   // Commands go out one at a time; each resolves with its reply line
-  command(text) {
+  command(text, { timeout = REPLY_TIMEOUT, quiet = false } = {}) {
     const run = () =>
       new Promise((resolve, reject) => {
         const name = text.split(' ')[0];
         const timer = setTimeout(() => {
           if (this.pending?.timer === timer) this.pending = null;
-          this.log(`No answer to ${name}`);
+          if (!quiet) this.log(`No answer to ${name}`);
           reject(new Error(`Turntable did not answer ${name}`));
-        }, REPLY_TIMEOUT);
+        }, timeout);
         this.pending = { name, resolve, reject, timer };
-        if (name !== 'JOG') this.log(`> ${text}`);
+        if (name !== 'JOG' && !quiet) this.log(`> ${text}`);
         this.write(text).catch((err) => {
           clearTimeout(timer);
           this.pending = null;
@@ -312,6 +320,8 @@ class Turntable {
     if (this.lockKey && key !== this.lockKey) throw new Error('The turntable is busy with a rotation capture');
   }
 
+  // A board left idle between camera heights sometimes swallows one command, which used to end a whole
+  // capture; the move is re-sent after waking the link, and only a third silence is reported as a failure
   async moveTo(target, { key } = {}) {
     if (!this.state.connected) throw new Error('Turntable not connected');
     this.checkLock(key);
@@ -319,16 +329,76 @@ class Turntable {
     const steps = Math.round(target);
     const distance = Math.abs(steps - (this.state.position ?? steps)) + (this.state.backlash || 0) * 2;
     this.set({ moving: true, target: steps });
-    const arrival = this.waitForArrival(8000 + distance * 3);
-    try {
-      await this.command(`MOVETO ${steps}`);
-      this.log(`Moving to ${steps}`);
-    } catch (err) {
-      this.failPending(err);
-      this.set({ moving: false });
-      throw err;
+    for (let attempt = 0; ; attempt++) {
+      const arrival = this.waitForArrival(8000 + distance * 3);
+      arrival.catch(() => null);
+      try {
+        await this.command(`MOVETO ${steps}`, { timeout: MOVE_REPLY_TIMEOUT });
+        this.log(`Moving to ${steps}`);
+        return await arrival;
+      } catch (err) {
+        // BUSY on a re-send means the first MOVETO did land: the table is already on its way
+        if (attempt > 0 && /still moving/.test(err.message)) return arrival;
+        const silent = /did not answer|did not report arrival/.test(err.message);
+        if (!silent || attempt >= 2) {
+          this.failPending(err);
+          this.set({ moving: false });
+          throw err;
+        }
+        this.log(`Trying MOVETO ${steps} again`);
+        await this.revive().catch(() => null);
+        if (!this.state.connected) {
+          this.set({ moving: false });
+          throw err;
+        }
+        this.set({ moving: true, target: steps });
+      }
     }
-    return arrival;
+  }
+
+  // Wakes a board that stopped answering; re-opens the port only if a PING gets nowhere either
+  async revive() {
+    if (await this.command('PING', { timeout: 1500 }).catch(() => null)) return;
+    const position = this.state.position;
+    this.log('Re-opening the serial port');
+    await this.disconnect().catch(() => null);
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    await this.connect({ restorePosition: position });
+  }
+
+  // The board prints its banner when it reboots (a knocked cable, a power dip): it has forgotten its
+  // position and its enable state, so both are pushed back before anything else is sent
+  async recoverFromReset() {
+    if (this.resetting) return;
+    this.resetting = true;
+    const position = Math.round(this.state.position ?? 0);
+    this.failPending(new Error('The turntable board restarted'));
+    this.set({ moving: false, jogging: 0, enabled: false });
+    this.stopJogTimer();
+    try {
+      // CH340 boards reboot a second time about two seconds later; a command sent in between is lost
+      await new Promise((resolve) => setTimeout(resolve, 2500));
+      await this.command(`SETPOS ${position}`);
+      await this.command('ENABLE 1');
+      this.set({ position, target: position, enabled: true });
+      this.log(`Board restarted: position ${position} restored`);
+    } catch (err) {
+      this.log(`Board restarted: could not restore its position (${err.message})`);
+    }
+    this.resetting = false;
+  }
+
+  startKeepAlive() {
+    this.stopKeepAlive();
+    this.keepAliveTimer = setInterval(() => {
+      if (!this.state.connected || this.state.moving || this.pending || this.lineWaiter || this.resetting) return;
+      this.command('PING', { quiet: true }).catch(() => null);
+    }, KEEPALIVE_MS);
+  }
+
+  stopKeepAlive() {
+    if (this.keepAliveTimer) clearInterval(this.keepAliveTimer);
+    this.keepAliveTimer = null;
   }
 
   async moveBy(delta) {

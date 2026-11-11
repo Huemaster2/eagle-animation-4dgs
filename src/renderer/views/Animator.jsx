@@ -32,7 +32,7 @@ import ViewTimelines from '@components/ViewTimelines';
 import Window from '@components/Window';
 import XSheet from '@components/XSheet';
 import { DEFAULT_FPS, MAX_FRAME_DUPLICATION } from '@config-web';
-import { angleGap, downscaleFrame, frameFolderName, nearestShot, nextSequenceNumber, planSequence, runSequence, shotAngle, shotBaseName } from '@core/captureSequence';
+import { angleGap, downscaleFrame, frameFolderName, nearestShot, nextSequenceNumber, planSequence, redoHeightError, runSequence, shotAngle, shotBaseName } from '@core/captureSequence';
 import { selectionClick } from '@core/frameSelection';
 import { normalizeOnionSkin } from '@core/onionSkin';
 import { referenceMatchesPerspective } from '@core/perspectives';
@@ -49,7 +49,7 @@ import {
   stopmoGrabLiveFrame,
 } from '@core/stopmoCamera';
 import { turntable } from '@core/turntable';
-import { angleOf, nearestEquivalent, PERSPECTIVES } from '@core/turntableMath';
+import { angleOf, degreesToSteps, nearestEquivalent, PERSPECTIVES } from '@core/turntableMath';
 import useAppCapabilities from '@hooks/useAppCapabilities';
 import useCamera from '@hooks/useCamera';
 import useDiscordActivity from '@hooks/useDiscordActivity';
@@ -487,55 +487,98 @@ const Animator = ({ t }) => {
 
   const rotationEnabled = turntableState.connected && turntableProfile.rotationCapture;
 
-  // Shutter with rotation capture on: a full turn of photos at every camera height, saved as one timeline frame
-  const runRotationCapture = async (replaceId = null) => {
+  // Shutter with rotation capture on: a full turn of photos at every camera height, saved as one timeline frame.
+  // `reshoot` ({ frame, height }) re-shoots one height of a frame already taken, leaving its other heights alone.
+  const runRotationCapture = async (replaceId = null, reshoot = null) => {
     const profile = turntableProfile;
     const rev = turntable.state.stepsPerRev;
-    const heights = profile.heights;
-    const heroHeight = Math.min(profile.heroHeight, heights);
-    const startView = PERSPECTIVES.includes(profile.rotationStart) && profile.perspectives[profile.rotationStart] !== null ? profile.rotationStart : null;
+    const old = reshoot?.frame?.sequence || null;
+    const heights = old ? old.heights : profile.heights;
+    const heroHeight = old ? old.heroHeight : Math.min(profile.heroHeight, heights);
+    const shotsPerPass = old ? old.shotsPerPass : profile.shotsPerPass;
+    const startView = old ? old.startView : PERSPECTIVES.includes(profile.rotationStart) && profile.perspectives[profile.rotationStart] !== null ? profile.rotationStart : null;
     const current = turntable.state.position ?? 0;
-    const anchor = startView ? profile.perspectives[startView] : current;
+    // A re-shot height repeats its own first angle; a new frame starts from the chosen view (or where the table stands)
+    const firstShot = old ? (old.shots || []).filter((sh) => sh.height === reshoot.height).sort((a, b) => a.index - b.index)[0] : null;
+    const anchor = firstShot ? degreesToSteps(firstShot.angle, rev) : startView ? profile.perspectives[startView] : current;
     // Exact (unrounded) start on the revolution nearest the table, so rounding never drifts frame to frame
     const start = anchor + Math.round((current - anchor) / rev) * rev;
-    const plan = planSequence({ start, stepsPerRev: rev, shotsPerPass: profile.shotsPerPass, heights, currentHeight: cameraHeightRef.current, serpentine: profile.alternateHeights });
-    const number = nextSequenceNumber(pictures);
-    const folder = frameFolderName(number);
-    const saveTarget = STOPMO_CAMERA_AVAILABLE ? getStopMoCaptureOptions().saveTarget : 'mac';
+    const plan = reshoot
+      ? planSequence({ start, stepsPerRev: rev, shotsPerPass, heights: 1 })
+      : planSequence({ start, stepsPerRev: rev, shotsPerPass, heights, currentHeight: cameraHeightRef.current, serpentine: profile.alternateHeights });
+    // The single pass of a re-shoot keeps the height number it replaces, so the photos keep their names
+    if (reshoot) {
+      plan.passes.forEach((pass) => {
+        pass.height = reshoot.height;
+        pass.shots.forEach((sh) => {
+          sh.height = reshoot.height;
+        });
+      });
+    }
+    const number = old ? old.number : nextSequenceNumber(pictures);
+    const folder = old ? old.folder : frameFolderName(number);
+    const saveTarget = old ? old.saveTarget : STOPMO_CAMERA_AVAILABLE ? getStopMoCaptureOptions().saveTarget : 'mac';
     const shots = [];
     let heroFrame = null;
     let firstFrame = null;
     let failure = null;
-    rotationControl.current = { stop: false, paused: false, resume: null, continueHeight: null, retryShot: null };
-    const show = (patch) => setRotationRun((r) => ({ ...(r || {}), heights, shotsPerPass: profile.shotsPerPass, folder: saveTarget === 'card' ? null : folder, ...patch }));
+    rotationControl.current = { stop: false, paused: false, resume: null, continueHeight: null, retryShot: null, retryMove: null, redo: false };
+    const show = (patch) => setRotationRun((r) => ({ ...(r || {}), heights, shotsPerPass, reshooting: reshoot ? reshoot.height : null, folder: saveTarget === 'card' ? null : folder, ...patch }));
     show({ phase: 'starting', done: 0, total: plan.total });
 
     const key = turntable.lock();
+    // A move that goes unanswered holds the run instead of ending it: the table has not turned, so it can be re-sent
+    const moveWithRetry = async (steps) => {
+      for (;;) {
+        if (turntable.state.position === steps) return steps;
+        try {
+          return await turntable.moveTo(steps, { key });
+        } catch (err) {
+          if (rotationControl.current.stop) throw err;
+          if (settings.SOUNDS) playSound(soundError);
+          const again = await new Promise((resolve) => {
+            rotationControl.current.retryMove = resolve;
+            show({ phase: 'moveFailed', error: err?.message || `${err}` });
+          });
+          rotationControl.current.retryMove = null;
+          if (again === 'redo') throw redoHeightError();
+          if (!again) throw err;
+          show({ phase: 'moving', error: null });
+        }
+      }
+    };
     let result = null;
     try {
       // Turn to the start view first; the photos then follow the plan
-      const first = Math.round(start);
-      if (turntable.state.position !== first) await turntable.moveTo(first, { key });
+      await moveWithRetry(Math.round(start));
       result = await runSequence({
         plan,
         shots,
         settleMs: profile.settleMs,
-        needsFirstHeight: cameraHeightRef.current !== plan.passes[0].height,
-        moveTo: (steps) => (turntable.state.position === steps ? Promise.resolve(steps) : turntable.moveTo(steps, { key })),
+        needsFirstHeight: !!reshoot || cameraHeightRef.current !== plan.passes[0].height,
+        moveTo: moveWithRetry,
         settle: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
         isStopped: () => rotationControl.current.stop,
         onProgress: (progress) => {
           if (progress.phase === 'moving') cameraHeightRef.current = progress.height;
           show(progress);
         },
-        askHeight: (height, isFirst) =>
-          new Promise((resolve) => {
+        askHeight: (height, isFirst) => {
+          // The camera is about to be handled: live view has to be running to frame and focus by
+          refreshLiveView();
+          return new Promise((resolve) => {
             rotationControl.current.continueHeight = resolve;
-            show({ phase: 'height', height, isFirst });
-          }),
+            show({ phase: 'height', height, isFirst: isFirst && !reshoot });
+          });
+        },
+        redoRequested: () => rotationControl.current.redo,
+        redoDone: () => {
+          rotationControl.current.redo = false;
+        },
         // Pause holds the turn between photos: the table keeps its angle until Resume
         gate: async (shot) => {
           if (!rotationControl.current.paused || rotationControl.current.stop) return;
+          refreshLiveView();
           await new Promise((resolve) => {
             rotationControl.current.resume = resolve;
             show({ phase: 'paused', height: shot.height, index: shot.index, pausing: false });
@@ -558,6 +601,7 @@ const Animator = ({ t }) => {
                 show({ phase: 'failed', height: shot.height, index: shot.index, error: err?.message || `${err}` });
               });
               rotationControl.current.retryShot = null;
+              if (retry === 'redo') throw redoHeightError();
               if (!retry) throw err;
               show({ phase: 'shooting', height: shot.height, index: shot.index, error: null });
             } finally {
@@ -582,20 +626,27 @@ const Animator = ({ t }) => {
 
     if (shots.length) {
       show({ phase: 'saving' });
+      // A re-shoot keeps the frame's other heights and swaps in the new photos of this one
+      const merged = reshoot ? [...(old.shots || []).filter((sh) => sh.height !== reshoot.height), ...shots] : shots;
       const sequence = {
         number,
         folder,
         saveTarget,
-        shotsPerPass: profile.shotsPerPass,
+        shotsPerPass,
         heights,
         heroHeight,
         startView,
-        complete: !!result?.complete,
-        shots,
+        complete: reshoot ? !!old.complete && !!result?.complete : !!result?.complete,
+        shots: merged,
       };
       try {
         const extra = { ...(startView ? { perspective: startView } : {}), sequence };
-        if (replaceId) {
+        if (reshoot && reshoot.height !== heroHeight) {
+          await projectActions.setFrameSequence(track, reshoot.frame.id, sequence);
+        } else if (reshoot) {
+          // The hero height is the photo the timeline shows, so that one is replaced as well
+          await projectActions.replaceFrame(track, reshoot.frame.id, heroFrame || firstFrame, extra);
+        } else if (replaceId) {
           await projectActions.replaceFrame(track, replaceId, heroFrame || firstFrame, extra);
           setReplaceQueue((q) => q.filter((id) => id !== replaceId));
         } else {
@@ -619,6 +670,16 @@ const Animator = ({ t }) => {
 
   const continueRotation = () => rotationControl.current.continueHeight?.(true);
   const retryRotationShot = () => rotationControl.current.retryShot?.(true);
+  const retryRotationMove = () => rotationControl.current.retryMove?.(true);
+  // Starts this height over: its photos so far are dropped and the table carries on forwards to the same angles
+  const redoRotationHeight = () => {
+    rotationControl.current.redo = true;
+    rotationControl.current.paused = false;
+    setRotationRun((r) => (r ? { ...r, pausing: false, error: null } : r));
+    rotationControl.current.retryShot?.('redo');
+    rotationControl.current.retryMove?.('redo');
+    rotationControl.current.resume?.();
+  };
   const pauseRotation = () => {
     rotationControl.current.paused = true;
     setRotationRun((r) => (r ? { ...r, pausing: true } : r));
@@ -633,6 +694,7 @@ const Animator = ({ t }) => {
     rotationControl.current.paused = false;
     if (rotationControl.current.continueHeight) rotationControl.current.continueHeight(false);
     if (rotationControl.current.retryShot) rotationControl.current.retryShot(false);
+    if (rotationControl.current.retryMove) rotationControl.current.retryMove(false);
     if (rotationControl.current.resume) rotationControl.current.resume();
     setRotationRun((r) => (r ? { ...r, stopping: true } : r));
   };
@@ -1026,6 +1088,12 @@ const Animator = ({ t }) => {
     if (currentCamera && playerSetStream.current) await currentCamera.connect({ setStream: playerSetStream.current });
   };
 
+  // Re-points the live-view stream and asks the camera to restart it: a stream left frozen on one frame
+  // (the camera drops live view around a capture) comes back without touching the shutter
+  const refreshLiveView = () => {
+    retakeCameraControl().catch(() => null);
+  };
+
   const handleCapabilityChange = async (id, value) => {
     cameraActions.setCapability(id, value);
   };
@@ -1369,6 +1437,8 @@ const Animator = ({ t }) => {
                 setShotPreview(filename ? { frameId: expandedFrame.id, filename } : null);
                 if (filename) handleSelectFrame(expandedFrame.id);
               }}
+              canReshoot={turntableState.connected && !rotationRun}
+              onReshootHeight={(height) => runRotationCapture(null, { frame: expandedFrame, height })}
               onClose={() => {
                 setExpandedFrameId(null);
                 setShotPreview(null);
@@ -1483,6 +1553,8 @@ const Animator = ({ t }) => {
         onPause={pauseRotation}
         onResume={resumeRotation}
         onRetry={retryRotationShot}
+        onRetryMove={retryRotationMove}
+        onRedoHeight={redoRotationHeight}
         onStop={stopRotation}
       />
       {xsheetLayout.OPEN && (

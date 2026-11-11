@@ -60,6 +60,8 @@ server.streamHandler = { req, conn in
     let key = ObjectIdentifier(s)
     streamsLock.lock(); streams[key] = s; streamsLock.unlock()
     s.onClose = { streamsLock.lock(); streams[key] = nil; streamsLock.unlock() }
+    // A viewer is watching but frames have stopped: restart live view (never the shutter)
+    s.onStall = { if cam.isReady && !cam.isCapturing { cam.restartLiveView() } }
     DispatchQueue.main.async {
         if cam.isReady && !cam.isLiveViewOn { cam.prepareForShooting { _ in } }
     }

@@ -45,7 +45,11 @@ final class MJPEGStream {
     private var lastSent: UInt64 = 0
     private var timer: DispatchSourceTimer?
     private let frame: () -> (UInt64, Data?)
+    private var lastNewFrame = Date()
+    private var lastStallReport = Date.distantPast
     var onClose: (() -> Void)?
+    /// Called when no new frame has arrived for a while, so live view can be brought back.
+    var onStall: (() -> Void)?
 
     init(_ c: NWConnection, frame: @escaping () -> (UInt64, Data?)) {
         connection = c
@@ -64,8 +68,17 @@ final class MJPEGStream {
 
     private func tick() {
         let (n, jpeg) = frame()
-        guard let jpeg, n != lastSent else { return }
+        guard let jpeg, n != lastSent else {
+            // The picture a viewer sees is frozen: ask for live view back, but not more than once every few seconds
+            let now = Date()
+            if now.timeIntervalSince(lastNewFrame) > 2.5, now.timeIntervalSince(lastStallReport) > 4 {
+                lastStallReport = now
+                onStall?()
+            }
+            return
+        }
         lastSent = n
+        lastNewFrame = Date()
         var part = Data("--stopmoframe\r\nContent-Type: image/jpeg\r\nContent-Length: \(jpeg.count)\r\n\r\n".utf8)
         part.append(jpeg)
         part.append(Data("\r\n".utf8))

@@ -8,7 +8,7 @@ import * as style from './style.module.css';
 const fileTitle = (shot) => (shot.files || []).map((f) => (f.onCard ? `${f.path} (on card)` : f.path)).join('\n');
 
 // Every photo of one frame's rotation, one row per camera height; clicking a photo shows it full size
-const SequenceStrip = ({ t, frame = null, frameNumber = 0, selected = null, onPreview = () => {}, onClose = () => {} }) => {
+const SequenceStrip = ({ t, frame = null, frameNumber = 0, selected = null, canReshoot = false, onPreview = () => {}, onReshootHeight = null, onClose = () => {} }) => {
   const sequence = frame?.sequence;
   if (!sequence?.shots?.length) return null;
   const heights = [...new Set(sequence.shots.map((s) => s.height))].sort((a, b) => a - b);
@@ -42,6 +42,17 @@ const SequenceStrip = ({ t, frame = null, frameNumber = 0, selected = null, onPr
               H{h}
               {h === sequence.heroHeight ? '★' : ''}
             </span>
+            {onReshootHeight && (
+              <button
+                type="button"
+                className={style.reshoot}
+                disabled={!canReshoot}
+                title={canReshoot ? t('Shoot height {{h}} again: the same angles, replacing these photos', { h }) : t('Connect the turntable to shoot a height again')}
+                onClick={() => onReshootHeight(h)}
+              >
+                {t('Re-shoot')}
+              </button>
+            )}
             {sequence.shots
               .filter((s) => s.height === h)
               .sort((a, b) => a.index - b.index)

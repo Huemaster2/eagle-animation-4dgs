@@ -112,3 +112,20 @@
   padding: 0 2px;
   position: absolute;
 }
+
+.reshoot {
+  background: var(--pf-button-face);
+  border: 1px solid var(--pf-line);
+  box-shadow: var(--pf-bevel);
+  color: var(--color-white);
+  cursor: pointer;
+  flex-shrink: 0;
+  font-family: inherit;
+  font-size: var(--font-size-7);
+  padding: 2px 6px;
+}
+
+.reshoot:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
