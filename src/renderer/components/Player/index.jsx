@@ -38,7 +38,9 @@ class Player extends Component {
       height: 0,
       ready: false,
       frameIndex: false, // Frame index contains the position in the animation (including duplicated frames)
+      tail: null, // How far playback has run into the reference past the last shot frame
     };
+    this.tail = null;
 
     this.resize = () => {
       this.initCanvas();
@@ -82,9 +84,28 @@ class Player extends Component {
 
     this.play = (playFromBegining = false) => {
       const startOnLiveView = this.state.frameIndex === false;
+      this.tail = null;
 
       const exec = (force = false) => {
         const filteredFrames = this.frames;
+        // Positions the reference has beyond the last shot frame: playback runs on through them
+        const tailLength = Math.max(0, Number(this.props.referenceTail) || 0);
+
+        if (!force && this.tail !== null) {
+          if (this.tail + 1 < tailLength) {
+            this.tail += 1;
+            this.setState({ tail: this.tail });
+            return true;
+          }
+          this.tail = null;
+          this.setState({ tail: null });
+          if (!this.props.loopStatus) return false;
+          force = true;
+        } else if (!force && this.state.frameIndex === false && filteredFrames.length && tailLength > 1) {
+          this.tail = 1;
+          this.setState({ tail: 1 });
+          return true;
+        }
 
         let newFrameIndex = false;
 
@@ -155,6 +176,8 @@ class Player extends Component {
       if (this.clock) {
         clearInterval(this.clock);
       }
+      this.tail = null;
+      this.setState({ tail: null });
       const frame = this.getLastVisibleFrame(); // Draw last non-hidden frame for onion feature
       this.drawFrame(frame.link || false);
       this.setState({ frameIndex: false });
@@ -301,11 +324,11 @@ class Player extends Component {
         })
       : [];
     // Reference sequences follow the animation position (holds counted, hidden frames skipped), during playback too
-    const showReferences = frameIndex !== false || isCameraReady || Number.isFinite(this.props.referencePosition);
+    const showReferences = frameIndex !== false || isCameraReady || this.state.tail !== null || Number.isFinite(this.props.referencePosition);
     // Scrubbing or playing the reference clip runs it past the end of what has been shot,
     // whatever is selected; playing the timeline hands it back so playback still matches the frames
     const timelinePosition = getAnimationPosition(this.frames, frameIndex);
-    const animationPosition = !isPlaying && Number.isFinite(this.props.referencePosition) ? this.props.referencePosition : timelinePosition;
+    const animationPosition = isPlaying ? timelinePosition + (this.state.tail || 0) : Number.isFinite(this.props.referencePosition) ? this.props.referencePosition : timelinePosition;
     const references = (this.props.references || []).map(normalizeReference).filter((r) => r.enabled && r.frames.length && referenceMatchesPerspective(r, perspective));
     const legacyGhostOpacity = onion.ENABLED && !blendMode ? 0 : hasOnionFrame ? 1 - onionValue : 0;
 
@@ -412,6 +435,7 @@ Player.propTypes = {
   references: PropTypes.array,
   alignReference: PropTypes.object,
   referencePosition: PropTypes.number,
+  referenceTail: PropTypes.number,
   onAlignReference: PropTypes.func,
   onAlignReferenceCommit: PropTypes.func,
   onAlignReferenceDone: PropTypes.func,

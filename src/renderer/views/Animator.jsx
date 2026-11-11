@@ -1268,6 +1268,7 @@ const Animator = ({ t }) => {
           references={referencesHidden ? [] : playerReferences}
           alignReference={alignReference}
           referencePosition={referenceSeek}
+          referenceTail={referenceCells?.extra?.length || 0}
           onAlignReference={(patch) => setAlignDraft((d) => ({ ...(d || { x: alignReference?.x ?? 0, y: alignReference?.y ?? 0, scale: alignReference?.scale ?? 1 }), ...patch }))}
           onAlignReferenceCommit={() => {
             if (alignDraft && alignReferenceId) projectActions.updateReference(track, alignReferenceId, alignDraft);
