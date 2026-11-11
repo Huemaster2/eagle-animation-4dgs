@@ -73,6 +73,8 @@ export const runSequence = async ({
   gate = async () => {},
   redoRequested = () => false,
   redoDone = () => {},
+  onPassStart = async () => {},
+  onPassEnd = async () => {},
   onProgress = () => {},
   isStopped = () => false,
   needsFirstHeight = false,
@@ -111,6 +113,11 @@ export const runSequence = async ({
         if (arrived !== at(shot.steps)) throw new Error(`Turntable stopped at ${arrived} instead of ${at(shot.steps)}`);
         if (settleMs) await settle(settleMs);
         if (isStopped()) return { shots, complete: false, endHeight: lastHeight };
+        // The table stands at the first angle of this height: the caller may check and note where it really is
+        if (shot === pass.shots[0]) {
+          await onPassStart(pass, at(shot.steps));
+          if (isStopped()) return { shots, complete: false, endHeight: lastHeight };
+        }
         report({ phase: 'shooting', height: pass.height, index: shot.index });
         shots.push(await capture(shot));
         done += 1;
@@ -125,6 +132,8 @@ export const runSequence = async ({
       report({ phase: 'returning', height: pass.height });
       const back = await moveTo(at(pass.end));
       if (back !== at(pass.end)) throw new Error(`Turntable stopped at ${back} instead of ${at(pass.end)}`);
+      // A full turn later the table should stand exactly where the first photo was taken
+      await onPassEnd(pass, at(pass.end));
     }
     if (redo || redoRequested()) {
       // This height starts over: its photos so far are dropped and the table carries on to the same

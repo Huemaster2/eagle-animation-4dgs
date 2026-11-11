@@ -1,3 +1,4 @@
+import { observeTags, turnToView } from '@core/tagVision';
 import { turntable } from '@core/turntable';
 import { DEFAULT_TURNTABLE_PROFILE, getActiveProfile, getProfiles, normalizeProfile } from '@core/turntableProfiles';
 import useSettings, { getCurrentSettings } from '@hooks/useSettings';
@@ -57,7 +58,33 @@ function useTurntable() {
     await turntable.setSpeed(p.runUs, p.startUs, p.ramp).catch(() => null);
   }, [settings]);
 
-  return { state, profile, profiles, actions: { connect, updateProfile, selectProfile, addProfile, deleteProfile } };
+  // Sets a view where the table stands. With tag alignment on, the tags in the live view are stored with it,
+  // and rotation references taken for the old position of that view are dropped.
+  const setView = useCallback(
+    async (view) => {
+      const p = getActiveProfile(getCurrentSettings() || settings);
+      const position = turntable.state.position;
+      const seen = p.tags.enabled ? await observeTags({ family: p.tags.family }).catch(() => null) : null;
+      const tagRefs = { ...p.tagRefs };
+      if (seen?.tags?.length) tagRefs[view] = seen;
+      else delete tagRefs[view];
+      const rotationRefs = Object.fromEntries(Object.entries(p.rotationRefs).filter(([k]) => !k.startsWith(`${view}:`)));
+      await updateProfile({ perspectives: { ...p.perspectives, [view]: position }, tagRefs, rotationRefs });
+      if (p.tags.enabled) turntable.log(`View ${view} set at ${position} with ${seen?.tags?.length || 0} tags${seen?.tags?.length ? ` (ids ${seen.tags.map((tag) => tag.id).join(', ')})` : ''}`);
+      return { position, tags: p.tags.enabled ? seen?.tags?.length || 0 : null };
+    },
+    [settings, updateProfile]
+  );
+
+  const goToView = useCallback(
+    (view) => {
+      const p = getActiveProfile(getCurrentSettings() || settings);
+      return turnToView({ profile: p, view });
+    },
+    [settings]
+  );
+
+  return { state, profile, profiles, actions: { connect, updateProfile, selectProfile, addProfile, deleteProfile, setView, goToView } };
 }
 
 export default useTurntable;

@@ -26,6 +26,7 @@ import SequenceStrip from '@components/SequenceStrip';
 import Timeline from '@components/Timeline';
 import ToolsWindow from '@components/ToolsWindow';
 import Tour from '@components/Tour';
+import { tagFailure } from '@components/TurntableQuickControls';
 import TurntableWindow from '@components/TurntableWindow';
 import ViewsPanel from '@components/ViewsPanel';
 import ViewTimelines from '@components/ViewTimelines';
@@ -48,6 +49,7 @@ import {
   STOPMO_CAMERA_AVAILABLE,
   stopmoGrabLiveFrame,
 } from '@core/stopmoCamera';
+import { alignTable, observeTags, turnToView } from '@core/tagVision';
 import { turntable } from '@core/turntable';
 import { angleOf, degreesToSteps, nearestEquivalent, PERSPECTIVES } from '@core/turntableMath';
 import useAppCapabilities from '@hooks/useAppCapabilities';
@@ -522,6 +524,12 @@ const Animator = ({ t }) => {
     let heroFrame = null;
     let firstFrame = null;
     let failure = null;
+    const tagsOn = STOPMO_CAMERA_AVAILABLE && !!profile.tags?.enabled;
+    const rotationRefs = { ...profile.rotationRefs };
+    const passRefs = {};
+    const closures = [];
+    let shotStarted = Date.now();
+    const shotTimes = [];
     rotationControl.current = { stop: false, paused: false, resume: null, continueHeight: null, retryShot: null, retryMove: null, redo: false };
     const show = (patch) => setRotationRun((r) => ({ ...(r || {}), heights, shotsPerPass, reshooting: reshoot ? reshoot.height : null, folder: saveTarget === 'card' ? null : folder, ...patch }));
     show({ phase: 'starting', done: 0, total: plan.total });
@@ -560,8 +568,40 @@ const Animator = ({ t }) => {
         settle: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
         isStopped: () => rotationControl.current.stop,
         onProgress: (progress) => {
-          if (progress.phase === 'moving') cameraHeightRef.current = progress.height;
+          if (progress.phase === 'moving') {
+            cameraHeightRef.current = progress.height;
+            shotStarted = Date.now();
+          }
           show(progress);
+        },
+        // With tag alignment on, every height starts where the rotations before it started, and its full turn
+        // is closed by eye: the tags are brought back to where they were at the first photo
+        onPassStart: async (pass, steps) => {
+          if (!tagsOn) return;
+          show({ phase: 'aligning', height: pass.height });
+          const refKey = startView ? `${startView}:${pass.height}` : null;
+          const stored = refKey ? rotationRefs[refKey] : null;
+          if (stored?.tags?.length)
+            await alignTable({ reference: stored, family: profile.tags.family, steps, key, isStopped: () => rotationControl.current.stop, label: `Height ${pass.height} start` });
+          const seen = await observeTags({ family: profile.tags.family }).catch(() => null);
+          passRefs[pass.height] = seen?.tags?.length ? seen : null;
+          if (!passRefs[pass.height]) turntable.log(`Height ${pass.height}: no AprilTag in the live view, so this turn is not checked`);
+          if (passRefs[pass.height] && refKey && !stored) {
+            rotationRefs[refKey] = seen;
+            updateTurntableProfile.current({ rotationRefs: { ...rotationRefs } });
+          }
+        },
+        onPassEnd: async (pass, steps) => {
+          if (!tagsOn) return;
+          const reference = passRefs[pass.height];
+          if (!reference) {
+            closures.push({ height: pass.height, missing: true });
+            return;
+          }
+          show({ phase: 'closing', height: pass.height });
+          refreshLiveView();
+          const result = await alignTable({ reference, family: profile.tags.family, steps, key, isStopped: () => rotationControl.current.stop, label: `Height ${pass.height} end` });
+          closures.push({ height: pass.height, ...result });
         },
         askHeight: (height, isFirst) => {
           // The camera is about to be handled: live view has to be running to frame and focus by
@@ -613,6 +653,9 @@ const Animator = ({ t }) => {
           if (!firstFrame) firstFrame = frame;
           if (shot.height === heroHeight && shot.index === 0) heroFrame = frame;
           const saved = await projectActions.savePicture(track, await downscaleFrame(frame));
+          // Turn, pause and photo together: what one photo of this run really costs
+          shotTimes.push(Date.now() - shotStarted);
+          show({ perPhoto: shotTimes.reduce((a, b) => a + b, 0) / shotTimes.length });
           return { height: shot.height, index: shot.index, angle: shotAngle(shot.steps, rev), offset: shot.offset, filename: saved.filename, link: saved.link, files };
         },
       });
@@ -663,6 +706,16 @@ const Animator = ({ t }) => {
       setNotice({ tone: 'error', message: t('Rotation capture stopped after {{n}} of {{total}} photos: {{error}}', { n: shots.length, total: plan.total, error: failure?.message || failure }) });
     } else if (!result?.complete) {
       setNotice({ tone: 'warning', message: t('Rotation capture stopped: {{n}} of {{total}} photos kept as frame {{folder}}.', { n: shots.length, total: plan.total, folder }) });
+    } else if (closures.length) {
+      // What the tags found at the end of each turn: how far the motor had left the table from a full circle
+      const degrees = (n) => `${Math.abs((n * 360) / rev).toFixed(1)}°`;
+      const lines = closures.map((c) => {
+        if (c.missing) return t('height {{h}}: no tag in view, not checked', { h: c.height });
+        if (!c.converged) return t('height {{h}}: tags could not be matched ({{why}})', { h: c.height, why: tagFailure(t, c) });
+        if (c.moved === 0) return t('height {{h}}: back on the tags', { h: c.height });
+        return t('height {{h}}: the turn ended {{deg}} {{side}} and was corrected', { h: c.height, deg: degrees(c.moved), side: c.moved > 0 ? t('short') : t('past') });
+      });
+      setNotice({ tone: closures.every((c) => c.converged) ? 'info' : 'warning', message: `${t('Tag check after each full turn')} — ${lines.join('; ')}.` });
     } else if (reshoot) {
       // The originals of the replaced photos stay on disk: nothing captured is ever written over
       setNotice({
@@ -837,14 +890,23 @@ const Animator = ({ t }) => {
     const steps = nearestEquivalent(target, turntable.state.position ?? target, turntable.state.stepsPerRev);
     setPerspectiveStatus(t('Turning to {{view}}…', { view: t(view) }));
     try {
-      const position = await turntable.moveTo(steps);
-      if (position !== steps) {
+      // With tag alignment on, the motor only gets the table close: the tags in the live view finish the job
+      const turned = await turnToView({ profile: turntableProfile, view });
+      if (turned.arrived !== steps) {
         setPerspectiveStatus(t('Stopped before reaching {{view}}', { view: t(view) }));
         return;
       }
       setPerspectiveStatus(t('At {{view}} — settling…', { view: t(view) }));
       await new Promise((resolve) => setTimeout(resolve, turntableProfile.settleMs));
-      setPerspectiveStatus(t('At {{view}}', { view: t(view) }));
+      if (turned.tags?.ok) {
+        setPerspectiveStatus(t('At {{view}} — matched to the tags within {{px}} px ({{steps}} steps corrected)', { view: t(view), px: turned.tags.residualPx, steps: turned.tags.moved }));
+      } else if (turned.tags) {
+        setPerspectiveStatus(`${t('At {{view}}', { view: t(view) })} — ${tagFailure(t, turned.tags)}`);
+      } else if (turned.noReference) {
+        setPerspectiveStatus(t('At {{view}} by motor angle only: no tags are stored for it. Press Set here with the tags in view.', { view: t(view) }));
+      } else {
+        setPerspectiveStatus(t('At {{view}}', { view: t(view) }));
+      }
       // While posing (live), keep a live-view snapshot of this view for the view's onion skin
       if (currentFrameId === false && STOPMO_CAMERA_AVAILABLE) {
         const blob = await stopmoGrabLiveFrame();

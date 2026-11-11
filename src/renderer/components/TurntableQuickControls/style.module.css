@@ -105,3 +105,20 @@
   font-size: var(--font-size-6);
   margin: 0;
 }
+
+.sliderRow {
+  align-items: center;
+  display: grid;
+  gap: 6px;
+  grid-template-columns: 56px 1fr 52px;
+}
+
+.sliderRow input {
+  accent-color: var(--color-white);
+  min-width: 0;
+}
+
+.on {
+  background: var(--pf-line);
+  color: var(--pf-paper);
+}

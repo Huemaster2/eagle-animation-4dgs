@@ -21,6 +21,32 @@ export const DEFAULT_TURNTABLE_PROFILE = {
   startUs: 1500,
   ramp: 12,
   lastPosition: 0,
+  // AprilTag alignment: tags riding on the table are matched in the live view to bring it back to the same angle
+  tags: { enabled: false, family: 'APRILTAG_36h11' },
+  tagRefs: {}, // view -> where its tags were in the picture when the view was set
+  rotationRefs: {}, // "view:height" -> where the tags were at the first photo of a rotation
+};
+
+// Table speed and acceleration as two plain choices. The board takes step delays; a step lasts twice the delay.
+// Longer ramps at higher speeds keep the motor from skipping steps when it starts and stops.
+export const SPEED_LEVELS = [2000, 1400, 950, 700, 500];
+export const ACCEL_LEVELS = [
+  { id: 'soft', startUs: 3500, ramps: [80, 120, 200, 300, 450] },
+  { id: 'medium', startUs: 2500, ramps: [40, 60, 100, 160, 260] },
+  { id: 'hard', startUs: 1500, ramps: [12, 12, 12, 40, 80] },
+];
+
+export const motorTuning = (speed, accel) => {
+  const runUs = SPEED_LEVELS[speed];
+  const level = ACCEL_LEVELS[accel];
+  return { runUs, startUs: Math.max(runUs, level.startUs), ramp: level.ramps[speed] };
+};
+
+// Which speed and acceleration a profile is on, or -1 when its numbers were typed in by hand
+export const tuningLevels = (profile) => {
+  const speed = SPEED_LEVELS.indexOf(profile.runUs);
+  const accel = speed < 0 ? -1 : ACCEL_LEVELS.findIndex((_, i) => motorTuning(speed, i).startUs === profile.startUs && motorTuning(speed, i).ramp === profile.ramp);
+  return { speed, accel };
 };
 
 const num = (v, fallback) => (Number.isFinite(Number(v)) && v !== null && v !== '' ? Number(v) : fallback);
@@ -54,6 +80,9 @@ export const normalizeProfile = (p = {}) => {
     startUs: Math.max(200, Math.round(num(p.startUs, d.startUs))),
     ramp: Math.max(0, Math.round(num(p.ramp, d.ramp))),
     lastPosition: Math.round(num(p.lastPosition, 0)),
+    tags: { enabled: !!p.tags?.enabled, family: typeof p.tags?.family === 'string' ? p.tags.family : d.tags.family },
+    tagRefs: p.tagRefs && typeof p.tagRefs === 'object' ? p.tagRefs : {},
+    rotationRefs: p.rotationRefs && typeof p.rotationRefs === 'object' ? p.rotationRefs : {},
   };
 };
 

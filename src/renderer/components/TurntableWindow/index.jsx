@@ -200,13 +200,18 @@ const TurntableWindow = ({ t }) => {
               <span className={style.label}>{t(key)}</span>
               <span className={style.value}>{value === null ? t('not set') : fmt(angleOf(value, rev))}</span>
               <div className={style.inline}>
-                <button type="button" className={style.step} disabled={!ready} onClick={() => actions.updateProfile({ perspectives: { ...profile.perspectives, [key]: state.position } })}>
+                <button type="button" className={style.step} disabled={!ready} onClick={() => run(() => actions.setView(key))}>
                   {t('Set here')}
                 </button>
-                <button type="button" className={style.step} disabled={!ready || value === null} onClick={() => goTo(value)}>
+                <button type="button" className={style.step} disabled={!ready || value === null} onClick={() => run(() => actions.goToView(key))}>
                   {t('Go')}
                 </button>
-                <button type="button" className={style.step} disabled={value === null} onClick={() => actions.updateProfile({ perspectives: { ...profile.perspectives, [key]: null } })}>
+                <button
+                  type="button"
+                  className={style.step}
+                  disabled={value === null}
+                  onClick={() => actions.updateProfile({ perspectives: { ...profile.perspectives, [key]: null }, tagRefs: { ...profile.tagRefs, [key]: undefined } })}
+                >
                   {t('Clear')}
                 </button>
               </div>

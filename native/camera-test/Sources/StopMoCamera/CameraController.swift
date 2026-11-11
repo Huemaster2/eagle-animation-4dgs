@@ -711,6 +711,8 @@ public final class CameraController: NSObject {
                     }
                 }
             }
+            // One exposure is at most a RAW and a JPEG: with both announced there is nothing left to wait for
+            if handles.count >= 2 { break }
             if !handles.isEmpty && Date().timeIntervalSince(lastNew) > 0.8 { break }
             Thread.sleep(forTimeInterval: 0.1)
         }

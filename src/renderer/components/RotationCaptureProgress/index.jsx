@@ -19,12 +19,18 @@ const RotationCaptureProgress = ({
   onStop = () => {},
 }) => {
   if (!run) return null;
-  const { phase, done = 0, total = 0, height, index, heights, shotsPerPass, folder, stopping, pausing, isFirst, reshooting, error } = run;
+  const { phase, done = 0, total = 0, height, index, heights, shotsPerPass, folder, stopping, pausing, isFirst, reshooting, perPhoto, error } = run;
+  const left = perPhoto && total > done ? ((total - done) * perPhoto) / 1000 : null;
+  const pace = perPhoto
+    ? ` · ${t('{{s}} s per photo', { s: (perPhoto / 1000).toFixed(1) })}${left ? ` · ${left >= 90 ? t('about {{m}} min left', { m: Math.round(left / 60) }) : t('about {{s}} s left', { s: Math.round(left) })}` : ''}`
+    : '';
   const status = {
     starting: t('Turning to the start view…'),
     moving: t('Turning to photo {{n}} of {{of}}…', { n: (index ?? 0) + 1, of: shotsPerPass }),
     shooting: t('Taking photo {{n}} of {{of}}…', { n: (index ?? 0) + 1, of: shotsPerPass }),
     returning: t('Completing the turn…'),
+    aligning: t('Checking the AprilTags at the first photo…'),
+    closing: t('Bringing the AprilTags back to where the turn began…'),
     saving: t('Saving the frame…'),
   }[phase];
   const canPause = phase === 'moving' || phase === 'shooting' || phase === 'starting';
@@ -118,6 +124,7 @@ const RotationCaptureProgress = ({
         </div>
         <p className={style.hint}>
           {t('{{done}} of {{total}} photos', { done, total })}
+          {pace}
           {folder ? ` · ${folder}` : ''}
         </p>
         <div className={style.buttons}>

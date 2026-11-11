@@ -19,6 +19,9 @@ export const findArduinoPort = async () => {
 };
 const REPLY_TIMEOUT = 2500;
 const MOVE_REPLY_TIMEOUT = 4000;
+const JOG_RAMP = 16;
+const JOG_RUN_US = 1200;
+const JOG_START_US = 2000;
 const APPROACH_DWELL_MS = 200; // lets the table stop coasting before the final forward approach
 const KEEPALIVE_MS = 4000; // an idle USB-serial link on macOS can go quiet: a slow PING keeps it awake
 const JOG_KEEPALIVE_MS = 120; // firmware stops on its own if JOG is not repeated within 250 ms
@@ -39,6 +42,7 @@ class Turntable {
     this.finalTarget = null;
     this.travel = 0; // direction of the motion in progress: a backwards one leaves the gears loaded the wrong way
     this.tuning = { backlash: null, speed: null };
+    this.jogSpeed = false; // true while the board is on the short hold-to-rotate ramp
     this.listeners = new Set();
     this.arrivalListeners = new Set();
     this.lockKey = null;
@@ -341,6 +345,7 @@ class Turntable {
     this.finalTarget = steps;
     this.set({ moving: true, target: steps });
     try {
+      await this.restoreSpeed();
       if (approach) {
         const short = await this.sendMove(steps - approach);
         // Stopped on the way: the caller gets where the table actually is, and nothing more moves
@@ -481,6 +486,7 @@ class Turntable {
     this.travel = d;
     this.set({ moving: true, jogging: d, target: null });
     try {
+      await this.useJogSpeed();
       await this.command(`JOG ${d}`);
     } catch (err) {
       this.set({ moving: false, jogging: 0 });
@@ -490,13 +496,33 @@ class Turntable {
     this.jogTimer = setInterval(() => this.write(`JOG ${d}`).catch(() => null), JOG_KEEPALIVE_MS);
   }
 
+  // The board brakes over its whole ramp when a jog is released. With the long ramps that keep fast moves from
+  // skipping steps the table would coast on for many degrees, so hold-to-rotate runs on a short ramp of its own.
+  async useJogSpeed() {
+    const speed = this.tuning.speed;
+    if (!speed || speed[2] <= JOG_RAMP) return;
+    const run = Math.max(speed[0], JOG_RUN_US);
+    await this.command(`SPEED ${Math.round(run)} ${Math.round(Math.max(speed[1], run, JOG_START_US))} ${JOG_RAMP}`);
+    this.jogSpeed = true;
+  }
+
+  async restoreSpeed() {
+    if (!this.jogSpeed) return;
+    this.jogSpeed = false;
+    const speed = this.tuning.speed;
+    if (speed) await this.command(`SPEED ${Math.round(speed[0])} ${Math.round(speed[1])} ${Math.round(speed[2])}`).catch((err) => this.log(`Could not restore the move speed: ${err.message}`));
+  }
+
   stopJogTimer() {
     if (this.jogTimer) clearInterval(this.jogTimer);
     this.jogTimer = null;
   }
 
   async jogStop() {
-    if (!this.state.jogging) return;
+    if (!this.state.jogging) {
+      if (!this.state.moving) await this.restoreSpeed();
+      return;
+    }
     this.stopJogTimer();
     await this.stop();
   }
@@ -510,14 +536,16 @@ class Turntable {
     const backwards = this.state.moving && this.travel < 0;
     const rest = this.state.moving ? this.waitForArrival(5000).catch(() => null) : null;
     await this.command('STOP').catch(() => null);
-    if (!backwards) return;
+    if (!backwards && !this.jogSpeed) return;
     await rest;
+    await this.restoreSpeed();
+    if (!backwards) return;
     await this.seatForward().catch((err) => this.log(`Could not seat forwards: ${err.message}`));
   }
 
   // Declares the current physical position as `steps` without moving
-  async setPosition(steps) {
-    this.checkLock();
+  async setPosition(steps, { key } = {}) {
+    this.checkLock(key);
     if (this.state.moving) throw new Error('Turntable is still moving');
     await this.command(`SETPOS ${Math.round(steps)}`);
     this.set({ position: Math.round(steps), target: Math.round(steps) });
