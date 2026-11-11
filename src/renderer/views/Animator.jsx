@@ -663,6 +663,12 @@ const Animator = ({ t }) => {
       setNotice({ tone: 'error', message: t('Rotation capture stopped after {{n}} of {{total}} photos: {{error}}', { n: shots.length, total: plan.total, error: failure?.message || failure }) });
     } else if (!result?.complete) {
       setNotice({ tone: 'warning', message: t('Rotation capture stopped: {{n}} of {{total}} photos kept as frame {{folder}}.', { n: shots.length, total: plan.total, folder }) });
+    } else if (reshoot) {
+      // The originals of the replaced photos stay on disk: nothing captured is ever written over
+      setNotice({
+        tone: 'info',
+        message: t('Height {{h}} re-shot: {{n}} photos replace the earlier ones, which are still in {{folder}}.', { h: reshoot.height, n: shots.length, folder: folder || t('the camera card') }),
+      });
     } else {
       setNotice(null);
     }

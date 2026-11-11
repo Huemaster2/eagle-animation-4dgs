@@ -35,6 +35,8 @@ class Turntable {
     this.jogTimer = null;
     this.keepAliveTimer = null;
     this.resetting = false;
+    this.travel = 0; // direction of the motion in progress: a backwards one leaves the gears loaded the wrong way
+    this.tuning = { backlash: null, speed: null };
     this.listeners = new Set();
     this.arrivalListeners = new Set();
     this.lockKey = null;
@@ -328,6 +330,7 @@ class Turntable {
     if (this.state.moving) throw new Error('Turntable is still moving');
     const steps = Math.round(target);
     const distance = Math.abs(steps - (this.state.position ?? steps)) + (this.state.backlash || 0) * 2;
+    this.travel = Math.sign(steps - (this.state.position ?? steps));
     this.set({ moving: true, target: steps });
     for (let attempt = 0; ; attempt++) {
       const arrival = this.waitForArrival(8000 + distance * 3);
@@ -364,6 +367,34 @@ class Turntable {
     await this.disconnect().catch(() => null);
     await new Promise((resolve) => setTimeout(resolve, 400));
     await this.connect({ restorePosition: position });
+    await this.reapplyTuning();
+  }
+
+  // A rebooted board is back on its built-in backlash and speed; the profile's values are sent again
+  async reapplyTuning() {
+    const { backlash, speed } = this.tuning;
+    if (Number.isFinite(backlash)) await this.setBacklash(backlash).catch(() => null);
+    if (speed) await this.setSpeed(...speed).catch(() => null);
+  }
+
+  // Backs off and comes forward again, taking up the gear slack exactly as a MOVETO does. Without it a view
+  // set after a backwards jog sits on the other side of the slack, and the table never returns to it.
+  async seatForward() {
+    const rest = this.state.position;
+    const slack = this.state.backlash ?? 20;
+    if (!this.state.connected || !Number.isFinite(rest) || !slack) return;
+    try {
+      for (const text of [`MOVE ${-slack}`, `MOVETO ${rest}`]) {
+        this.set({ moving: true, target: rest });
+        const arrival = this.waitForArrival(8000);
+        arrival.catch(() => null);
+        await this.command(text, { timeout: MOVE_REPLY_TIMEOUT });
+        await arrival;
+      }
+      this.log(`Seated forwards at ${rest}`);
+    } finally {
+      this.set({ moving: false });
+    }
   }
 
   // The board prints its banner when it reboots (a knocked cable, a power dip): it has forgotten its
@@ -381,6 +412,7 @@ class Turntable {
       await this.command(`SETPOS ${position}`);
       await this.command('ENABLE 1');
       this.set({ position, target: position, enabled: true });
+      await this.reapplyTuning();
       this.log(`Board restarted: position ${position} restored`);
     } catch (err) {
       this.log(`Board restarted: could not restore its position (${err.message})`);
@@ -410,6 +442,7 @@ class Turntable {
     if (!this.state.connected || this.state.moving) return;
     this.checkLock();
     const d = dir > 0 ? 1 : -1;
+    this.travel = d;
     this.set({ moving: true, jogging: d, target: null });
     try {
       await this.command(`JOG ${d}`);
@@ -432,10 +465,17 @@ class Turntable {
     await this.stop();
   }
 
+  // A motion cut short while travelling backwards is finished off with a forward approach,
+  // so the table always rests with its gears loaded the same way
   async stop() {
     this.stopJogTimer();
     if (!this.state.connected) return;
+    const backwards = this.state.moving && this.travel < 0;
+    const rest = this.state.moving ? this.waitForArrival(5000).catch(() => null) : null;
     await this.command('STOP').catch(() => null);
+    if (!backwards) return;
+    await rest;
+    await this.seatForward().catch((err) => this.log(`Could not seat forwards: ${err.message}`));
   }
 
   // Declares the current physical position as `steps` without moving
@@ -448,11 +488,13 @@ class Turntable {
 
   async setBacklash(steps) {
     const r = await this.command(`BACKLASH ${Math.max(0, Math.round(steps))}`);
+    this.tuning.backlash = Number(r.args[1]);
     this.set({ backlash: Number(r.args[1]) });
   }
 
   async setSpeed(runUs, startUs, ramp) {
     await this.command(`SPEED ${Math.round(runUs)} ${Math.round(startUs)} ${Math.round(ramp)}`);
+    this.tuning.speed = [runUs, startUs, ramp];
   }
 
   async setEnabled(on) {
