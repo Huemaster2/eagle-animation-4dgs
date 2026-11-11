@@ -85,6 +85,8 @@ class Turntable {
   log(line) {
     const log = [...this.state.log, `${new Date().toLocaleTimeString()} ${line}`].slice(-LOG_LINES);
     this.set({ log });
+    // The desktop app copies these lines into its log file, so a fault can be read back after the fact
+    console.info(`[turntable] ${line}`);
   }
 
   // A port the user already allowed is reused silently; otherwise the system picks the Arduino (see main process)
@@ -347,6 +349,11 @@ class Turntable {
           return short;
         }
         await new Promise((resolve) => setTimeout(resolve, APPROACH_DWELL_MS));
+        // Stop pressed during the pause: the final approach is not made
+        if (this.finalTarget === null) {
+          this.set({ moving: false, target: short });
+          return short;
+        }
         this.travel = 1;
       }
       this.finalTarget = null;

@@ -51,6 +51,8 @@ function createWindow() {
   mainWindow.webContents.on('console-message', (event) => {
     if (event.level === 'error') {
       appLog(`renderer error: ${event.message}`);
+    } else if (`${event.message}`.startsWith('[turntable] ')) {
+      appLog(event.message);
     }
   });
 

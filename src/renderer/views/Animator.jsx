@@ -797,20 +797,43 @@ const Animator = ({ t }) => {
   // Switching views never touches the shutter. While posing it turns the table to that view;
   // while reviewing captured frames it only swaps the photos shown, so a review never moves the rig.
   const selectPerspective = async (view) => {
-    if (turntable.state.moving || turntable.state.locked) return;
+    if (turntable.state.moving || turntable.state.locked) {
+      turntable.log(`View ${view} ignored: ${turntable.state.locked ? 'a rotation capture has the table' : 'the table is still moving'}`);
+      return;
+    }
     setActivePerspective(view);
     setPerspectiveStatus('');
-    if (!view || reviewingFrames) return;
+    if (!view) return;
+    if (reviewingFrames) {
+      turntable.log(`View ${view} shown without turning: a captured frame is selected`);
+      return;
+    }
     await turnToPerspective(view);
   };
 
+  // A view that cannot turn the table always says why: a silent button reads as a broken one
   const turnToPerspective = async (view) => {
     if (turntable.state.moving || turntable.state.locked) return;
     const target = turntableProfile.perspectives[view];
-    if (!turntable.state.connected || target === null) {
-      setPerspectiveStatus(turntable.state.connected ? t('{{view}} is not set on the turntable yet: line it up with the reference, then Set here', { view: t(view) }) : '');
+    // A dropped link is picked up again on the spot rather than leaving the view buttons dead
+    if (!turntable.state.connected) {
+      // A view never set on a table (references only) has nowhere to turn to
+      if (!turntable.state.supported || turntable.state.connecting || target === null || target === undefined) return;
+      turntable.log(`View ${view}: turntable not connected${turntable.state.error ? ` (${turntable.state.error})` : ''}, connecting`);
+      setPerspectiveStatus(t('Connecting the turntable…'));
+      try {
+        await turntableActions.connect();
+      } catch (err) {
+        setPerspectiveStatus(t('The turntable is not connected: {{error}}', { error: err.message }));
+        return;
+      }
+    }
+    if (target === null || target === undefined) {
+      turntable.log(`View ${view} not turned: no position set for it`);
+      setPerspectiveStatus(t('{{view}} is not set on the turntable yet: line it up with the reference, then Set here', { view: t(view) }));
       return;
     }
+    turntable.log(`View ${view}: turning from ${turntable.state.position} to ${nearestEquivalent(target, turntable.state.position ?? target, turntable.state.stepsPerRev)}`);
     const steps = nearestEquivalent(target, turntable.state.position ?? target, turntable.state.stepsPerRev);
     setPerspectiveStatus(t('Turning to {{view}}…', { view: t(view) }));
     try {
@@ -828,6 +851,7 @@ const Animator = ({ t }) => {
         if (blob) await projectActions.savePerspectiveView(track, view, blob);
       }
     } catch (err) {
+      turntable.log(`View ${view} failed: ${err.message}`);
       setPerspectiveStatus(err.message);
     }
   };
