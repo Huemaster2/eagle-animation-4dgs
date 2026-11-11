@@ -19,6 +19,7 @@ export const findArduinoPort = async () => {
 };
 const REPLY_TIMEOUT = 2500;
 const MOVE_REPLY_TIMEOUT = 4000;
+const APPROACH_DWELL_MS = 200; // lets the table stop coasting before the final forward approach
 const KEEPALIVE_MS = 4000; // an idle USB-serial link on macOS can go quiet: a slow PING keeps it awake
 const JOG_KEEPALIVE_MS = 120; // firmware stops on its own if JOG is not repeated within 250 ms
 const LOG_LINES = 200;
@@ -35,6 +36,7 @@ class Turntable {
     this.jogTimer = null;
     this.keepAliveTimer = null;
     this.resetting = false;
+    this.finalTarget = null;
     this.travel = 0; // direction of the motion in progress: a backwards one leaves the gears loaded the wrong way
     this.tuning = { backlash: null, speed: null };
     this.listeners = new Set();
@@ -198,7 +200,9 @@ class Turntable {
     }
     if (msg.type === 'DONE') {
       const position = Number(msg.args[0]);
-      this.set({ position, moving: false, jogging: 0, target: position });
+      // Between the two legs of a move the table is still busy and still headed for its real target
+      const between = Number.isFinite(this.finalTarget) && position !== this.finalTarget;
+      this.set({ position, moving: between, jogging: 0, target: between ? this.finalTarget : position });
       this.log(`Arrived at ${position}`);
       const waiters = this.moveWaiters;
       this.moveWaiters = [];
@@ -322,16 +326,41 @@ class Turntable {
     if (this.lockKey && key !== this.lockKey) throw new Error('The turntable is busy with a rotation capture');
   }
 
-  // A board left idle between camera heights sometimes swallows one command, which used to end a whole
-  // capture; the move is re-sent after waking the link, and only a third silence is reported as a failure
+  // Every move ends the same way: it stops short of the target, waits for the table to stop coasting, then
+  // covers the last stretch forwards from rest. Arriving at speed let the table's own momentum carry it into
+  // the gear slack, so a view landed in a slightly different place depending on where the table came from.
   async moveTo(target, { key } = {}) {
     if (!this.state.connected) throw new Error('Turntable not connected');
     this.checkLock(key);
     if (this.state.moving) throw new Error('Turntable is still moving');
     const steps = Math.round(target);
-    const distance = Math.abs(steps - (this.state.position ?? steps)) + (this.state.backlash || 0) * 2;
+    const approach = this.state.backlash || 0;
     this.travel = Math.sign(steps - (this.state.position ?? steps));
+    this.finalTarget = steps;
     this.set({ moving: true, target: steps });
+    try {
+      if (approach) {
+        const short = await this.sendMove(steps - approach);
+        // Stopped on the way: the caller gets where the table actually is, and nothing more moves
+        if (short !== steps - approach) {
+          this.set({ moving: false, target: short });
+          return short;
+        }
+        await new Promise((resolve) => setTimeout(resolve, APPROACH_DWELL_MS));
+        this.travel = 1;
+      }
+      this.finalTarget = null;
+      return await this.sendMove(steps);
+    } finally {
+      this.finalTarget = null;
+    }
+  }
+
+  // A board left idle between camera heights sometimes swallows one command, which used to end a whole
+  // capture; the move is re-sent after waking the link, and only a third silence is reported as a failure
+  async sendMove(steps) {
+    const distance = Math.abs(steps - (this.state.position ?? steps)) + (this.state.backlash || 0) * 2;
+    this.set({ moving: true });
     for (let attempt = 0; ; attempt++) {
       const arrival = this.waitForArrival(8000 + distance * 3);
       arrival.catch(() => null);
@@ -354,7 +383,7 @@ class Turntable {
           this.set({ moving: false });
           throw err;
         }
-        this.set({ moving: true, target: steps });
+        this.set({ moving: true });
       }
     }
   }
@@ -470,6 +499,7 @@ class Turntable {
   async stop() {
     this.stopJogTimer();
     if (!this.state.connected) return;
+    this.finalTarget = null;
     const backwards = this.state.moving && this.travel < 0;
     const rest = this.state.moving ? this.waitForArrival(5000).catch(() => null) : null;
     await this.command('STOP').catch(() => null);
