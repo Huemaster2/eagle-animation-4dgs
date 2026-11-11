@@ -44,6 +44,7 @@ const ViewsPanel = ({
   onExposureChange = () => {},
   onExposureRefresh = () => {},
   onSettingsChange = () => {},
+  onGo = null,
 }) => {
   const input = useRef(null);
   const importFor = useRef(ALL);
@@ -142,7 +143,7 @@ const ViewsPanel = ({
 
       {tab === 'turntable' && (
         <div className={style.body}>
-          <TurntableQuickControls activeView={active} />
+          <TurntableQuickControls activeView={active} onGo={onGo} />
         </div>
       )}
 

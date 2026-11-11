@@ -479,9 +479,9 @@ class Turntable {
   }
 
   // Hold-to-rotate: keeps JOG alive while held; release decelerates to a stop
-  async jogStart(dir) {
+  async jogStart(dir, { key } = {}) {
     if (!this.state.connected || this.state.moving) return;
-    this.checkLock();
+    this.checkLock(key);
     const d = dir > 0 ? 1 : -1;
     this.travel = d;
     this.set({ moving: true, jogging: d, target: null });

@@ -24,7 +24,7 @@ export const tagFailure = (t, tags) => {
 };
 
 // Compact turntable page for the floating panel, so the table can be set up while watching the live view
-const TurntableQuickControls = ({ t, activeView = null }) => {
+const TurntableQuickControls = ({ t, activeView = null, onGo = null }) => {
   const { state, profile, actions } = useTurntable();
   const [message, setMessage] = useState('');
   const rev = state.stepsPerRev;
@@ -46,6 +46,11 @@ const TurntableQuickControls = ({ t, activeView = null }) => {
     });
   const goToView = (view) =>
     run(async () => {
+      // The animator's own turn also runs the by-hand line-up for views that ask for it
+      if (onGo) {
+        await onGo(view);
+        return;
+      }
       const result = await actions.goToView(view);
       if (result.tags && !result.tags.ok) setMessage(tagFailure(t, result.tags));
       else if (result.noReference) setMessage(t('{{view}} has no tags stored: turned by motor angle only. Press Set here with the tags in view.', { view: t(view) }));
@@ -149,6 +154,14 @@ const TurntableQuickControls = ({ t, activeView = null }) => {
             </button>
             <button type="button" className={style.btn} disabled={!ready || value === null} onClick={() => goToView(key)}>
               {t('Go')}
+            </button>
+            <button
+              type="button"
+              className={`${style.btn} ${profile.handAlign[key] ? style.on : ''}`}
+              title={t('Line this view up by hand each time: after the turn, a stored picture of the view ghosts over the live view and the table is nudged until they agree')}
+              onClick={() => actions.updateProfile({ handAlign: { ...profile.handAlign, [key]: !profile.handAlign[key] } })}
+            >
+              {t('By hand')}
             </button>
           </div>
         );

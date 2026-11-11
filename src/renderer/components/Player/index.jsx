@@ -341,6 +341,15 @@ class Player extends Component {
             style={{ opacity: isCameraReady && frameIndex === false ? 1 : 0 }}
             onRatioChange={this.resize}
           />
+          {this.props.alignFrame?.src && frameIndex === false && (
+            <img
+              alt=""
+              draggable={false}
+              src={this.props.alignFrame.src}
+              className={`${style.layout} ${reverseClassNames}`}
+              style={{ mixBlendMode: this.props.alignFrame.difference ? 'difference' : 'normal', opacity: this.props.alignFrame.difference ? 1 : this.props.alignFrame.opacity, pointerEvents: 'none' }}
+            />
+          )}
           <canvas
             ref={this.dom.picture}
             className={style.layout}

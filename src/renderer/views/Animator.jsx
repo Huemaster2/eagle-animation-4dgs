@@ -2,6 +2,7 @@ import CameraSettingsWindow from '@components/CameraSettingsWindow';
 import CameraTestWindow from '@components/CameraTestWindow';
 import ControlBar from '@components/ControlBar';
 import DesktopNavigation from '@components/DesktopNavigation';
+import HandAlignBar from '@components/HandAlignBar';
 import HistogramWindow from '@components/HistogramWindow';
 import ImportOverlay from '@components/ImportOverlay';
 import KeyboardHandler from '@components/KeyboardHandler';
@@ -33,6 +34,7 @@ import ViewTimelines from '@components/ViewTimelines';
 import Window from '@components/Window';
 import XSheet from '@components/XSheet';
 import { DEFAULT_FPS, MAX_FRAME_DUPLICATION } from '@config-web';
+import { captureAlignFrame, getAlignFrame } from '@core/alignFrames';
 import { angleGap, downscaleFrame, frameFolderName, nearestShot, nextSequenceNumber, planSequence, redoHeightError, runSequence, shotAngle, shotBaseName } from '@core/captureSequence';
 import { selectionClick } from '@core/frameSelection';
 import { normalizeOnionSkin } from '@core/onionSkin';
@@ -210,6 +212,9 @@ const Animator = ({ t }) => {
   const [canonStatus, setCanonStatus] = useState(null);
   const [activePerspective, setActivePerspective] = useState(null);
   const [perspectiveStatus, setPerspectiveStatus] = useState('');
+  // A view being lined up by hand: its stored picture ghosts over the live view until Aligned or Skip
+  const [handAlign, setHandAlign] = useState(null);
+  const handAlignControl = useRef(null);
   const [notice, setNotice] = useState(null);
   const [rotationRun, setRotationRun] = useState(null);
   const [expandedFrameId, setExpandedFrameId] = useState(null);
@@ -525,6 +530,13 @@ const Animator = ({ t }) => {
     let firstFrame = null;
     let failure = null;
     const tagsOn = STOPMO_CAMERA_AVAILABLE && !!profile.tags?.enabled;
+    const handStart = STOPMO_CAMERA_AVAILABLE && !!startView && !!profile.handAlign?.[startView];
+    // First photo of each height in the latest rotation already on the timeline: what this one should match
+    const previousFirstShots = {};
+    for (const picture of pictures) {
+      if (picture.deleted || !picture.sequence || picture.id === reshoot?.frame?.id) continue;
+      for (const sh of picture.sequence.shots || []) if (sh.index === 0 && sh.link) previousFirstShots[sh.height] = sh.link;
+    }
     const rotationRefs = { ...profile.rotationRefs };
     const passRefs = {};
     const closures = [];
@@ -577,7 +589,15 @@ const Animator = ({ t }) => {
         // With tag alignment on, every height starts where the rotations before it started, and its full turn
         // is closed by eye: the tags are brought back to where they were at the first photo
         onPassStart: async (pass, steps) => {
-          if (!tagsOn) return;
+          // A start view marked "By hand" is lined up before the first photo of every height, against the same
+          // photo of the frame before (or the view's stored picture when this is the first rotation)
+          if (handStart && !rotationControl.current.stop) {
+            show({ phase: 'handAlign', height: pass.height });
+            refreshLiveView();
+            const before = previousFirstShots[pass.height] || getAlignFrame(profile.id, startView);
+            await lineUpByHand({ view: startView, steps, frame: before, key });
+          }
+          if (!tagsOn || rotationControl.current.stop) return;
           show({ phase: 'aligning', height: pass.height });
           const refKey = startView ? `${startView}:${pass.height}` : null;
           const stored = refKey ? rotationRefs[refKey] : null;
@@ -748,7 +768,36 @@ const Animator = ({ t }) => {
     setRotationRun((r) => (r ? { ...r, pausing: false } : r));
     rotationControl.current.resume?.();
   };
+  // Shows the by-hand line-up for a view and waits for it: true when Aligned was pressed, false when skipped.
+  // `steps` is where the motor believes the view is; Aligned makes that true of wherever the table now stands.
+  const lineUpByHand = ({ view, steps, frame, key = undefined }) =>
+    new Promise((resolve) => {
+      handAlignControl.current?.resolve(false);
+      handAlignControl.current = { view, steps, key, resolve };
+      setHandAlign({ view, frame: frame || null, opacity: 0.5, difference: false });
+    });
+
+  const finishHandAlign = async (aligned) => {
+    const current = handAlignControl.current;
+    if (!current) return;
+    handAlignControl.current = null;
+    setHandAlign(null);
+    if (aligned) {
+      const moved = (turntable.state.position ?? current.steps) - current.steps;
+      turntable.log(`View ${current.view} lined up by hand, ${moved} steps from where the motor had put it`);
+      // The step count is re-anchored here, so the next turn starts from what was seen rather than from drift
+      if (moved !== 0) await turntable.setPosition(current.steps, { key: current.key }).catch((err) => turntable.log(`Could not re-anchor the position: ${err.message}`));
+    }
+    current.resolve(aligned);
+  };
+
+  const nudgeHandAlign = (steps) => {
+    const key = handAlignControl.current?.key;
+    turntable.moveTo((turntable.state.position ?? 0) + steps, { key }).catch((err) => setPerspectiveStatus(err.message));
+  };
+
   const stopRotation = () => {
+    finishHandAlign(false);
     rotationControl.current.stop = true;
     rotationControl.current.paused = false;
     if (rotationControl.current.continueHeight) rotationControl.current.continueHeight(false);
@@ -906,6 +955,16 @@ const Animator = ({ t }) => {
         setPerspectiveStatus(t('At {{view}} by motor angle only: no tags are stored for it. Press Set here with the tags in view.', { view: t(view) }));
       } else {
         setPerspectiveStatus(t('At {{view}}', { view: t(view) }));
+      }
+      // Views marked "By hand" are finished against their stored picture, every time they are turned to
+      if (turntableProfile.handAlign?.[view]) {
+        if (currentFrameId !== false) {
+          setPerspectiveStatus(t('At {{view}} by motor angle. Select Live to line it up by hand.', { view: t(view) }));
+        } else {
+          setPerspectiveStatus(t('At {{view}} — nudge the table until it matches the ghost picture, then press Aligned', { view: t(view) }));
+          const aligned = await lineUpByHand({ view, steps, frame: getAlignFrame(turntableProfile.id, view) });
+          setPerspectiveStatus(aligned ? t('At {{view}} — lined up by hand', { view: t(view) }) : t('At {{view}} by motor angle only', { view: t(view) }));
+        }
       }
       // While posing (live), keep a live-view snapshot of this view for the view's onion skin
       if (currentFrameId === false && STOPMO_CAMERA_AVAILABLE) {
@@ -1427,6 +1486,7 @@ const Animator = ({ t }) => {
           referenceFrameId={referenceFramePosition ? referenceFrameId : null}
           references={referencesHidden ? [] : playerReferences}
           alignReference={alignReference}
+          alignFrame={handAlign?.frame ? { src: handAlign.frame, opacity: handAlign.opacity, difference: handAlign.difference } : null}
           referencePosition={referenceSeek}
           referenceTail={referenceCells?.extra?.length || 0}
           onAlignReference={(patch) => setAlignDraft((d) => ({ ...(d || { x: alignReference?.x ?? 0, y: alignReference?.y ?? 0, scale: alignReference?.scale ?? 1 }), ...patch }))}
@@ -1476,6 +1536,20 @@ const Animator = ({ t }) => {
           ) : (
             <NoticeBanner message={notice?.message} tone={notice?.tone} onDismiss={() => setNotice(null)} />
           )}
+          <HandAlignBar
+            align={handAlign ? { ...handAlign, jogging: !!turntableState.jogging } : null}
+            busy={turntableState.moving}
+            onNudge={nudgeHandAlign}
+            onHold={(dir) => turntable.jogStart(dir, { key: handAlignControl.current?.key }).catch((err) => setPerspectiveStatus(err.message))}
+            onRelease={() => turntable.jogStop().catch(() => null)}
+            onChange={(patch) => setHandAlign((a) => (a ? { ...a, ...patch } : a))}
+            onRetake={async () => {
+              const frame = await captureAlignFrame(turntableProfile.id, handAlign.view);
+              if (frame) setHandAlign((a) => (a ? { ...a, frame } : a));
+            }}
+            onDone={() => finishHandAlign(true)}
+            onSkip={() => finishHandAlign(false)}
+          />
           {showPerspectives && (!livePanel.OPEN || livePanel.COLLAPSED) && (
             <PerspectiveBar
               active={activePerspective}
@@ -1700,6 +1774,7 @@ const Animator = ({ t }) => {
           onExposureChange={handleCapabilityChange}
           onExposureRefresh={() => cameraActions.refreshCapabilities()}
           onSelect={selectPerspective}
+          onGo={turnToPerspective}
           onTurn={!reviewingFrames && activePerspective && !tableAtActiveView ? () => turnToPerspective(activePerspective) : null}
           onImport={importReferences}
           onUpdateReference={(referenceId, patch) => projectActions.updateReference(track, referenceId, patch)}

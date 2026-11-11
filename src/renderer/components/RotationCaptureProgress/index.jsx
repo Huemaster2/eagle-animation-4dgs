@@ -30,6 +30,7 @@ const RotationCaptureProgress = ({
     shooting: t('Taking photo {{n}} of {{of}}…', { n: (index ?? 0) + 1, of: shotsPerPass }),
     returning: t('Completing the turn…'),
     aligning: t('Checking the AprilTags at the first photo…'),
+    handAlign: t('Nudge the table until it matches the ghost picture, then press Aligned.'),
     closing: t('Bringing the AprilTags back to where the turn began…'),
     saving: t('Saving the frame…'),
   }[phase];

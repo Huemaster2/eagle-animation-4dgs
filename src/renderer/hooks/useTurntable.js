@@ -1,3 +1,4 @@
+import { captureAlignFrame } from '@core/alignFrames';
 import { observeTags, turnToView } from '@core/tagVision';
 import { turntable } from '@core/turntable';
 import { DEFAULT_TURNTABLE_PROFILE, getActiveProfile, getProfiles, normalizeProfile } from '@core/turntableProfiles';
@@ -65,13 +66,15 @@ function useTurntable() {
       const p = getActiveProfile(getCurrentSettings() || settings);
       const position = turntable.state.position;
       const seen = p.tags.enabled ? await observeTags({ family: p.tags.family }).catch(() => null) : null;
+      // The live view as it is now becomes the picture this view is lined up against by hand
+      const frame = await captureAlignFrame(p.id, view);
       const tagRefs = { ...p.tagRefs };
       if (seen?.tags?.length) tagRefs[view] = seen;
       else delete tagRefs[view];
       const rotationRefs = Object.fromEntries(Object.entries(p.rotationRefs).filter(([k]) => !k.startsWith(`${view}:`)));
       await updateProfile({ perspectives: { ...p.perspectives, [view]: position }, tagRefs, rotationRefs });
       if (p.tags.enabled) turntable.log(`View ${view} set at ${position} with ${seen?.tags?.length || 0} tags${seen?.tags?.length ? ` (ids ${seen.tags.map((tag) => tag.id).join(', ')})` : ''}`);
-      return { position, tags: p.tags.enabled ? seen?.tags?.length || 0 : null };
+      return { position, tags: p.tags.enabled ? seen?.tags?.length || 0 : null, frame: !!frame };
     },
     [settings, updateProfile]
   );

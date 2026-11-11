@@ -1,0 +1,56 @@
+.bar {
+  align-items: center;
+  background: var(--pf-paper);
+  border: 1px solid var(--pf-line);
+  color: var(--color-white);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: var(--font-size-6);
+  gap: 6px 14px;
+  justify-content: center;
+  padding: 6px 10px;
+}
+
+.title {
+  font-weight: 700;
+}
+
+.group {
+  align-items: center;
+  display: flex;
+  gap: 4px;
+}
+
+.group input {
+  accent-color: var(--color-white);
+  width: 90px;
+}
+
+.hint {
+  opacity: 0.8;
+}
+
+.btn {
+  background: var(--pf-button-face);
+  border: 1px solid var(--pf-line);
+  box-shadow: var(--pf-bevel);
+  color: var(--color-white);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: var(--font-size-6);
+  min-width: 34px;
+  padding: 4px 8px;
+  touch-action: none;
+  user-select: none;
+}
+
+.btn:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.on,
+.primary {
+  background: var(--pf-line);
+  color: var(--pf-paper);
+}
