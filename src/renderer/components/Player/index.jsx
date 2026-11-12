@@ -379,6 +379,7 @@ class Player extends Component {
                 x={ref.x}
                 y={ref.y}
                 scale={ref.scale}
+                mirror={ref.mirror}
                 width={this.getSize().width}
                 height={this.getSize().height}
                 videoRatio={this.getVideoRatio()}

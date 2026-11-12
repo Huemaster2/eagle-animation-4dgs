@@ -9,6 +9,7 @@ export const DEFAULT_REFERENCE = {
   x: 0,
   y: 0,
   scale: 1,
+  mirror: false,
   blendMode: 'normal',
 };
 
@@ -23,6 +24,7 @@ export const normalizeReference = (ref = {}) => ({
   x: clamp(Number(ref.x) || 0, -1, 1),
   y: clamp(Number(ref.y) || 0, -1, 1),
   scale: clamp(Number(ref.scale) || 1, 0.1, 4),
+  mirror: !!ref.mirror,
   blendMode: ONION_BLEND_MODES.includes(ref.blendMode) ? ref.blendMode : 'normal',
   frames: ref.frames || [],
 });

@@ -385,6 +385,10 @@
   width: 100%;
 }
 
+.refCellMirror {
+  transform: scaleX(-1);
+}
+
 .refCellEmpty {
   background: var(--pf-stripes, transparent);
   display: block;

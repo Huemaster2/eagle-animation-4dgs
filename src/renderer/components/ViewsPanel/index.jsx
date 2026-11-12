@@ -45,6 +45,7 @@ const ViewsPanel = ({
   onExposureRefresh = () => {},
   onSettingsChange = () => {},
   onGo = null,
+  referencePosition = 0,
 }) => {
   const input = useRef(null);
   const importFor = useRef(ALL);
@@ -234,6 +235,45 @@ const ViewsPanel = ({
                       </button>
                       <button type="button" className={style.small} onClick={() => onUpdateReference(ref.id, { x: 0, y: 0, scale: 1 })}>
                         {t('Reset')}
+                      </button>
+                    </div>
+                  )}
+                  {ref.enabled && (
+                    <div className={style.refTools}>
+                      <button
+                        type="button"
+                        className={`${style.small} ${ref.mirror ? style.smallActive : ''}`}
+                        title={t('Flips the reference left to right')}
+                        onClick={() => onUpdateReference(ref.id, { mirror: !ref.mirror })}
+                      >
+                        {t('Mirror')}
+                      </button>
+                      <span className={style.refToolLabel}>{t('Starts at')}</span>
+                      <input
+                        type="number"
+                        className={style.refNumber}
+                        min={1}
+                        max={ref.frames.length}
+                        step={1}
+                        value={ref.offset + 1}
+                        aria-label={t('Reference frame shown beside the first frame of the timeline')}
+                        onChange={(event) => {
+                          const frame = Math.round(Number(event.target.value));
+                          if (Number.isFinite(frame)) onUpdateReference(ref.id, { offset: Math.min(ref.frames.length, Math.max(1, frame)) - 1 });
+                        }}
+                      />
+                      <span className={style.refToolValue}>/ {ref.frames.length}</span>
+                      <button
+                        type="button"
+                        className={style.small}
+                        title={t('Makes the reference frame on screen now the one beside the first frame of the timeline')}
+                        disabled={referencePosition + ref.offset < 0 || referencePosition + ref.offset >= ref.frames.length}
+                        onClick={() => onUpdateReference(ref.id, { offset: referencePosition + ref.offset })}
+                      >
+                        {t('Start here')}
+                      </button>
+                      <button type="button" className={style.small} disabled={ref.offset === 0} onClick={() => onUpdateReference(ref.id, { offset: 0 })}>
+                        {t('From the top')}
                       </button>
                     </div>
                   )}

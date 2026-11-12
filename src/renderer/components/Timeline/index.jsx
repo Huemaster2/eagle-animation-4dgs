@@ -369,7 +369,12 @@ const Timeline = ({
                 onClick={() => stableOnSelect(cell.id)}
               >
                 {cell.link ? (
-                  <img alt="" className={style.refCellImg} src={getPictureLink(cell.link, { w: 80, h: 26, m: 'cover', f: 'jpg' })} loading="lazy" />
+                  <img
+                    alt=""
+                    className={`${style.refCellImg} ${referenceCells.mirror ? style.refCellMirror : ''}`}
+                    src={getPictureLink(cell.link, { w: 80, h: 26, m: 'cover', f: 'jpg' })}
+                    loading="lazy"
+                  />
                 ) : (
                   <span className={style.refCellEmpty} />
                 )}
@@ -383,7 +388,12 @@ const Timeline = ({
                 title={t('Frame {{n}} of the reference, past what is shot', { n: cell.position + 1 })}
                 onClick={() => onReferenceSeek(cell.position)}
               >
-                <img alt="" className={style.refCellImg} src={getPictureLink(cell.link, { w: 80, h: 26, m: 'cover', f: 'jpg' })} loading="lazy" />
+                <img
+                  alt=""
+                  className={`${style.refCellImg} ${referenceCells.mirror ? style.refCellMirror : ''}`}
+                  src={getPictureLink(cell.link, { w: 80, h: 26, m: 'cover', f: 'jpg' })}
+                  loading="lazy"
+                />
               </button>
             ))}
           </div>

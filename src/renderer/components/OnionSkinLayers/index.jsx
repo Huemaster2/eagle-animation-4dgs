@@ -59,7 +59,7 @@ export const preloadImage = (link) => loadImage(getPictureLink(link, { h: 720, m
 
 // One persistent canvas per reference sequence: the previous image stays up until the next one
 // has loaded, so playback does not flicker while frames stream in.
-export const ReferenceLayer = ({ link = null, preload = [], opacity = 0.5, blendMode = 'normal', x = 0, y = 0, scale = 1, width, height, videoRatio = null, className = '' }) => {
+export const ReferenceLayer = ({ link = null, preload = [], opacity = 0.5, blendMode = 'normal', x = 0, y = 0, scale = 1, mirror = false, width, height, videoRatio = null, className = '' }) => {
   const canvasRef = useRef(null);
 
   useEffect(() => {
@@ -92,7 +92,7 @@ export const ReferenceLayer = ({ link = null, preload = [], opacity = 0.5, blend
     <canvas
       ref={canvasRef}
       className={`${style.layer} ${className}`}
-      style={{ opacity: link ? opacity : 0, mixBlendMode: blendMode || 'normal', transform: `translate(${x * 50}%, ${y * 50}%) scale(${scale})` }}
+      style={{ opacity: link ? opacity : 0, mixBlendMode: blendMode || 'normal', transform: `translate(${x * 50}%, ${y * 50}%) scale(${mirror ? -scale : scale}, ${scale})` }}
     />
   );
 };

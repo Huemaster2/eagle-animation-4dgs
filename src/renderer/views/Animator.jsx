@@ -411,7 +411,7 @@ const Animator = ({ t }) => {
       const found = getReferenceFrame(trackReference, i);
       if (found?.frame?.link) extra.push({ position: i, link: found.frame.link, current: current === i });
     }
-    return cells.length || extra.length ? { cells, extra } : null;
+    return cells.length || extra.length ? { cells, extra, mirror: trackReference.mirror } : null;
   })();
   const expandedFrame = expandedFrameId ? pictures.find((p) => p.id === expandedFrameId) || null : null;
   const expandedFrames = pictures.reduce((acc, e) => [...acc, ...new Array(e.length || 1).fill(e)], []);
@@ -1778,6 +1778,7 @@ const Animator = ({ t }) => {
           onTurn={!reviewingFrames && activePerspective && !tableAtActiveView ? () => turnToPerspective(activePerspective) : null}
           onImport={importReferences}
           onUpdateReference={(referenceId, patch) => projectActions.updateReference(track, referenceId, patch)}
+          referencePosition={Number.isFinite(referenceSeek) ? referenceSeek : animationPosition}
           aligning={alignReferenceId}
           onAlign={setAlignReferenceId}
           onLayoutChange={setLivePanel}
