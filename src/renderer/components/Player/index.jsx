@@ -91,6 +91,7 @@ class Player extends Component {
         // Positions the reference has beyond the last shot frame: playback runs on through them
         const tailLength = Math.max(0, Number(this.props.referenceTail) || 0);
 
+        const atEnd = this.state.frameIndex === false || this.state.frameIndex >= filteredFrames.length - 1;
         if (!force && this.tail !== null) {
           if (this.tail + 1 < tailLength) {
             this.tail += 1;
@@ -101,9 +102,16 @@ class Player extends Component {
           this.setState({ tail: null });
           if (!this.props.loopStatus) return false;
           force = true;
-        } else if (!force && this.state.frameIndex === false && filteredFrames.length && tailLength > 1) {
-          this.tail = 1;
-          this.setState({ tail: 1 });
+        } else if (!force && atEnd && tailLength > (this.state.frameIndex === false ? 1 : 0)) {
+          // The last shot frame has played: carry on through the reference alone, over the live view, before
+          // looping or stopping. Looping used to jump back to the first frame here, so the rest never played.
+          this.tail = this.state.frameIndex === false ? 1 : 0;
+          if (this.state.frameIndex !== false) {
+            const last = this.getLastVisibleFrame();
+            this.drawFrame(last.link || false);
+            this.props.onFrameChange(false, false);
+          }
+          this.setState({ tail: this.tail, frameIndex: false });
           return true;
         }
 
