@@ -3,12 +3,13 @@ import TurntableAngleSlider from '@components/TurntableAngleSlider';
 import { HoldButton } from '@components/TurntableWindow';
 import { STOPMO_CAMERA_AVAILABLE } from '@core/stopmoCamera';
 import { TAG_FAMILIES } from '@core/tagDetect';
+import { simRig } from '@core/simulatedRig';
 import { observeTags } from '@core/tagVision';
 import { turntable } from '@core/turntable';
 import { angleOf, degreesToSteps, PERSPECTIVES } from '@core/turntableMath';
 import { ACCEL_LEVELS, motorTuning, SPEED_LEVELS, tuningLevels } from '@core/turntableProfiles';
 import useTurntable from '@hooks/useTurntable';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { withTranslation } from 'react-i18next';
 
 import * as style from './style.module.css';
@@ -24,6 +25,46 @@ export const tagFailure = (t, tags) => {
 };
 
 // Compact turntable page for the floating panel, so the table can be set up while watching the live view
+// A stand-in rig for working with nothing plugged in: a board that answers like the firmware, and a camera
+// (picked in Camera settings) that draws the set as the simulated table stands.
+const SimulatedRigSection = ({ t, state, onConnect }) => {
+  const [rig, setRig] = useState({ pose: simRig.pose, cameraHeight: simRig.cameraHeight });
+  useEffect(() => simRig.subscribe((next) => setRig({ pose: next.pose, cameraHeight: next.cameraHeight })), []);
+  const set = (patch) => {
+    simRig.set(patch);
+    setRig((r) => ({ ...r, ...patch }));
+  };
+  return (
+    <>
+      <p className={style.label}>{t('Simulated rig (for testing)')}</p>
+      {!state.simulated && (
+        <button type="button" className={style.btn} disabled={state.connected || state.connecting} onClick={onConnect}>
+          {state.connected ? t('A turntable is already connected') : t('Use a simulated turntable')}
+        </button>
+      )}
+      <p className={style.hint}>
+        {state.simulated
+          ? t('This turntable is a stand-in. Pick “Simulated rig” in Camera settings to see the set turn with it.')
+          : t('Stands in for the board. Pick “Simulated rig” in Camera settings for a picture that turns with it.')}
+      </p>
+      <label className={style.sliderRow}>
+        <span className={style.viewName}>{t('Pose')}</span>
+        <input type="range" min={0} max={1} step={0.01} value={rig.pose} onChange={(e) => set({ pose: Number(e.target.value) })} />
+        <span className={style.hint}>{`${Math.round(rig.pose * 100)}%`}</span>
+      </label>
+      <div className={style.row}>
+        <span className={style.viewName}>{t('Height')}</span>
+        {[1, 2, 3, 4].map((h) => (
+          <button key={h} type="button" className={`${style.btn} ${rig.cameraHeight === h ? style.on : ''}`} onClick={() => set({ cameraHeight: h })}>
+            {h}
+          </button>
+        ))}
+      </div>
+      <p className={style.hint}>{t('Pose stands in for moving the puppet between frames; Height for raising the camera between turns.')}</p>
+    </>
+  );
+};
+
 const TurntableQuickControls = ({ t, activeView = null, onGo = null }) => {
   const { state, profile, actions } = useTurntable();
   const [message, setMessage] = useState('');
@@ -83,6 +124,7 @@ const TurntableQuickControls = ({ t, activeView = null, onGo = null }) => {
         <button type="button" className={style.btn} disabled={!state.supported || state.connecting} onClick={() => run(actions.connect)}>
           {t('Connect turntable')}
         </button>
+        <SimulatedRigSection t={t} state={state} onConnect={() => run(actions.connectSimulated)} />
       </div>
     );
   }
@@ -91,7 +133,10 @@ const TurntableQuickControls = ({ t, activeView = null, onGo = null }) => {
     <div className={style.wrap}>
       <div className={style.readout}>
         <span className={style.angle}>{fmt(angleOf(state.position ?? 0, rev))}</span>
-        <span className={style.hint}>{state.jogging ? t('Rotating…') : state.moving ? t('Moving…') : t('Stopped')}</span>
+        <span className={style.hint}>
+          {state.jogging ? t('Rotating…') : state.moving ? t('Moving…') : t('Stopped')}
+          {state.simulated ? ` · ${t('simulated')}` : ''}
+        </span>
       </div>
 
       <TurntableAngleSlider state={state} onError={fail} />
@@ -241,6 +286,7 @@ const TurntableQuickControls = ({ t, activeView = null, onGo = null }) => {
           )}
         </>
       )}
+      <SimulatedRigSection t={t} state={state} onConnect={() => run(actions.connectSimulated)} />
       {message && <p className={style.error}>{message}</p>}
       <p className={style.hint}>{t('Moving the table here never takes a photo.')}</p>
     </div>

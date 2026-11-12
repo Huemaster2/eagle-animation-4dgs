@@ -46,8 +46,10 @@ class Turntable {
     this.listeners = new Set();
     this.arrivalListeners = new Set();
     this.lockKey = null;
+    this.portFactory = null; // set only for the simulated board, which is built fresh on every open
     this.state = {
       supported: typeof navigator !== 'undefined' && !!navigator.serial,
+      simulated: false,
       connected: false,
       connecting: false,
       firmware: null,
@@ -94,12 +96,20 @@ class Turntable {
   }
 
   // A port the user already allowed is reused silently; otherwise the system picks the Arduino (see main process)
-  async connect({ restorePosition = null } = {}) {
-    if (!this.state.supported) throw new Error('Serial ports are not available in this build');
+  // Plugs in a stand-in board that speaks the same lines as the firmware (see simulatedRig)
+  async connectSimulated(factory, options = {}) {
+    this.portFactory = factory;
+    return this.connect({ ...options, port: factory() });
+  }
+
+  // `port` is given only by the simulated rig; otherwise the real Arduino is looked up
+  async connect({ restorePosition = null, port: given = null } = {}) {
+    if (!given && !this.state.supported) throw new Error('Serial ports are not available in this build');
     if (this.state.connected || this.state.connecting) return;
-    this.set({ connecting: true, error: null });
+    this.set({ connecting: true, error: null, simulated: !!given });
     try {
-      const port = await findArduinoPort();
+      if (!given) this.portFactory = null;
+      const port = given || (await findArduinoPort());
       await port.open({ baudRate: BAUD });
       this.port = port;
       this.writer = port.writable.getWriter();
@@ -407,7 +417,7 @@ class Turntable {
     this.log('Re-opening the serial port');
     await this.disconnect().catch(() => null);
     await new Promise((resolve) => setTimeout(resolve, 400));
-    await this.connect({ restorePosition: position });
+    await this.connect({ restorePosition: position, port: this.portFactory ? this.portFactory() : null });
     await this.reapplyTuning();
   }
 

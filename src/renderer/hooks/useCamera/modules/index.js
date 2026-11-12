@@ -3,6 +3,7 @@ import { DEVICE, TOUCAN_CAMERA_SERVER_AVAILABLE } from '@config-web';
 import { STOPMO_CAMERA_AVAILABLE } from '@core/stopmoCamera';
 
 import { Camera as DisabledCamera, CameraBrowser as DisabledCameraBrowser } from './Disabled';
+import { Camera as SimulatedCamera, CameraBrowser as SimulatedCameraBrowser } from './Simulated';
 import { Camera as StopMoCanonCamera, CameraBrowser as StopMoCanonBrowser } from './StopMoCanon';
 import { Camera as ToucanCameraServerCamera, CameraBrowser as ToucanCameraServerBrowser } from './ToucanCameraServer';
 import { Camera as WebcamCamera, CameraBrowser as WebcamCameraBrowser } from './Webcam';
@@ -10,6 +11,8 @@ import { Camera as WebGPhoto2Camera, CameraBrowser as WebGPhoto2CameraBrowser } 
 
 const getCameraModules = (compatibilityMode = false) => [
   { browser: DisabledCameraBrowser, item: DisabledCamera },
+  // Draws the set from the simulated turntable: lets the whole app be used with nothing plugged in
+  { browser: SimulatedCameraBrowser, item: SimulatedCamera },
   // Canon 5D Mark II through the StopMo helper, independent of Toucan / compatibility mode
   ...(STOPMO_CAMERA_AVAILABLE ? [{ browser: StopMoCanonBrowser, item: StopMoCanonCamera }] : []),
   ...(TOUCAN_CAMERA_SERVER_AVAILABLE && !compatibilityMode ? [{ browser: ToucanCameraServerBrowser, item: ToucanCameraServerCamera }] : []),
@@ -39,7 +42,7 @@ export const getCameras = async (compatibilityMode = false) => {
   }
 
   // The tethered Canon comes first so it is picked automatically when connected
-  const moduleWeights = { 'STOPMO-CANON': -1, GPHOTO2: 1, DISABLED: 2 };
+  const moduleWeights = { 'STOPMO-CANON': -1, GPHOTO2: 1, DISABLED: 2, SIMULATED: 3 };
   availableCameras.sort((a, b) => {
     const weightDiff = (moduleWeights[a.module] || 0) - (moduleWeights[b.module] || 0);
     if (weightDiff !== 0) return weightDiff;

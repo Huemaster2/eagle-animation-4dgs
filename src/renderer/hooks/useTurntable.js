@@ -1,4 +1,5 @@
 import { captureAlignFrame } from '@core/alignFrames';
+import { createSimulatedPort } from '@core/simulatedRig';
 import { observeTags, turnToView } from '@core/tagVision';
 import { turntable } from '@core/turntable';
 import { DEFAULT_TURNTABLE_PROFILE, getActiveProfile, getProfiles, normalizeProfile } from '@core/turntableProfiles';
@@ -52,6 +53,14 @@ function useTurntable() {
     [writeProfiles]
   );
 
+  // Same opening as a real board, with a stand-in in its place: for working with nothing plugged in
+  const connectSimulated = useCallback(async () => {
+    const p = getActiveProfile(getCurrentSettings() || settings);
+    await turntable.connectSimulated(createSimulatedPort, { restorePosition: p.lastPosition });
+    await turntable.setBacklash(p.backlash).catch(() => null);
+    await turntable.setSpeed(p.runUs, p.startUs, p.ramp).catch(() => null);
+  }, [settings]);
+
   const connect = useCallback(async () => {
     const p = getActiveProfile(getCurrentSettings() || settings);
     await turntable.connect({ restorePosition: p.lastPosition });
@@ -87,7 +96,7 @@ function useTurntable() {
     [settings]
   );
 
-  return { state, profile, profiles, actions: { connect, updateProfile, selectProfile, addProfile, deleteProfile, setView, goToView } };
+  return { state, profile, profiles, actions: { connect, connectSimulated, updateProfile, selectProfile, addProfile, deleteProfile, setView, goToView } };
 }
 
 export default useTurntable;

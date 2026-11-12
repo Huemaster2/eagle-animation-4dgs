@@ -1645,7 +1645,7 @@ const Animator = ({ t }) => {
             viewRowsOpen={viewRowsOpen}
             timelines={timelines}
             currentTimeline={track}
-            showRotationButton={STOPMO_CAMERA_AVAILABLE && !rotationEnabled}
+            showRotationButton={turntableState.connected && !rotationEnabled}
             canRotateFrame={!!currentFrame && turntableState.connected && !isPlaying && !rotationRun}
             frameHasRotation={!!currentFrame?.sequence?.shots?.length}
             rotationBlocked={!turntableState.connected ? t('The turntable is not connected') : !currentFrame ? t('Pick the frame on the timeline that the turn belongs to') : ''}
