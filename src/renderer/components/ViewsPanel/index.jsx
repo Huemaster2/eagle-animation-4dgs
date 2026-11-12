@@ -46,6 +46,9 @@ const ViewsPanel = ({
   onSettingsChange = () => {},
   onGo = null,
   useViews = true,
+  timelineName = '',
+  otherTimeline = null,
+  onCopyReference = null,
   referencePosition = 0,
 }) => {
   const input = useRef(null);
@@ -97,9 +100,10 @@ const ViewsPanel = ({
     </button>
   );
 
+  // With views off a sequence belongs to the timeline, not to a view, so they are all in one list
   const groups = [...(useViews ? PERSPECTIVES : []), ALL].map((view) => ({
     view,
-    refs: references.map(normalizeReference).filter((r) => (view === ALL ? !r.perspective : r.perspective === view)),
+    refs: references.map(normalizeReference).filter((r) => (view === ALL ? !useViews || !r.perspective : r.perspective === view)),
   }));
 
   return (
@@ -202,7 +206,7 @@ const ViewsPanel = ({
           {groups.map(({ view, refs }) => (
             <section key={view} className={`${style.group} ${active === view || (view === ALL && active === null) ? style.groupActive : ''}`}>
               <div className={style.groupHead}>
-                <span className={style.groupTitle}>{view === ALL ? t('All views') : t(view)}</span>
+                <span className={style.groupTitle}>{view === ALL ? (useViews ? t('All views') : timelineName || t('References')) : t(view)}</span>
                 <button type="button" className={style.small} disabled={!!importProgress} onClick={() => pickFolder(view)}>
                   {t('Import folder…')}
                 </button>
@@ -276,6 +280,16 @@ const ViewsPanel = ({
                       <button type="button" className={style.small} disabled={ref.offset === 0} onClick={() => onUpdateReference(ref.id, { offset: 0 })}>
                         {t('From the top')}
                       </button>
+                      {onCopyReference && otherTimeline && (
+                        <button
+                          type="button"
+                          className={style.small}
+                          title={t('Puts a copy of this sequence on the other timeline, with its own fade, position and start frame')}
+                          onClick={() => onCopyReference(ref.id, otherTimeline.index)}
+                        >
+                          {t('Copy to {{name}}', { name: otherTimeline.name })}
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>

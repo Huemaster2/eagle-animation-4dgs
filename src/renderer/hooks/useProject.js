@@ -508,6 +508,21 @@ function useProject(options) {
     [projectId]
   );
 
+  // Action put a copy of a reference sequence on another timeline: the frames are the project's, so only
+  // the record is copied, and the copy keeps its own fade, position, mirror and start frame
+  const actionCopyReference = useCallback(async (fromTrackId, referenceId, toTrackId) => {
+    const from = Number(fromTrackId);
+    const to = Number(toTrackId);
+    setProjectData((oldData) => {
+      let d = structuredClone(oldData);
+      const reference = (d.project.scenes[from]?.references || []).find((r) => r.id === referenceId);
+      if (reference && d.project.scenes[to]) {
+        d.project.scenes[to].references = [...(d.project.scenes[to].references || []), { ...structuredClone(reference), id: v4() }];
+      }
+      return d;
+    });
+  }, []);
+
   // Action update reference sequence display settings
   const actionUpdateReference = useCallback(async (trackId, referenceId, patch = {}) => {
     const sceneId = Number(trackId);
@@ -571,6 +586,7 @@ function useProject(options) {
       importReferenceSequence: actionImportReferenceSequence,
       savePerspectiveView: actionSavePerspectiveView,
       updateReference: actionUpdateReference,
+      copyReference: actionCopyReference,
       deleteReference: actionDeleteReference,
       undo: actionUndo,
       redo: actionRedo,

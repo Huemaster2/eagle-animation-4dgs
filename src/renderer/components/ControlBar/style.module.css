@@ -26,9 +26,10 @@
 }
 
 .subcontainer.center {
-  max-width: 156px;
+  flex: 0 0 auto;
+  gap: 4px;
+  justify-content: center;
   min-width: 156px;
-  width: 156px;
 }
 
 .slider {
@@ -80,6 +81,12 @@
   }
 
   .previewIndicator {
+    display: none;
+  }
+}
+
+@media (width <=1050px) {
+  .timelines {
     display: none;
   }
 }

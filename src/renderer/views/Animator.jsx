@@ -1864,6 +1864,9 @@ const Animator = ({ t }) => {
           busy={turntableState.moving}
           calibrated={Object.fromEntries(PERSPECTIVES.map((v) => [v, turntableState.connected && turntableProfile.perspectives[v] !== null]))}
           useViews={useViews}
+          timelineName={timelines.length > 1 ? t('Timeline {{n}}', { n: timelines.find((tl) => Number(tl.index) === Number(track))?.number || 1 }) : ''}
+          otherTimeline={otherTimeline ? { index: otherTimeline.index, name: t('Timeline {{n}}', { n: otherTimeline.number }) } : null}
+          onCopyReference={(referenceId, toTrack) => projectActions.copyReference(track, referenceId, toTrack)}
           references={sceneReferences}
           importProgress={referenceImport}
           exposure={currentCameraCapabilities.filter((c) => EXPOSURE_CAPABILITIES.includes(c.id))}
