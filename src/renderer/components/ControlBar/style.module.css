@@ -130,3 +130,31 @@
     gap: 0;
   }
 }
+
+.timelines {
+  display: flex;
+  gap: 2px;
+  margin-right: 4px;
+}
+
+.timelineButton {
+  background: var(--pf-button-face);
+  border: 1px solid var(--pf-line);
+  box-shadow: var(--pf-bevel);
+  color: var(--color-white);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: var(--font-size-6);
+  min-width: 26px;
+  padding: 4px 0;
+}
+
+.timelineButton:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.timelineButtonOn {
+  background: var(--pf-line);
+  color: var(--pf-paper);
+}

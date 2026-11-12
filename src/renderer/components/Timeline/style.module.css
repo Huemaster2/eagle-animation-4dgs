@@ -360,6 +360,14 @@
   --size: 54px;
 }
 
+.withCompanion {
+  --size: 54px;
+}
+
+.withReference.withCompanion {
+  --size: 36px;
+}
+
 .refTag {
   height: 26px;
 }

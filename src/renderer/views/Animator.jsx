@@ -227,6 +227,8 @@ const Animator = ({ t }) => {
   // Height the camera was last left at by a rotation capture (null until the first one: the app asks)
   const cameraHeightRef = useRef(null);
   const { state: turntableState, profile: turntableProfile, actions: turntableActions } = useTurntable();
+  // Views off: the table is placed by hand, so nothing picks a photo by angle and the view buttons are gone
+  const useViews = STOPMO_CAMERA_AVAILABLE && !!turntableProfile.useViews;
 
   // The Arduino forgets its position on reset, so every stop is remembered in the rig profile
   const updateTurntableProfile = useRef(turntableActions.updateProfile);
@@ -300,6 +302,11 @@ const Animator = ({ t }) => {
       setDeleteOnLiveViewConfirmation(false);
     })();
   }, [currentFrameId]);
+
+  // Views switched off: nothing is shown by angle any more, so no view stays selected
+  useEffect(() => {
+    if (!useViews) setActivePerspective(null);
+  }, [useViews]);
 
   // Reset per-scene local state when switching scenes
   useEffect(() => {
@@ -427,7 +434,7 @@ const Animator = ({ t }) => {
         )
   );
   // The view buttons appear once the rig has views set up or a reference sequence is tied to a view
-  const showPerspectives = STOPMO_CAMERA_AVAILABLE && (turntableState.connected || PERSPECTIVES.some((v) => turntableProfile.perspectives[v] !== null) || sceneReferences.some((r) => r.perspective));
+  const showPerspectives = useViews && (turntableState.connected || PERSPECTIVES.some((v) => turntableProfile.perspectives[v] !== null) || sceneReferences.some((r) => r.perspective));
   // Looking at captured frames rather than the live view: the views then only change which photo is shown
   const reviewingFrames = currentFrameId !== false || isPlaying;
   const rotationFrameCount = pictures.filter((p) => p.sequence?.shots?.length).length;
@@ -437,7 +444,8 @@ const Animator = ({ t }) => {
       ? true
       : Math.abs(nearestEquivalent(activeViewSteps, turntableState.position ?? activeViewSteps, turntableState.stepsPerRev) - (turntableState.position ?? 0)) <= 2;
   // One timeline per calibrated view: every frame's photo taken at that view's angle
-  const viewRows = PERSPECTIVES.map((view) => ({ view, steps: turntableProfile.perspectives[view] }))
+  const viewRows = (useViews ? PERSPECTIVES : [])
+    .map((view) => ({ view, steps: turntableProfile.perspectives[view] }))
     .filter(({ steps }) => steps !== null && steps !== undefined)
     .map(({ view, steps }) => {
       const angle = angleOf(steps, turntableState.stepsPerRev);
@@ -464,6 +472,12 @@ const Animator = ({ t }) => {
 
   const visibleScenes = project.scenes.map((s, index) => ({ ...s, index })).filter((s) => !s.deleted);
   const editingScene = project.scenes[sceneEditingIndex] || null;
+  // Each scene is a timeline of its own: two of them hold the same animation shot from two table positions
+  const timelines = visibleScenes.map((s, i) => ({ index: s.index, number: i + 1, count: s.pictures?.filter((p) => !p.deleted).length || 0 }));
+  const otherTimeline = timelines.length === 2 ? timelines.find((tl) => Number(tl.index) !== Number(track)) : null;
+  const goToTimeline = (index) => {
+    if (Number(index) !== Number(track)) navigate(`/animator/${id}/${index}`);
+  };
   const editingFps = Math.min(60, Math.max(1, Number(editingScene?.framerate) || 1));
   const editingRatio = editingScene?.ratio ? parseRatio(editingScene.ratio) : null;
 
@@ -499,10 +513,13 @@ const Animator = ({ t }) => {
 
   // Shutter with rotation capture on: a full turn of photos at every camera height, saved as one timeline frame.
   // `reshoot` ({ frame, height }) re-shoots one height of a frame already taken, leaving its other heights alone.
-  const runRotationCapture = async (replaceId = null, reshoot = null) => {
+  // `attachTo` is a frame already on the timeline: the full turn is shot and kept with it, and the photo
+  // the timeline shows stays the one that was taken by hand.
+  const runRotationCapture = async (replaceId = null, reshoot = null, attachTo = null) => {
     const profile = turntableProfile;
     const rev = turntable.state.stepsPerRev;
     const old = reshoot?.frame?.sequence || null;
+    const intoFrame = attachTo || reshoot?.frame || null;
     const heights = old ? old.heights : profile.heights;
     const heroHeight = old ? old.heroHeight : Math.min(profile.heroHeight, heights);
     const shotsPerPass = old ? old.shotsPerPass : profile.shotsPerPass;
@@ -525,8 +542,8 @@ const Animator = ({ t }) => {
         });
       });
     }
-    const number = old ? old.number : nextSequenceNumber(pictures);
-    const folder = old ? old.folder : frameFolderName(number);
+    const number = old ? old.number : attachTo?.sequence?.number || nextSequenceNumber(pictures);
+    const folder = old ? old.folder : attachTo?.sequence?.folder || frameFolderName(number);
     const saveTarget = old ? old.saveTarget : STOPMO_CAMERA_AVAILABLE ? getStopMoCaptureOptions().saveTarget : 'mac';
     const shots = [];
     let heroFrame = null;
@@ -546,7 +563,16 @@ const Animator = ({ t }) => {
     let shotStarted = Date.now();
     const shotTimes = [];
     rotationControl.current = { stop: false, paused: false, resume: null, continueHeight: null, retryShot: null, retryMove: null, redo: false };
-    const show = (patch) => setRotationRun((r) => ({ ...(r || {}), heights, shotsPerPass, reshooting: reshoot ? reshoot.height : null, folder: saveTarget === 'card' ? null : folder, ...patch }));
+    const show = (patch) =>
+      setRotationRun((r) => ({
+        ...(r || {}),
+        heights,
+        shotsPerPass,
+        reshooting: reshoot ? reshoot.height : null,
+        forFrame: intoFrame ? pictures.findIndex((p) => p.id === intoFrame.id) + 1 : 0,
+        folder: saveTarget === 'card' ? null : folder,
+        ...patch,
+      }));
     show({ phase: 'starting', done: 0, total: plan.total });
 
     const key = turntable.lock();
@@ -709,7 +735,10 @@ const Animator = ({ t }) => {
       };
       try {
         const extra = { ...(startView ? { perspective: startView } : {}), sequence };
-        if (reshoot && reshoot.height !== heroHeight) {
+        if (attachTo) {
+          // The frame keeps the photo it was animated with; the turn is only added to it
+          await projectActions.setFrameSequence(track, attachTo.id, sequence);
+        } else if (reshoot && reshoot.height !== heroHeight) {
           await projectActions.setFrameSequence(track, reshoot.frame.id, sequence);
         } else if (reshoot) {
           // The hero height is the photo the timeline shows, so that one is replaced as well
@@ -741,6 +770,11 @@ const Animator = ({ t }) => {
         return t('height {{h}}: the turn ended {{deg}} {{side}} and was corrected', { h: c.height, deg: degrees(c.moved), side: c.moved > 0 ? t('short') : t('past') });
       });
       setNotice({ tone: closures.every((c) => c.converged) ? 'info' : 'warning', message: `${t('Tag check after each full turn')} — ${lines.join('; ')}.` });
+    } else if (attachTo) {
+      setNotice({
+        tone: 'info',
+        message: t('{{n}} photos added to frame {{f}}{{where}}.', { n: shots.length, f: pictures.findIndex((p) => p.id === attachTo.id) + 1, where: folder ? ` — ${folder}` : '' }),
+      });
     } else if (reshoot) {
       // The originals of the replaced photos stay on disk: nothing captured is ever written over
       setNotice({
@@ -1098,6 +1132,30 @@ const Animator = ({ t }) => {
     // Plays the reference sequence over the live view; from the top again once it has run out
     REFERENCE_VISIBLE: () => settingsActions.setSettings({ REFERENCES_HIDDEN: !settings.REFERENCES_HIDDEN }),
     VIEW_ROWS: () => settingsActions.setSettings({ VIEW_ROWS: { OPEN: !settings.VIEW_ROWS?.OPEN } }),
+    SELECT_TIMELINE: (index) => goToTimeline(index),
+    NEXT_TIMELINE: () => {
+      if (visibleScenes.length < 2) return;
+      const at = visibleScenes.findIndex((s) => Number(s.index) === Number(track));
+      goToTimeline(visibleScenes[(at + 1) % visibleScenes.length].index);
+    },
+    // Shoots the whole turn for the frame on the timeline, leaving the photo it was animated with in place
+    ROTATION_FOR_FRAME: async () => {
+      if (isTakingPicture || isPlaying || rotationRun) return;
+      if (!currentFrame) {
+        setNotice({ tone: 'warning', message: t('Pick the frame on the timeline that the turn belongs to first.') });
+        return;
+      }
+      if (!turntableState.connected) {
+        setNotice({ tone: 'warning', message: t('The turntable is not connected.') });
+        return;
+      }
+      flushSync(() => setIsTakingPicture(true));
+      try {
+        await runRotationCapture(null, null, currentFrame);
+      } finally {
+        flushSync(() => setIsTakingPicture(false));
+      }
+    },
     ONION_TOGGLE: () => {
       settingsActions.setSettings({ ONION_SKIN: { ...onionConfig, ENABLED: !onionConfig.ENABLED } });
     },
@@ -1582,8 +1640,15 @@ const Animator = ({ t }) => {
             showOnionSettings={activeWindow === 'onion'}
             hasReference={referenceLength > 0}
             referencesHidden={referencesHidden}
-            hasViewRows={viewRows.length > 0}
+            hasViewRows={useViews ? viewRows.length > 0 : !!otherTimeline}
+            viewRowsIsOtherTimeline={!useViews}
             viewRowsOpen={viewRowsOpen}
+            timelines={timelines}
+            currentTimeline={track}
+            showRotationButton={STOPMO_CAMERA_AVAILABLE && !rotationEnabled}
+            canRotateFrame={!!currentFrame && turntableState.connected && !isPlaying && !rotationRun}
+            frameHasRotation={!!currentFrame?.sequence?.shots?.length}
+            rotationBlocked={!turntableState.connected ? t('The turntable is not connected') : !currentFrame ? t('Pick the frame on the timeline that the turn belongs to') : ''}
             isPlaying={isPlaying}
             isCameraReady={!!currentCamera}
             isTakingPicture={isTakingPicture}
@@ -1608,7 +1673,7 @@ const Animator = ({ t }) => {
                 setShotPreview(filename ? { frameId: expandedFrame.id, filename } : null);
                 if (filename) handleSelectFrame(expandedFrame.id);
               }}
-              views={PERSPECTIVES}
+              views={useViews ? PERSPECTIVES : []}
               picks={Object.fromEntries(
                 PERSPECTIVES.map((view) => {
                   const steps = turntableProfile.perspectives[view];
@@ -1662,6 +1727,14 @@ const Animator = ({ t }) => {
             />
           )}
           <Timeline
+            companionCells={
+              !useViews && viewRowsOpen && otherTimeline
+                ? {
+                    name: t('Timeline {{n}}', { n: otherTimeline.number }),
+                    cells: (project.scenes[otherTimeline.index]?.pictures || []).filter((p) => !p.deleted).map((p, i) => ({ id: p.id, position: i + 1, link: p.link })),
+                  }
+                : null
+            }
             referenceCells={referenceCells}
             onReferenceSeek={(position) => {
               if (currentFrameId !== false) handleSelectFrame(false);
@@ -1790,6 +1863,7 @@ const Animator = ({ t }) => {
           reviewing={reviewingFrames}
           busy={turntableState.moving}
           calibrated={Object.fromEntries(PERSPECTIVES.map((v) => [v, turntableState.connected && turntableProfile.perspectives[v] !== null]))}
+          useViews={useViews}
           references={sceneReferences}
           importProgress={referenceImport}
           exposure={currentCameraCapabilities.filter((c) => EXPOSURE_CAPABILITIES.includes(c.id))}

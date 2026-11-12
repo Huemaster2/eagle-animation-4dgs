@@ -96,7 +96,17 @@ const TurntableQuickControls = ({ t, activeView = null, onGo = null }) => {
 
       <TurntableAngleSlider state={state} onError={fail} />
 
-      {activeView && (
+      <label className={`${style.readout} ${style.label}`}>
+        <span>{t('Saved views (FRONT, RIGHT, BACK, LEFT)')}</span>
+        <Switch checked={profile.useViews} onChange={() => actions.updateProfile({ useViews: !profile.useViews })} />
+      </label>
+      <p className={style.hint}>
+        {profile.useViews
+          ? t('The view buttons turn the table to a saved angle, and the timeline shows every frame from that view.')
+          : t('Off: place the table by hand, take an ordinary photo, and shoot the full turn for that frame afterwards. Saved views are kept.')}
+      </p>
+
+      {profile.useViews && activeView && (
         <div className={style.calibrate}>
           <span className={style.hint}>{t('{{view}} reference is on the picture. Turn the table until the live view lines up with it, then:', { view: t(activeView) })}</span>
           <button type="button" className={`${style.btn} ${style.primary}`} disabled={!ready} onClick={() => setView(activeView)}>
@@ -139,8 +149,8 @@ const TurntableQuickControls = ({ t, activeView = null, onGo = null }) => {
         <span>{t('Shutter takes a full turn ({{n}} × {{h}} heights)', { n: profile.shotsPerPass, h: profile.heights })}</span>
         <Switch checked={profile.rotationCapture} onChange={() => actions.updateProfile({ rotationCapture: !profile.rotationCapture })} />
       </label>
-      <p className={style.label}>{t('Views')}</p>
-      {PERSPECTIVES.map((key) => {
+      {profile.useViews && <p className={style.label}>{t('Views')}</p>}
+      {(profile.useViews ? PERSPECTIVES : []).map((key) => {
         const value = profile.perspectives[key];
         return (
           <div className={style.viewRow} key={key}>
@@ -193,7 +203,7 @@ const TurntableQuickControls = ({ t, activeView = null, onGo = null }) => {
       </label>
       <p className={style.hint}>{t('Pause is the wait after each turn before the photo, for the puppet to stop swaying. A soft start is slower over short turns but least likely to skip steps.')}</p>
 
-      {STOPMO_CAMERA_AVAILABLE && (
+      {STOPMO_CAMERA_AVAILABLE && profile.useViews && (
         <>
           <label className={`${style.readout} ${style.label}`}>
             <span>{t('Align with AprilTags')}</span>

@@ -161,6 +161,7 @@ const Timeline = ({
   onExpand = () => {},
   selectedIds = [],
   viewLabel = null,
+  companionCells = null,
   referenceCells = null,
   onReferenceSeek = () => {},
 }) => {
@@ -323,7 +324,7 @@ const Timeline = ({
   return (
     <div className={style.wrapper} data-tour="timeline">
       <aside
-        className={`${style.container} ${playing ? style.playing : ''} ${referenceCells ? style.withReference : ''}`}
+        className={`${style.container} ${playing ? style.playing : ''} ${referenceCells ? style.withReference : ''} ${companionCells ? style.withCompanion : ''}`}
         ref={ref}
         onScroll={updateShadows}
         onMouseDownCapture={(e) => {
@@ -355,6 +356,22 @@ const Timeline = ({
           />
           <LiveItem select={select} onSelect={stableOnSelect} frameCaptureMode={frameCaptureMode} />
         </div>
+        {companionCells && (
+          <div className={style.row}>
+            <span className={`${style.viewTag} ${style.refTag}`}>
+              <span className={style.viewTagName}>{companionCells.name}</span>
+            </span>
+            {companionCells.cells.map((cell) => (
+              <span key={cell.id} className={style.refCell} title={t('Frame {{n}} of {{name}}', { n: cell.position, name: companionCells.name })}>
+                {cell.link ? (
+                  <img alt="" className={style.refCellImg} src={getPictureLink(cell.link, { w: 80, h: 26, m: 'cover', f: 'jpg' })} loading="lazy" />
+                ) : (
+                  <span className={style.refCellEmpty} />
+                )}
+              </span>
+            ))}
+          </div>
+        )}
         {referenceCells && (
           <div className={style.row}>
             <span className={`${style.viewTag} ${style.refTag}`}>

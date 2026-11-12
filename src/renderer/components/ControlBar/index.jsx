@@ -22,6 +22,7 @@ import faLayer from '@icons/faLayer';
 import faPen from '@icons/faPen';
 import faPlay from '@icons/faPlay';
 import faRectangleHistory from '@icons/faRectangleHistory';
+import faRotate from '@icons/faRotate';
 import faSliders from '@icons/faSliders';
 import faStop from '@icons/faStop';
 import faTrash from '@icons/faTrash';
@@ -64,6 +65,13 @@ const ControlBar = ({
   referencesHidden = false,
   hasViewRows = false,
   viewRowsOpen = false,
+  viewRowsIsOtherTimeline = false,
+  timelines = [],
+  currentTimeline = 0,
+  showRotationButton = false,
+  canRotateFrame = false,
+  frameHasRotation = false,
+  rotationBlocked = '',
   onAction = null,
   totalAnimationFrames = 0,
   t,
@@ -187,7 +195,13 @@ const ControlBar = ({
             groupClassName={style.liveViewActions}
             actions={[
               {
-                title: viewRowsOpen ? t('Hide the view timelines') : t('View timelines (one row per view)'),
+                title: viewRowsIsOtherTimeline
+                  ? viewRowsOpen
+                    ? t('Hide the other timeline')
+                    : t('Show the other timeline under this one')
+                  : viewRowsOpen
+                    ? t('Hide the view timelines')
+                    : t('View timelines (one row per view)'),
                 selected: viewRowsOpen,
                 onClick: handleAction('VIEW_ROWS'),
                 icon: faRectangleHistory,
@@ -218,6 +232,34 @@ const ControlBar = ({
         </div>
       </div>
       <div className={`${style.subcontainer} ${style.center}`}>
+        {timelines.length > 0 && (
+          <div className={style.timelines} role="group" aria-label={t('Timelines')}>
+            {timelines.map((timeline) => (
+              <button
+                key={timeline.index}
+                type="button"
+                className={`${style.timelineButton} ${Number(timeline.index) === Number(currentTimeline) ? style.timelineButtonOn : ''}`}
+                aria-pressed={Number(timeline.index) === Number(currentTimeline)}
+                title={t('Timeline {{n}} — {{count}} frames', { n: timeline.number, count: timeline.count })}
+                disabled={isPlaying}
+                onClick={handleAction('SELECT_TIMELINE', timeline.index)}
+              >
+                {timeline.number}
+              </button>
+            ))}
+            {timelines.length < 2 && (
+              <button
+                type="button"
+                className={style.timelineButton}
+                title={t('Add a second timeline, for animating the same shot from another angle')}
+                disabled={isPlaying}
+                onClick={handleAction('ADD_SCENE')}
+              >
+                +
+              </button>
+            )}
+          </div>
+        )}
         <Button
           title={t('Camera settings')}
           selected={showCameraSettings}
@@ -227,6 +269,16 @@ const ControlBar = ({
           dataTour="camera-settings"
         />
         <Button disabled={isTakingPicture || !isCameraReady} onClick={handleAction('TAKE_PICTURE')} color="primary" icon={faCamera} title={t('Take a picture')} dataTour="capture" />
+        {showRotationButton && (
+          <Button
+            size="mini"
+            icon={faRotate}
+            selected={frameHasRotation}
+            disabled={!canRotateFrame || isTakingPicture}
+            onClick={handleAction('ROTATION_FOR_FRAME')}
+            title={rotationBlocked || (frameHasRotation ? t('Shoot the full turn for this frame again') : t('Shoot the full turn for this frame (every height)'))}
+          />
+        )}
 
         <Button
           title={t('Masking mode ({{status}})', { status: (MASKING_MODES[maskingMode] || MASKING_MODES.DISABLED)(t) })}

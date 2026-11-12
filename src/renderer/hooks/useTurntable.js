@@ -27,7 +27,7 @@ function useTurntable() {
     [settings, settingsActions]
   );
 
-  const updateProfile = useCallback((patch) => writeProfiles((list, activeId) => ({ list: list.map((p) => (p.id === activeId ? { ...p, ...patch } : p)) })), [writeProfiles]);
+  const updateProfile = useCallback((patch) => writeProfiles((list, activeId) => ({ list: list.map((p) => (p.id === activeId ? { ...normalizeProfile(p), ...patch } : p)) })), [writeProfiles]);
 
   const selectProfile = useCallback((id) => writeProfiles((list) => ({ list, activeId: id })), [writeProfiles]);
 

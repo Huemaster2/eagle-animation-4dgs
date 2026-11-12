@@ -29,6 +29,9 @@ export const DEFAULT_TURNTABLE_PROFILE = {
   handAlign: { FRONT: false, RIGHT: false, BACK: false, LEFT: false },
   // view -> { height, index }: the photo of every rotation that stands for the view, picked by hand
   viewShots: {},
+  // The saved FRONT/RIGHT/BACK/LEFT views and everything that turns the table to them. Off means the table
+  // is placed by hand, the shutter takes one ordinary photo, and a rotation is asked for frame by frame.
+  useViews: false,
 };
 
 // Table speed and acceleration as two plain choices. The board takes step delays; a step lasts twice the delay.
@@ -73,11 +76,13 @@ export const normalizeProfile = (p = {}) => {
     // Profiles saved before rotation capture used 19 photos per pass; the rig now shoots 25
     shotsPerPass: Math.min(360, Math.max(1, Math.round(num(!p.version && Number(p.shotsPerPass) === 19 ? 25 : p.shotsPerPass, d.shotsPerPass)))),
     heights: Math.min(10, Math.max(1, Math.round(num(p.heights, d.heights)))),
-    rotationCapture: p.rotationCapture === undefined ? d.rotationCapture : !!p.rotationCapture,
+    // A rig set up before views could be switched off starts by hand, with the shutter back to single photos
+    useViews: p.useViews === undefined ? d.useViews : !!p.useViews,
+    rotationCapture: num(p.version, 0) < 3 ? false : p.rotationCapture === undefined ? d.rotationCapture : !!p.rotationCapture,
     rotationStart: [...PERSPECTIVES, 'CURRENT'].includes(p.rotationStart) ? p.rotationStart : d.rotationStart,
     heroHeight: Math.max(1, Math.round(num(p.heroHeight, d.heroHeight))),
     alternateHeights: p.alternateHeights === undefined ? d.alternateHeights : !!p.alternateHeights,
-    version: 2,
+    version: 3,
     settleMs: Math.min(10000, Math.max(0, Math.round(num(p.settleMs, d.settleMs)))),
     backlash: Math.min(500, Math.max(0, Math.round(num(p.backlash, d.backlash)))),
     runUs: Math.max(200, Math.round(num(p.runUs, d.runUs))),

@@ -34,6 +34,8 @@ const SHORTCUTS = {
   DUPLICATE: ['pageup'],
   DEDUPLICATE: ['pagedown'],
   GRID: ['g'],
+  ROTATION_FOR_FRAME: ['r'],
+  NEXT_TIMELINE: ['t'],
   ADD_SCENE: ['ctrl+n'],
   UNDO: ['ctrl+z'],
   REDO: ['ctrl+y', 'ctrl+shift+z'],

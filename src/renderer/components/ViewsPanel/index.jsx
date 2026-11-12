@@ -45,6 +45,7 @@ const ViewsPanel = ({
   onExposureRefresh = () => {},
   onSettingsChange = () => {},
   onGo = null,
+  useViews = true,
   referencePosition = 0,
 }) => {
   const input = useRef(null);
@@ -96,7 +97,7 @@ const ViewsPanel = ({
     </button>
   );
 
-  const groups = [...PERSPECTIVES, ALL].map((view) => ({
+  const groups = [...(useViews ? PERSPECTIVES : []), ALL].map((view) => ({
     view,
     refs: references.map(normalizeReference).filter((r) => (view === ALL ? !r.perspective : r.perspective === view)),
   }));
@@ -156,7 +157,7 @@ const ViewsPanel = ({
 
       {tab === 'views' && (
         <div className={style.body}>
-          <div className={style.cross}>
+          <div className={`${style.cross} ${useViews ? '' : style.hidden}`}>
             {PERSPECTIVES.map(viewButton)}
             <button
               type="button"
