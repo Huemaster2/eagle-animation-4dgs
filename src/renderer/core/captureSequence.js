@@ -54,6 +54,20 @@ export const nearestShot = (sequence, angle, height = sequence?.heroHeight) => {
   return pool.reduce((best, s) => (angleGap(s.angle, angle) < angleGap(best.angle, angle) ? s : best), pool[0]);
 };
 
+// The photo of a frame's rotation that stands for a view: the one picked by hand for this frame, else the one
+// picked for every frame, else the photo nearest the view's motor angle (null when the view has neither)
+export const shotForView = (sequence, view, angle = null, defaults = {}) => {
+  const usable = (sequence?.shots || []).filter((s) => s.link || s.filename);
+  if (!usable.length) return null;
+  const find = (pick) => (pick ? usable.find((s) => s.height === pick.height && s.index === pick.index) : null);
+  const own = find(sequence?.viewShots?.[view]);
+  const picked = own || find(defaults?.[view]);
+  if (picked) return { shot: picked, picked: own ? 'frame' : 'all' };
+  if (angle === null || angle === undefined) return null;
+  const nearest = nearestShot(sequence, angle);
+  return nearest ? { shot: nearest, picked: null } : null;
+};
+
 export const shotAngle = (steps, stepsPerRev) => {
   const deg = stepsToDegrees(steps, stepsPerRev) % 360;
   return Math.round((deg < 0 ? deg + 360 : deg) * 100) / 100;

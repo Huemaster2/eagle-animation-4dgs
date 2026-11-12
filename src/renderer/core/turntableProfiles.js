@@ -27,6 +27,8 @@ export const DEFAULT_TURNTABLE_PROFILE = {
   rotationRefs: {}, // "view:height" -> where the tags were at the first photo of a rotation
   // Views finished by hand: after the motor turn, the table is nudged against a stored picture of the view
   handAlign: { FRONT: false, RIGHT: false, BACK: false, LEFT: false },
+  // view -> { height, index }: the photo of every rotation that stands for the view, picked by hand
+  viewShots: {},
 };
 
 // Table speed and acceleration as two plain choices. The board takes step delays; a step lasts twice the delay.
@@ -85,6 +87,7 @@ export const normalizeProfile = (p = {}) => {
     tags: { enabled: !!p.tags?.enabled, family: typeof p.tags?.family === 'string' ? p.tags.family : d.tags.family },
     tagRefs: p.tagRefs && typeof p.tagRefs === 'object' ? p.tagRefs : {},
     rotationRefs: p.rotationRefs && typeof p.rotationRefs === 'object' ? p.rotationRefs : {},
+    viewShots: p.viewShots && typeof p.viewShots === 'object' ? p.viewShots : {},
     handAlign: Object.fromEntries(Object.keys(d.handAlign).map((view) => [view, !!p.handAlign?.[view]])),
   };
 };

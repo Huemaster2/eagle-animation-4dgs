@@ -183,6 +183,18 @@ function useProject(options) {
     });
   }, []);
 
+  // Action drop every frame's own choice of photo for a view, so one choice made for all frames applies
+  const actionClearViewShots = useCallback(async (trackId, view) => {
+    const sceneId = Number(trackId);
+    setProjectData((oldData) => {
+      let d = structuredClone(oldData);
+      for (const p of d.project.scenes[sceneId]?.pictures || []) {
+        if (p.sequence?.viewShots) delete p.sequence.viewShots[view];
+      }
+      return d;
+    });
+  }, []);
+
   // Action rename
   const actionRename = useCallback(async (title) => {
     setProjectData((oldData) => {
@@ -546,6 +558,7 @@ function useProject(options) {
       deleteFrames: actionDeleteFrames,
       setFrameNote: actionSetFrameNote,
       setFrameSequence: actionSetFrameSequence,
+      clearViewShots: actionClearViewShots,
       replaceFrame: actionReplaceFrame,
       rename: actionRename,
       moveFrame: actionMoveFrame,

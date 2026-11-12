@@ -35,7 +35,7 @@ import Window from '@components/Window';
 import XSheet from '@components/XSheet';
 import { DEFAULT_FPS, MAX_FRAME_DUPLICATION } from '@config-web';
 import { captureAlignFrame, getAlignFrame } from '@core/alignFrames';
-import { angleGap, downscaleFrame, frameFolderName, nearestShot, nextSequenceNumber, planSequence, redoHeightError, runSequence, shotAngle, shotBaseName } from '@core/captureSequence';
+import { angleGap, downscaleFrame, frameFolderName, nextSequenceNumber, planSequence, redoHeightError, runSequence, shotAngle, shotBaseName, shotForView } from '@core/captureSequence';
 import { selectionClick } from '@core/frameSelection';
 import { normalizeOnionSkin } from '@core/onionSkin';
 import { referenceMatchesPerspective } from '@core/perspectives';
@@ -379,12 +379,14 @@ const Animator = ({ t }) => {
   const viewSteps = activePerspective ? turntableProfile.perspectives[activePerspective] : null;
   const viewAngle = viewSteps === null || viewSteps === undefined ? null : angleOf(viewSteps, turntableState.stepsPerRev);
   const viewPictures = pictures.map((p) => {
-    if (!p.sequence || viewAngle === null) return p;
-    const shot = nearestShot(p.sequence, viewAngle);
-    if (!shot?.link) return p;
+    if (!p.sequence || !activePerspective) return p;
+    // A photo picked by hand for this view wins over the one nearest the motor's idea of the angle
+    const found = shotForView(p.sequence, activePerspective, viewAngle, turntableProfile.viewShots);
+    if (!found?.shot?.link) return p;
+    const { shot } = found;
     // The timeline frame carries the angle it is showing, and whether the turn ever reached this view
     const spacing = 360 / (2 * Math.max(1, p.sequence?.shotsPerPass || 1));
-    return { ...p, link: shot.link, shotAngle: shot.angle, shotOff: angleGap(shot.angle, viewAngle) > spacing + 0.5 };
+    return { ...p, link: shot.link, shotAngle: shot.angle, shotOff: !found.picked && angleGap(shot.angle, viewAngle) > spacing + 0.5 };
   });
   const playerPictures = shotPreview
     ? viewPictures.map((p) => {
@@ -443,10 +445,11 @@ const Animator = ({ t }) => {
         view,
         angle,
         frames: pictures.map((p) => {
-          const shot = p.sequence ? nearestShot(p.sequence, angle) : null;
+          const found = p.sequence ? shotForView(p.sequence, view, angle, turntableProfile.viewShots) : null;
+          const shot = found?.shot || null;
           // A turn that stopped early has no photo near some views: the nearest one is shown, marked as off-angle
           const spacing = 360 / (2 * Math.max(1, p.sequence?.shotsPerPass || 1));
-          const gap = shot ? angleGap(shot.angle, angle) : null;
+          const gap = shot && !found.picked ? angleGap(shot.angle, angle) : null;
           return { id: p.id, link: shot?.link || p.link, angle: shot ? shot.angle : null, own: !shot?.link, off: gap !== null && gap > spacing + 0.5 };
         }),
       };
@@ -701,6 +704,8 @@ const Animator = ({ t }) => {
         startView,
         complete: reshoot ? !!old.complete && !!result?.complete : !!result?.complete,
         shots: merged,
+        // Photos picked by hand for the views stay picked when one height is shot again
+        ...(old?.viewShots ? { viewShots: old.viewShots } : {}),
       };
       try {
         const extra = { ...(startView ? { perspective: startView } : {}), sequence };
@@ -1602,6 +1607,24 @@ const Animator = ({ t }) => {
               onPreview={(filename) => {
                 setShotPreview(filename ? { frameId: expandedFrame.id, filename } : null);
                 if (filename) handleSelectFrame(expandedFrame.id);
+              }}
+              views={PERSPECTIVES}
+              picks={Object.fromEntries(
+                PERSPECTIVES.map((view) => {
+                  const steps = turntableProfile.perspectives[view];
+                  const found = shotForView(expandedFrame.sequence, view, steps === null || steps === undefined ? null : angleOf(steps, turntableState.stepsPerRev), turntableProfile.viewShots);
+                  return [view, found ? { height: found.shot.height, index: found.shot.index, picked: found.picked } : null];
+                })
+              )}
+              onPick={(view, shot, everyFrame) => {
+                const pick = shot ? { height: shot.height, index: shot.index } : undefined;
+                if (everyFrame) {
+                  // One choice for all frames: each frame's own choice for this view gives way to it
+                  updateTurntableProfile.current({ viewShots: { ...turntableProfile.viewShots, [view]: pick } });
+                  projectActions.clearViewShots(track, view);
+                } else {
+                  projectActions.setFrameSequence(track, expandedFrame.id, { ...expandedFrame.sequence, viewShots: { ...(expandedFrame.sequence.viewShots || {}), [view]: pick } });
+                }
               }}
               canReshoot={turntableState.connected && !rotationRun}
               onReshootHeight={(height) => runRotationCapture(null, { frame: expandedFrame, height })}
