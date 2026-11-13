@@ -7,7 +7,7 @@ import { TAG_FAMILIES } from '@core/tagDetect';
 import { observeTags } from '@core/tagVision';
 import { turntable } from '@core/turntable';
 import { angleOf, degreesToSteps, PERSPECTIVES } from '@core/turntableMath';
-import { ACCEL_LEVELS, motorTuning, SPEED_LEVELS, tuningLevels, turnStepsFor } from '@core/turntableProfiles';
+import { ACCEL_LEVELS, motorTuning, SPEED_LEVELS, tuningLevels } from '@core/turntableProfiles';
 import useTurntable from '@hooks/useTurntable';
 import { useEffect, useState } from 'react';
 import { withTranslation } from 'react-i18next';
@@ -25,43 +25,54 @@ export const tagFailure = (t, tags) => {
 };
 
 // Compact turntable page for the floating panel, so the table can be set up while watching the live view
-// How far the table turns between the photos of a full turn. A turn has to come back to where it started,
-// so the step is set as a whole number of photos: the figure typed in is snapped to the nearest that fits.
-// How far the table turns between the photos of a full turn
+// A number that can be typed into freely: the field keeps what is being typed, and every value that reads
+// as a number is passed on, so there is nothing to press afterwards
+const NumberField = ({ label, value, min, max, step = 1, width, onCommit }) => {
+  const [text, setText] = useState(String(value));
+  useEffect(() => {
+    if (Number(text) !== value) setText(String(value));
+    // Only the stored value is watched: syncing on `text` would undo what is being typed
+  }, [value]);
+  return (
+    <input
+      type="number"
+      className={style.number}
+      style={width ? { width } : undefined}
+      min={min}
+      max={max}
+      step={step}
+      value={text}
+      aria-label={label}
+      onChange={(event) => {
+        setText(event.target.value);
+        const next = Number(event.target.value);
+        if (Number.isFinite(next) && next >= min && next <= max) onCommit(next);
+      }}
+    />
+  );
+};
+
+// How far the table turns between photos, and how many photos a pass takes: two separate things
 const TurnStep = ({ t, profile, onChange }) => {
-  const exact = 360 / Math.max(1, profile.shotsPerPass);
-  const steps = turnStepsFor(profile.shotsPerPass);
+  const span = (profile.shotsPerPass - 1) * profile.stepDegrees;
   return (
     <>
-      <p className={style.label}>{t('Full turn')}</p>
+      <p className={style.label}>{t('Rotation photos')}</p>
       <div className={style.row}>
         <span className={style.viewName}>{t('Every')}</span>
-        <select
-          className={style.number}
-          value={String(exact)}
-          aria-label={t('Degrees the table turns between photos')}
-          onChange={(event) => onChange({ shotsPerPass: Math.max(1, Math.round(360 / Number(event.target.value))) })}
-        >
-          {steps.map((degrees) => (
-            <option key={degrees} value={String(degrees)}>
-              {t('{{deg}}° — {{n}} photos', { deg: Number(degrees.toFixed(2)), n: Math.round(360 / degrees) })}
-            </option>
-          ))}
-        </select>
-        <span className={style.viewName}>{t('Heights')}</span>
-        <input
-          type="number"
-          className={style.number}
-          min={1}
-          max={10}
-          step={1}
-          value={profile.heights}
-          aria-label={t('Camera heights')}
-          onChange={(event) => onChange({ heights: Math.min(10, Math.max(1, Math.round(Number(event.target.value) || 1))) })}
-        />
+        <NumberField label={t('Degrees the table turns between photos')} value={profile.stepDegrees} min={0.1} max={360} step={0.1} onCommit={(stepDegrees) => onChange({ stepDegrees })} />
+        <span className={style.viewName}>°</span>
+        <NumberField label={t('Photos per turn')} value={profile.shotsPerPass} min={1} max={1000} onCommit={(shotsPerPass) => onChange({ shotsPerPass })} />
+        <span className={style.viewName}>{t('photos')}</span>
+        <NumberField label={t('Camera heights')} value={profile.heights} min={1} max={10} width={46} onCommit={(heights) => onChange({ heights })} />
+        <span className={style.viewName}>{t('heights')}</span>
       </div>
       <p className={style.hint}>
-        {t('{{total}} photos per frame: {{n}} around the circle at each of {{h}} heights.', { total: profile.shotsPerPass * profile.heights, n: profile.shotsPerPass, h: profile.heights })}
+        {t('{{span}}° in all, {{turns}}. The table finishes the turn it is on before the next height, so every height starts in the same place. {{total}} photos per frame.', {
+          span: Math.round(span * 10) / 10,
+          turns: span < 360 ? t('less than one turn') : t('{{n}} turns', { n: Math.round((span / 360) * 10) / 10 }),
+          total: profile.shotsPerPass * profile.heights,
+        })}
       </p>
     </>
   );

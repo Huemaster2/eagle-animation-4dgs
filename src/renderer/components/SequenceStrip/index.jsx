@@ -116,7 +116,7 @@ const SequenceStrip = ({
                     onClick={() => onPreview(isSelected ? null : shot.filename)}
                   >
                     {shot.link && <img alt="" src={getPictureLink(shot.link, { w: 96, h: 64, m: 'cover', f: 'jpg' })} loading="lazy" />}
-                    <span className={style.angle}>{Math.round(shot.offset ?? shot.angle)}°</span>
+                    <span className={style.angle}>{Math.round((shot.offset ?? shot.angle) % 360)}°</span>
                     {standsFor(shot).length > 0 && (
                       <span className={style.viewMark}>
                         {standsFor(shot)

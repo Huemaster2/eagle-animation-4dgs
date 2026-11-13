@@ -6,7 +6,6 @@ import TurntableAngleSlider from '@components/TurntableAngleSlider';
 import { flashArduinoUno } from '@core/arduinoFlasher';
 import { findArduinoPort, turntable } from '@core/turntable';
 import { angleOf, degreesToSteps, nearestEquivalent, PERSPECTIVES } from '@core/turntableMath';
-import { turnStepsFor } from '@core/turntableProfiles';
 import useTurntable from '@hooks/useTurntable';
 import { useEffect, useState } from 'react';
 import { withTranslation } from 'react-i18next';
@@ -76,8 +75,8 @@ const TurntableWindow = ({ t }) => {
 
   // Stops of one full turn from the start view (or from where the table is)
   const startSteps = PERSPECTIVES.includes(profile.rotationStart) && profile.perspectives[profile.rotationStart] !== null ? profile.perspectives[profile.rotationStart] : (state.position ?? 0);
-  const shots = Array.from({ length: profile.shotsPerPass }, (_, i) => startSteps + (i * rev) / profile.shotsPerPass);
-  const interval = 360 / profile.shotsPerPass;
+  const interval = profile.stepDegrees;
+  const shots = Array.from({ length: profile.shotsPerPass }, (_, i) => startSteps + (i * interval * rev) / 360);
 
   useEffect(() => {
     if (previewIndex >= shots.length) setPreviewIndex(0);
@@ -229,15 +228,9 @@ const TurntableWindow = ({ t }) => {
         </label>
         <div className={style.row}>
           <span className={style.label}>{t('Photos per turn')}</span>
-          <input className={style.number} type="number" min={1} max={360} value={profile.shotsPerPass} onChange={(e) => actions.updateProfile({ shotsPerPass: e.target.value })} />
+          <input className={style.number} type="number" min={1} max={1000} value={profile.shotsPerPass} onChange={(e) => actions.updateProfile({ shotsPerPass: e.target.value })} />
           <span className={style.label}>{t('Degrees apart')}</span>
-          <select className={style.number} value={String(interval)} onChange={(e) => actions.updateProfile({ shotsPerPass: Math.max(1, Math.round(360 / Number(e.target.value))) })}>
-            {turnStepsFor(profile.shotsPerPass).map((degrees) => (
-              <option key={degrees} value={String(degrees)}>
-                {t('{{deg}}° — {{n}} photos', { deg: Number(degrees.toFixed(2)), n: Math.round(360 / degrees) })}
-              </option>
-            ))}
-          </select>
+          <input className={style.number} type="number" min={0.1} max={360} step={0.1} value={profile.stepDegrees} onChange={(e) => actions.updateProfile({ stepDegrees: e.target.value })} />
           <span className={style.label}>{t('Camera heights')}</span>
           <input className={style.number} type="number" min={1} max={10} value={profile.heights} onChange={(e) => actions.updateProfile({ heights: e.target.value })} />
           <span className={style.label}>{t('Settle (ms)')}</span>
@@ -266,10 +259,11 @@ const TurntableWindow = ({ t }) => {
         </label>
         <p className={style.hint}>
           {t(
-            '{{n}} photos every {{deg}} around a full circle, at {{heights}} heights you set by hand: {{total}} photos per frame. The photo at the start view and height {{hero}} is the frame shown in the timeline; the rest open from the frame.',
+            '{{n}} photos {{deg}} apart ({{span}} in all), at {{heights}} heights you set by hand: {{total}} photos per frame. The table finishes the turn it is on before the next height. The photo at the start view and height {{hero}} is the frame shown in the timeline; the rest open from the frame.',
             {
               n: profile.shotsPerPass,
               deg: fmt(interval),
+              span: fmt((profile.shotsPerPass - 1) * interval),
               heights: profile.heights,
               total: profile.shotsPerPass * profile.heights,
               hero: Math.min(profile.heroHeight, profile.heights),

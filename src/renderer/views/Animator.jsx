@@ -530,9 +530,10 @@ const Animator = ({ t }) => {
     const anchor = firstShot ? degreesToSteps(firstShot.angle, rev) : startView ? profile.perspectives[startView] : current;
     // Exact (unrounded) start on the revolution nearest the table, so rounding never drifts frame to frame
     const start = anchor + Math.round((current - anchor) / rev) * rev;
+    const stepDegrees = old ? old.stepDegrees : profile.stepDegrees;
     const plan = reshoot
-      ? planSequence({ start, stepsPerRev: rev, shotsPerPass, heights: 1 })
-      : planSequence({ start, stepsPerRev: rev, shotsPerPass, heights, currentHeight: cameraHeightRef.current, serpentine: profile.alternateHeights });
+      ? planSequence({ start, stepsPerRev: rev, shotsPerPass, stepDegrees, heights: 1 })
+      : planSequence({ start, stepsPerRev: rev, shotsPerPass, stepDegrees, heights, currentHeight: cameraHeightRef.current, serpentine: profile.alternateHeights });
     // The single pass of a re-shoot keeps the height number it replaces, so the photos keep their names
     if (reshoot) {
       plan.passes.forEach((pass) => {
@@ -725,6 +726,7 @@ const Animator = ({ t }) => {
         folder,
         saveTarget,
         shotsPerPass,
+        stepDegrees,
         heights,
         heroHeight,
         startView,

@@ -1,7 +1,9 @@
 import { stepsToDegrees } from '@core/turntableMath';
 
-// Full-rotation capture: for each camera height, the table makes one forward turn stopping
-// `shotsPerPass` times at equal angles, then completes the circle back to where it started.
+// Rotation capture: for each camera height the table turns the same number of degrees between photos
+// until the pass has its photos, then carries on forwards to the next whole turn, so the height after it
+// starts at the same angle. The step and the number of photos are set apart from each other: the photos
+// may cover less than a circle, or more than one.
 
 const pad = (n, width) => `${n}`.padStart(width, '0');
 
@@ -17,24 +19,28 @@ export const heightOrder = (heights, currentHeight = null, serpentine = true) =>
 
 // Every stop of the sequence as absolute motor steps. `start` may be fractional (an exact revolution
 // multiple); targets are rounded from it so rounding never accumulates over passes or frames.
-export const planSequence = ({ start, stepsPerRev, shotsPerPass, heights, currentHeight = null, serpentine = true }) => {
+export const planSequence = ({ start, stepsPerRev, shotsPerPass, stepDegrees = null, heights, currentHeight = null, serpentine = true }) => {
   const n = Math.max(1, Math.round(shotsPerPass));
+  // Without a step of its own a pass spreads its photos evenly over one turn, as it always used to
+  const step = Number.isFinite(stepDegrees) && stepDegrees > 0 ? (stepDegrees / 360) * stepsPerRev : stepsPerRev / n;
+  const span = (n - 1) * step;
+  // Whole turns made by a pass: the table finishes the last one so every height starts in the same place
+  const close = Math.ceil(span / stepsPerRev) * stepsPerRev;
   const order = heightOrder(heights, currentHeight, serpentine);
   const passes = order.map((height, p) => {
-    const base = start + p * stepsPerRev;
+    const base = start + p * close;
     return {
       height,
       shots: Array.from({ length: n }, (_, i) => ({
         height,
         index: i,
-        steps: Math.round(base + (i * stepsPerRev) / n),
-        offset: (i * 360) / n,
+        steps: Math.round(base + i * step),
+        offset: (i * step * 360) / stepsPerRev,
       })),
-      // Completing the circle brings the table back to the start angle, still turning forward
-      end: Math.round(base + stepsPerRev),
+      end: Math.round(base + close),
     };
   });
-  return { passes, stepsPerRev, total: passes.length * n, endHeight: order[order.length - 1] };
+  return { passes, stepsPerRev, close, span: (span * 360) / stepsPerRev, total: passes.length * n, endHeight: order[order.length - 1] };
 };
 
 export const nextSequenceNumber = (pictures = []) => pictures.reduce((max, p) => Math.max(max, Number(p?.sequence?.number) || 0), 0) + 1;

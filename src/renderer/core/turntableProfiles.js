@@ -8,6 +8,8 @@ export const DEFAULT_TURNTABLE_PROFILE = {
   captureStart: null,
   captureEnd: null,
   shotsPerPass: 25,
+  // Degrees the table turns between photos, set apart from how many photos a pass takes
+  stepDegrees: 14.4,
   heights: 3,
   settleMs: 800,
   // Rotation capture: the shutter takes a full turn at every height; the photo at the start view and main height is the frame's picture
@@ -32,15 +34,6 @@ export const DEFAULT_TURNTABLE_PROFILE = {
   // The saved FRONT/RIGHT/BACK/LEFT views and everything that turns the table to them. Off means the table
   // is placed by hand, the shutter takes one ordinary photo, and a rotation is asked for frame by frame.
   useViews: false,
-};
-
-// Steps that divide a circle exactly, so a full turn always comes back to where it started
-export const TURN_STEPS = [2, 3, 4, 5, 6, 7.2, 8, 9, 10, 12, 14.4, 15, 18, 20, 24, 30, 36, 45, 60, 72, 90, 120];
-
-// The step list to offer for a profile, including the one it is on when that is not a listed step
-export const turnStepsFor = (shotsPerPass) => {
-  const exact = 360 / Math.max(1, shotsPerPass);
-  return TURN_STEPS.includes(Number(exact.toFixed(4))) ? TURN_STEPS : [...TURN_STEPS, exact].sort((a, b) => a - b);
 };
 
 // Table speed and acceleration as two plain choices. The board takes step delays; a step lasts twice the delay.
@@ -83,7 +76,9 @@ export const normalizeProfile = (p = {}) => {
     captureStart: p.captureStart === null || p.captureStart === undefined ? null : Math.round(Number(p.captureStart)),
     captureEnd: p.captureEnd === null || p.captureEnd === undefined ? null : Math.round(Number(p.captureEnd)),
     // Profiles saved before rotation capture used 19 photos per pass; the rig now shoots 25
-    shotsPerPass: Math.min(360, Math.max(1, Math.round(num(!p.version && Number(p.shotsPerPass) === 19 ? 25 : p.shotsPerPass, d.shotsPerPass)))),
+    shotsPerPass: Math.min(1000, Math.max(1, Math.round(num(!p.version && Number(p.shotsPerPass) === 19 ? 25 : p.shotsPerPass, d.shotsPerPass)))),
+    // A rig set up before the step could be set on its own keeps the step its photo count used to mean
+    stepDegrees: Math.min(360, Math.max(0.1, num(p.stepDegrees, 360 / Math.max(1, num(p.shotsPerPass, d.shotsPerPass))))),
     heights: Math.min(10, Math.max(1, Math.round(num(p.heights, d.heights)))),
     // A rig set up before views could be switched off starts by hand, with the shutter back to single photos
     useViews: p.useViews === undefined ? d.useViews : !!p.useViews,
