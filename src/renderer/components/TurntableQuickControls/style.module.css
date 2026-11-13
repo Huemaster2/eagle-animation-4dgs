@@ -122,3 +122,13 @@
   background: var(--pf-line);
   color: var(--pf-paper);
 }
+
+.number {
+  background: var(--pf-paper);
+  border: 1px solid var(--pf-line);
+  color: var(--color-white);
+  font-family: inherit;
+  font-size: var(--font-size-6);
+  padding: 2px 4px;
+  width: 56px;
+}

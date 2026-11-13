@@ -34,6 +34,15 @@ export const DEFAULT_TURNTABLE_PROFILE = {
   useViews: false,
 };
 
+// Steps that divide a circle exactly, so a full turn always comes back to where it started
+export const TURN_STEPS = [2, 3, 4, 5, 6, 7.2, 8, 9, 10, 12, 14.4, 15, 18, 20, 24, 30, 36, 45, 60, 72, 90, 120];
+
+// The step list to offer for a profile, including the one it is on when that is not a listed step
+export const turnStepsFor = (shotsPerPass) => {
+  const exact = 360 / Math.max(1, shotsPerPass);
+  return TURN_STEPS.includes(Number(exact.toFixed(4))) ? TURN_STEPS : [...TURN_STEPS, exact].sort((a, b) => a - b);
+};
+
 // Table speed and acceleration as two plain choices. The board takes step delays; a step lasts twice the delay.
 // Longer ramps at higher speeds keep the motor from skipping steps when it starts and stops.
 export const SPEED_LEVELS = [2000, 1400, 950, 700, 500];

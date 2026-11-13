@@ -6,6 +6,7 @@ import TurntableAngleSlider from '@components/TurntableAngleSlider';
 import { flashArduinoUno } from '@core/arduinoFlasher';
 import { findArduinoPort, turntable } from '@core/turntable';
 import { angleOf, degreesToSteps, nearestEquivalent, PERSPECTIVES } from '@core/turntableMath';
+import { turnStepsFor } from '@core/turntableProfiles';
 import useTurntable from '@hooks/useTurntable';
 import { useEffect, useState } from 'react';
 import { withTranslation } from 'react-i18next';
@@ -229,6 +230,14 @@ const TurntableWindow = ({ t }) => {
         <div className={style.row}>
           <span className={style.label}>{t('Photos per turn')}</span>
           <input className={style.number} type="number" min={1} max={360} value={profile.shotsPerPass} onChange={(e) => actions.updateProfile({ shotsPerPass: e.target.value })} />
+          <span className={style.label}>{t('Degrees apart')}</span>
+          <select className={style.number} value={String(interval)} onChange={(e) => actions.updateProfile({ shotsPerPass: Math.max(1, Math.round(360 / Number(e.target.value))) })}>
+            {turnStepsFor(profile.shotsPerPass).map((degrees) => (
+              <option key={degrees} value={String(degrees)}>
+                {t('{{deg}}° — {{n}} photos', { deg: Number(degrees.toFixed(2)), n: Math.round(360 / degrees) })}
+              </option>
+            ))}
+          </select>
           <span className={style.label}>{t('Camera heights')}</span>
           <input className={style.number} type="number" min={1} max={10} value={profile.heights} onChange={(e) => actions.updateProfile({ heights: e.target.value })} />
           <span className={style.label}>{t('Settle (ms)')}</span>

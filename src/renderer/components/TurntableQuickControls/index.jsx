@@ -1,13 +1,13 @@
 import Switch from '@components/Switch';
 import TurntableAngleSlider from '@components/TurntableAngleSlider';
 import { HoldButton } from '@components/TurntableWindow';
+import { simRig } from '@core/simulatedRig';
 import { STOPMO_CAMERA_AVAILABLE } from '@core/stopmoCamera';
 import { TAG_FAMILIES } from '@core/tagDetect';
-import { simRig } from '@core/simulatedRig';
 import { observeTags } from '@core/tagVision';
 import { turntable } from '@core/turntable';
 import { angleOf, degreesToSteps, PERSPECTIVES } from '@core/turntableMath';
-import { ACCEL_LEVELS, motorTuning, SPEED_LEVELS, tuningLevels } from '@core/turntableProfiles';
+import { ACCEL_LEVELS, motorTuning, SPEED_LEVELS, tuningLevels, turnStepsFor } from '@core/turntableProfiles';
 import useTurntable from '@hooks/useTurntable';
 import { useEffect, useState } from 'react';
 import { withTranslation } from 'react-i18next';
@@ -25,6 +25,48 @@ export const tagFailure = (t, tags) => {
 };
 
 // Compact turntable page for the floating panel, so the table can be set up while watching the live view
+// How far the table turns between the photos of a full turn. A turn has to come back to where it started,
+// so the step is set as a whole number of photos: the figure typed in is snapped to the nearest that fits.
+// How far the table turns between the photos of a full turn
+const TurnStep = ({ t, profile, onChange }) => {
+  const exact = 360 / Math.max(1, profile.shotsPerPass);
+  const steps = turnStepsFor(profile.shotsPerPass);
+  return (
+    <>
+      <p className={style.label}>{t('Full turn')}</p>
+      <div className={style.row}>
+        <span className={style.viewName}>{t('Every')}</span>
+        <select
+          className={style.number}
+          value={String(exact)}
+          aria-label={t('Degrees the table turns between photos')}
+          onChange={(event) => onChange({ shotsPerPass: Math.max(1, Math.round(360 / Number(event.target.value))) })}
+        >
+          {steps.map((degrees) => (
+            <option key={degrees} value={String(degrees)}>
+              {t('{{deg}}° — {{n}} photos', { deg: Number(degrees.toFixed(2)), n: Math.round(360 / degrees) })}
+            </option>
+          ))}
+        </select>
+        <span className={style.viewName}>{t('Heights')}</span>
+        <input
+          type="number"
+          className={style.number}
+          min={1}
+          max={10}
+          step={1}
+          value={profile.heights}
+          aria-label={t('Camera heights')}
+          onChange={(event) => onChange({ heights: Math.min(10, Math.max(1, Math.round(Number(event.target.value) || 1))) })}
+        />
+      </div>
+      <p className={style.hint}>
+        {t('{{total}} photos per frame: {{n}} around the circle at each of {{h}} heights.', { total: profile.shotsPerPass * profile.heights, n: profile.shotsPerPass, h: profile.heights })}
+      </p>
+    </>
+  );
+};
+
 // A stand-in rig for working with nothing plugged in: a board that answers like the firmware, and a camera
 // (picked in Camera settings) that draws the set as the simulated table stands.
 const SimulatedRigSection = ({ t, state, onConnect }) => {
@@ -194,6 +236,7 @@ const TurntableQuickControls = ({ t, activeView = null, onGo = null }) => {
         <span>{t('Shutter takes a full turn ({{n}} × {{h}} heights)', { n: profile.shotsPerPass, h: profile.heights })}</span>
         <Switch checked={profile.rotationCapture} onChange={() => actions.updateProfile({ rotationCapture: !profile.rotationCapture })} />
       </label>
+      <TurnStep t={t} profile={profile} onChange={(patch) => actions.updateProfile(patch)} />
       {profile.useViews && <p className={style.label}>{t('Views')}</p>}
       {(profile.useViews ? PERSPECTIVES : []).map((key) => {
         const value = profile.perspectives[key];
